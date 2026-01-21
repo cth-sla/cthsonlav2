@@ -5,7 +5,6 @@ import {
   PieChart, Pie, Legend
 } from 'recharts';
 import { Meeting, Endpoint, EndpointStatus } from '../types';
-import { storageService } from '../services/storageService';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
@@ -46,7 +45,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
     setGeneratedData([]); 
   }, [reportType]);
 
-  const stats = useMemo(() => {
+  const statsSummary = useMemo(() => {
     if (generatedData.length === 0 || reportType !== 'meetings') return null;
 
     const unitMap: Record<string, number> = {};
@@ -55,20 +54,25 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
     const yearMap: Record<string, number> = {};
 
     generatedData.forEach(row => {
-      // Host Unit
+      // Đơn vị chủ trì
       const unit = row['Đơn vị chủ trì'];
       unitMap[unit] = (unitMap[unit] || 0) + 1;
       
-      // Parse Date for grouping
-      const dateParts = row['Bắt đầu'].split(' ')[0].split('/');
-      const d = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
+      // Xử lý ngày tháng từ chuỗi "DD/MM/YYYY, HH:mm" hoặc định dạng chuẩn
+      const dateStr = row['Bắt đầu'];
+      const dateParts = dateStr.includes(',') ? dateStr.split(',')[0].split('/') : dateStr.split(' ')[0].split('/');
       
+      // Giả định định dạng là DD/MM/YYYY
+      const d = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
+      if (isNaN(d.getTime())) return;
+
       const yearLabel = `${d.getFullYear()}`;
       yearMap[yearLabel] = (yearMap[yearLabel] || 0) + 1;
 
       const monthLabel = `T${d.getMonth() + 1}/${d.getFullYear()}`;
       monthMap[monthLabel] = (monthMap[monthLabel] || 0) + 1;
 
+      // Tính tuần
       const oneJan = new Date(d.getFullYear(), 0, 1);
       const numberOfDays = Math.floor((d.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
       const weekLabel = `W${Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7)}/${d.getFullYear()}`;
@@ -93,8 +97,12 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
         counts[unit] = (counts[unit] || 0) + 1;
       });
       return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    } else if (reportType === 'units') {
+      return generatedData.map(row => ({
+        name: row['Đơn vị'],
+        value: Number(row['Số lượng cuộc họp'])
+      }));
     }
-    // ... logic cho các loại khác
     return [];
   }, [generatedData, reportType]);
 
@@ -171,7 +179,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
       }
       setGeneratedData(data);
       setIsGenerating(false);
-    }, 800);
+    }, 600);
   };
 
   const downloadPDF = () => {
@@ -187,9 +195,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
   };
 
   const reportTitleMap = {
-    meetings: 'Báo cáo Chi tiết Cuộc họp',
-    endpoints: 'Báo cáo Trạng thái Điểm cầu',
-    units: 'Báo cáo Hiệu suất theo Đơn vị'
+    meetings: 'Thống kê Chi tiết Cuộc họp',
+    endpoints: 'Trạng thái Điểm cầu Hệ thống',
+    units: 'Thống kê Hiệu suất Đơn vị'
   };
 
   return (
@@ -210,7 +218,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
           </div>
 
           <div className="space-y-2 lg:col-span-1">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Phạm vi thời gian</label>
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Thời gian trích xuất</label>
             <select 
               className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
               value={dateMode}
@@ -252,19 +260,19 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
           <div className="flex gap-2 lg:col-span-2">
             <button onClick={handleGenerate} disabled={isGenerating} className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
               {isGenerating ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
-              Tạo báo cáo
+              Trích xuất dữ liệu
             </button>
           </div>
         </div>
       </div>
 
       {generatedData.length > 0 && (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 animate-in fade-in duration-700">
           <div className="flex justify-end gap-3 no-print">
             <button onClick={() => setShowChart(!showChart)} className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-all ${showChart ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}>
-              {showChart ? 'Ẩn Biểu đồ' : 'Xem Biểu đồ'}
+              {showChart ? 'Ẩn biểu đồ' : 'Hiện biểu đồ'}
             </button>
-            <button onClick={downloadPDF} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase shadow-md hover:bg-blue-700">Xuất PDF</button>
+            <button onClick={downloadPDF} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase shadow-md hover:bg-blue-700">Xuất Báo cáo PDF</button>
           </div>
 
           <div ref={reportRef} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 space-y-10">
@@ -280,32 +288,32 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
                </div>
             </div>
 
-            {stats && reportType === 'meetings' && (
+            {statsSummary && reportType === 'meetings' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Tổng cuộc họp</p>
-                    <div className="text-3xl font-black text-blue-700">{stats.total}</div>
-                    <p className="text-[9px] text-blue-500 font-bold mt-1 uppercase">Dữ liệu trong {stats.years} năm</p>
+                 <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 shadow-sm">
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Tổng số cuộc họp</p>
+                    <div className="text-3xl font-black text-blue-700">{statsSummary.total}</div>
+                    <p className="text-[9px] text-blue-500 font-bold mt-1 uppercase">Dữ liệu trích xuất từ {statsSummary.years} năm</p>
                  </div>
-                 <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Đơn vị tích cực</p>
-                    <div className="text-lg font-black text-emerald-700 truncate">{stats.topUnit[0]}</div>
-                    <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase">{stats.topUnit[1]} cuộc họp</p>
+                 <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 shadow-sm">
+                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Đơn vị tích cực nhất</p>
+                    <div className="text-lg font-black text-emerald-700 truncate">{statsSummary.topUnit[0]}</div>
+                    <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase">{statsSummary.topUnit[1]} cuộc họp đã tổ chức</p>
                  </div>
-                 <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50">
-                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Thống kê theo Tháng</p>
-                    <div className="text-3xl font-black text-amber-700">{stats.months} <span className="text-xs uppercase">Tháng</span></div>
+                 <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 shadow-sm">
+                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Số tháng thống kê</p>
+                    <div className="text-3xl font-black text-amber-700">{statsSummary.months} <span className="text-xs uppercase">Tháng</span></div>
                  </div>
-                 <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50">
-                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Thống kê theo Tuần</p>
-                    <div className="text-3xl font-black text-purple-700">{stats.weeks} <span className="text-xs uppercase">Tuần</span></div>
+                 <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50 shadow-sm">
+                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Số tuần thống kê</p>
+                    <div className="text-3xl font-black text-purple-700">{statsSummary.weeks} <span className="text-xs uppercase">Tuần</span></div>
                  </div>
               </div>
             )}
 
             {showChart && chartData.length > 0 && (
               <div className="bg-gray-50/30 rounded-3xl p-8 border border-gray-100">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 text-center">Biểu đồ phân bổ Cuộc họp theo Đơn vị</h4>
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 text-center">Phân bổ Số lượng cuộc họp theo Đơn vị</h4>
                 <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ bottom: 60 }}>
@@ -344,7 +352,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
             </div>
 
             <div className="mt-20 flex justify-between items-start text-[9px] text-gray-400 font-black uppercase tracking-[0.2em]">
-              <div className="max-w-[200px] italic">Báo cáo được tạo tự động bởi hệ thống CTH-SLA Platform v3.1.0</div>
+              <div className="max-w-[200px] italic">Báo cáo được trích xuất tự động và có giá trị nội bộ • v3.1.0</div>
               <div className="text-center w-48">
                  Cán bộ phụ trách<br/><br/><br/><br/>
                  <div className="w-full h-px bg-gray-200 mb-2"></div>

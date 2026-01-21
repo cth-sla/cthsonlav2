@@ -9,14 +9,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
     sourcemap: false,
     minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'chart-vendor': ['recharts'],
-          'pdf-vendor': ['html2pdf.js', 'jszip', 'file-saver']
+          'recharts-vendor': ['recharts'],
+          'utils-vendor': ['html2pdf.js', 'jszip', 'file-saver']
         }
       }
     }
