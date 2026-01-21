@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus } from '../types';
+import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings } from '../types';
 
 interface ManagementPageProps {
   units: Unit[];
   staff: Staff[];
   participantGroups: ParticipantGroup[];
   endpoints: Endpoint[];
+  systemSettings: SystemSettings;
   onAddUnit: (unit: Omit<Unit, 'id'>) => void;
   onUpdateUnit: (unit: Unit) => void;
   onAddStaff: (staff: Omit<Staff, 'id'>) => void;
@@ -19,6 +20,7 @@ interface ManagementPageProps {
   onDeleteStaff: (id: string) => void;
   onDeleteGroup: (id: string) => void;
   onDeleteEndpoint: (id: string) => void;
+  onUpdateSettings: (settings: SystemSettings) => void;
 }
 
 const ManagementPage: React.FC<ManagementPageProps> = ({
@@ -26,6 +28,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   staff,
   participantGroups,
   endpoints,
+  systemSettings,
   onAddUnit,
   onUpdateUnit,
   onAddStaff,
@@ -37,15 +40,19 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   onDeleteUnit,
   onDeleteStaff,
   onDeleteGroup,
-  onDeleteEndpoint
+  onDeleteEndpoint,
+  onUpdateSettings
 }) => {
-  const [activeTab, setActiveTab] = useState<'units' | 'staff' | 'groups' | 'endpoints'>('units');
+  const [activeTab, setActiveTab] = useState<'units' | 'staff' | 'groups' | 'endpoints' | 'settings'>('units');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Unit | Staff | ParticipantGroup | Endpoint | null>(null);
   const [formData, setFormData] = useState<any>({});
+
+  // System Settings local state
+  const [settingsForm, setSettingsForm] = useState<SystemSettings>(systemSettings);
 
   const filteredUnits = units.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -97,10 +104,26 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       editingItem ? onUpdateStaff(formData as Staff) : onAddStaff(formData as Omit<Staff, 'id'>);
     } else if (activeTab === 'endpoints') {
       editingItem ? onUpdateEndpoint(formData as Endpoint) : onAddEndpoint(formData as Omit<Endpoint, 'id' | 'status' | 'lastConnected'>);
-    } else {
+    } else if (activeTab === 'groups') {
       editingItem ? onUpdateGroup(formData as ParticipantGroup) : onAddGroup(formData as Omit<ParticipantGroup, 'id'>);
     }
     closeModal();
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettingsForm({ ...settingsForm, logoBase64: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveSettings = () => {
+    onUpdateSettings(settingsForm);
+    alert('Đã cập nhật cấu hình hệ thống!');
   };
 
   return (
@@ -108,51 +131,41 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       {/* Sub-navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
-          <button 
-            onClick={() => { setActiveTab('units'); setSearchTerm(''); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'units' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Đơn vị
-          </button>
-          <button 
-            onClick={() => { setActiveTab('staff'); setSearchTerm(''); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'staff' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Cán bộ
-          </button>
-          <button 
-            onClick={() => { setActiveTab('groups'); setSearchTerm(''); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'groups' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Thành phần
-          </button>
-          <button 
-            onClick={() => { setActiveTab('endpoints'); setSearchTerm(''); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'endpoints' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Điểm cầu
-          </button>
+          {['units', 'staff', 'groups', 'endpoints', 'settings'].map((tab) => (
+            <button 
+              key={tab}
+              onClick={() => { setActiveTab(tab as any); setSearchTerm(''); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {tab === 'units' ? 'Đơn vị' : 
+               tab === 'staff' ? 'Cán bộ' : 
+               tab === 'groups' ? 'Thành phần' : 
+               tab === 'endpoints' ? 'Điểm cầu' : 'Cấu hình'}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm nhanh..."
-              className="pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none w-full md:w-48 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <svg className="w-4 h-4 absolute left-3 top-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        {activeTab !== 'settings' && (
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Tìm kiếm nhanh..."
+                className="pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none w-full md:w-48 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <svg className="w-4 h-4 absolute left-3 top-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+            <button 
+              onClick={() => openModal()}
+              className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm active:scale-95 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
+              Thêm mới
+            </button>
           </div>
-          <button 
-            onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm active:scale-95 flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
-            Thêm mới
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Table Content */}
@@ -267,10 +280,98 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           </table>
         )}
 
-        {(filteredUnits.length === 0 && activeTab === 'units') ||
+        {activeTab === 'settings' && (
+          <div className="p-8 max-w-2xl space-y-8">
+            <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight">Cấu hình giao diện hệ thống</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Tên hệ thống (Dài)</label>
+                  <input 
+                    type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={settingsForm.systemName}
+                    onChange={e => setSettingsForm({...settingsForm, systemName: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Tên viết tắt (Short Name)</label>
+                  <input 
+                    type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={settingsForm.shortName}
+                    onChange={e => setSettingsForm({...settingsForm, shortName: e.target.value})}
+                  />
+                </div>
+                
+                {/* Primary Color Customization Section */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Màu chủ đạo hệ thống (Theme Color)</label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <input 
+                        type="color" 
+                        className="w-12 h-12 p-1 bg-white border border-gray-200 rounded-xl cursor-pointer"
+                        value={settingsForm.primaryColor}
+                        onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
+                      />
+                    </div>
+                    <input 
+                      type="text" 
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm uppercase"
+                      value={settingsForm.primaryColor}
+                      onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-medium italic">Thay đổi màu sắc này để tùy chỉnh giao diện Dashboard và Sidebar.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700">Logo hệ thống</label>
+                  <div className="flex flex-col items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+                    {settingsForm.logoBase64 ? (
+                      <img src={settingsForm.logoBase64} alt="Preview" className="h-16 w-auto object-contain rounded" />
+                    ) : (
+                      <div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    )}
+                    <input 
+                      type="file" accept="image/*" className="hidden" id="logo-upload"
+                      onChange={handleLogoChange}
+                    />
+                    <label htmlFor="logo-upload" className="cursor-pointer px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                      {settingsForm.logoBase64 ? 'Thay đổi Logo' : 'Tải lên Logo'}
+                    </label>
+                    {settingsForm.logoBase64 && (
+                      <button 
+                        onClick={() => setSettingsForm({...settingsForm, logoBase64: undefined})}
+                        className="text-[10px] text-red-500 font-bold uppercase hover:underline"
+                      >
+                        Xóa Logo (Dùng mặc định)
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-100 flex justify-end">
+              <button 
+                onClick={handleSaveSettings}
+                className="px-8 py-3 bg-blue-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"
+              >
+                Lưu cấu hình
+              </button>
+            </div>
+          </div>
+        )}
+
+        {((filteredUnits.length === 0 && activeTab === 'units') ||
          (filteredStaff.length === 0 && activeTab === 'staff') ||
          (filteredEndpoints.length === 0 && activeTab === 'endpoints') ||
-         (filteredGroups.length === 0 && activeTab === 'groups') ? (
+         (filteredGroups.length === 0 && activeTab === 'groups')) ? (
           <div className="p-12 text-center text-gray-400 italic bg-gray-50/30">
             Không tìm thấy dữ liệu nào phù hợp với tìm kiếm của bạn.
           </div>

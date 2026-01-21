@@ -1,5 +1,5 @@
 
-import { Meeting, Unit, Staff, ParticipantGroup, User, Endpoint, SavedReportConfig } from '../types';
+import { Meeting, Unit, Staff, ParticipantGroup, User, Endpoint, SavedReportConfig, SystemSettings } from '../types';
 import { MOCK_MEETINGS, MOCK_UNITS, MOCK_STAFF, MOCK_PARTICIPANT_GROUPS, MOCK_USERS, MOCK_ENDPOINTS } from '../constants';
 
 const DB_KEYS = {
@@ -9,11 +9,17 @@ const DB_KEYS = {
   GROUPS: 'cth_sla_groups',
   USERS: 'cth_sla_users',
   ENDPOINTS: 'cth_sla_endpoints',
-  SAVED_REPORTS: 'cth_sla_saved_reports'
+  SAVED_REPORTS: 'cth_sla_saved_reports',
+  SYSTEM_SETTINGS: 'cth_sla_system_settings'
+};
+
+const DEFAULT_SETTINGS: SystemSettings = {
+  systemName: 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+  shortName: 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+  primaryColor: '#3B82F6'
 };
 
 export const storageService = {
-  // Khởi tạo dữ liệu ban đầu nếu chưa có
   init() {
     if (!localStorage.getItem(DB_KEYS.UNITS)) {
       localStorage.setItem(DB_KEYS.UNITS, JSON.stringify(MOCK_UNITS));
@@ -36,9 +42,11 @@ export const storageService = {
     if (!localStorage.getItem(DB_KEYS.SAVED_REPORTS)) {
       localStorage.setItem(DB_KEYS.SAVED_REPORTS, JSON.stringify([]));
     }
+    if (!localStorage.getItem(DB_KEYS.SYSTEM_SETTINGS)) {
+      localStorage.setItem(DB_KEYS.SYSTEM_SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
+    }
   },
 
-  // Generic Get/Set
   getData<T>(key: string, defaultValue: T): T {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : defaultValue;
@@ -48,7 +56,6 @@ export const storageService = {
     localStorage.setItem(key, JSON.stringify(data));
   },
 
-  // Specific Methods
   getMeetings(): Meeting[] { return this.getData(DB_KEYS.MEETINGS, MOCK_MEETINGS); },
   saveMeetings(data: Meeting[]) { this.saveData(DB_KEYS.MEETINGS, data); },
 
@@ -68,5 +75,8 @@ export const storageService = {
   saveEndpoints(data: Endpoint[]) { this.saveData(DB_KEYS.ENDPOINTS, data); },
 
   getSavedReports(): SavedReportConfig[] { return this.getData(DB_KEYS.SAVED_REPORTS, []); },
-  saveSavedReports(data: SavedReportConfig[]) { this.saveData(DB_KEYS.SAVED_REPORTS, data); }
+  saveSavedReports(data: SavedReportConfig[]) { this.saveData(DB_KEYS.SAVED_REPORTS, data); },
+
+  getSystemSettings(): SystemSettings { return this.getData(DB_KEYS.SYSTEM_SETTINGS, DEFAULT_SETTINGS); },
+  saveSystemSettings(data: SystemSettings) { this.saveData(DB_KEYS.SYSTEM_SETTINGS, data); }
 };

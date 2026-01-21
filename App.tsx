@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend
 } from 'recharts';
-import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User } from './types';
+import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
 import MonitoringGrid from './components/MonitoringGrid';
@@ -39,6 +39,18 @@ const App: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>(() => storageService.getStaff());
   const [groups, setGroups] = useState<ParticipantGroup[]>(() => storageService.getGroups());
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
+
+  // Inject primary color into CSS
+  useEffect(() => {
+    const root = document.documentElement;
+    if (systemSettings.primaryColor) {
+      root.style.setProperty('--primary-color', systemSettings.primaryColor);
+      // Generate a lighter version for backgrounds (very simple approach)
+      root.style.setProperty('--primary-color-bg', `${systemSettings.primaryColor}15`);
+      root.style.setProperty('--primary-color-hover', `${systemSettings.primaryColor}dd`);
+    }
+  }, [systemSettings.primaryColor]);
 
   const checkDb = useCallback(async () => {
     const result = await databaseService.checkConnection();
@@ -145,43 +157,60 @@ const App: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  if (!currentUser) return <LoginView users={users} onLoginSuccess={setCurrentUser} />;
+  if (!currentUser) return <LoginView users={users} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50" style={{ '--theme-primary': systemSettings.primaryColor } as any}>
       <aside className="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 shadow-xl z-10 flex flex-col">
         <div className="p-6">
-          <h1 className="text-xl font-bold tracking-tight flex items-center gap-3">
-            <div className="relative group">
-               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-               <div className="relative p-2 bg-slate-800 border border-slate-700 rounded-xl">
-                <svg className="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 22V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="12" cy="12" r="2.5" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1"/>
-                </svg>
+          <h1 className="flex items-start gap-3">
+            <div className="relative group shrink-0">
+               <div 
+                className="absolute -inset-1 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"
+                style={{ background: `linear-gradient(to right, ${systemSettings.primaryColor}, #22d3ee)` }}
+               ></div>
+               <div className="relative p-2 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden w-10 h-10">
+                {systemSettings.logoBase64 ? (
+                  <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full object-contain" />
+                ) : (
+                  <svg className="w-6 h-6" style={{ color: '#22d3ee' }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 22V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="12" r="2.5" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1"/>
+                  </svg>
+                )}
                </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg leading-none font-black bg-gradient-to-r from-white via-blue-100 to-blue-300 bg-clip-text text-transparent uppercase tracking-tighter">E-Meeting</span>
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-0.5">SLA Platform</span>
+              <span 
+                className="text-xs leading-tight font-black bg-clip-text text-transparent uppercase tracking-tight"
+                style={{ backgroundImage: `linear-gradient(to right, white, #d1d5db, ${systemSettings.primaryColor})` }}
+              >
+                {systemSettings.shortName}
+              </span>
+              <span 
+                className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80"
+                style={{ color: systemSettings.primaryColor }}
+              >
+                {systemSettings.systemName}
+              </span>
             </div>
           </h1>
         </div>
 
         <nav className="mt-2 px-4 space-y-1 flex-1 overflow-y-auto">
-          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'dashboard' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
             <span className="font-semibold text-sm">Tổng quan</span>
           </button>
           
-          <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'reports' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <span className="font-semibold text-sm">Báo cáo & Thống kê</span>
           </button>
 
-          <button onClick={() => setActiveTab('meetings')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'meetings' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('meetings')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'meetings' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'meetings' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <span className="font-semibold text-sm">Quản lý lịch họp</span>
           </button>
@@ -189,19 +218,19 @@ const App: React.FC = () => {
           {isAdmin && (
             <>
               <div className="pt-4 pb-1 px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Hệ thống</div>
-              <button onClick={() => setActiveTab('monitoring')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('monitoring')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'monitoring' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 <span className="font-semibold text-sm">Giám sát điểm cầu</span>
               </button>
-              <button onClick={() => setActiveTab('management')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'management' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('management')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'management' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'management' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                <span className="font-semibold text-sm">Danh mục chung</span>
+                <span className="font-semibold text-sm">Quản lý & Cấu hình</span>
               </button>
-              <button onClick={() => setActiveTab('accounts')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('accounts')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'accounts' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                 <span className="font-semibold text-sm">Quản trị Tài khoản</span>
               </button>
-              <button onClick={() => setActiveTab('deployment')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('deployment')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'text-blue-400 border border-blue-600/20' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'deployment' ? { backgroundColor: `${systemSettings.primaryColor}1a`, color: systemSettings.primaryColor } : {}}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                 <span className="font-semibold text-sm">Hệ thống & Triển khai</span>
               </button>
@@ -223,7 +252,7 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' ? 'Thống kê & Phân tích Dữ liệu' : 
              activeTab === 'meetings' ? 'Danh sách lịch họp' : 
              activeTab === 'monitoring' ? 'Giám sát Điểm cầu' : 
-             activeTab === 'management' ? 'Quản lý Danh mục' :
+             activeTab === 'management' ? 'Quản lý Danh mục & Cấu hình' :
              activeTab === 'reports' ? 'Báo cáo & Xuất dữ liệu' :
              activeTab === 'accounts' ? 'Quản lý Tài khoản' : 
              activeTab === 'deployment' ? 'Phát hành & Quản lý Từ xa' : 'Triển khai hệ thống'}
@@ -249,7 +278,7 @@ const App: React.FC = () => {
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-100">
+                  <div className="p-3 rounded-2xl text-white shadow-lg" style={{ backgroundColor: systemSettings.primaryColor }}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                   </div>
                   <div>
@@ -259,10 +288,10 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200">
-                   <button onClick={() => setStatsPeriod('week')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Tuần</button>
-                   <button onClick={() => setStatsPeriod('month')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Tháng</button>
-                   <button onClick={() => setStatsPeriod('year')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'year' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Năm</button>
-                   <button onClick={() => setStatsPeriod('unit')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'unit' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Đơn vị</button>
+                   <button onClick={() => setStatsPeriod('week')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'week' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'week' ? { color: systemSettings.primaryColor } : {}}>Tuần</button>
+                   <button onClick={() => setStatsPeriod('month')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'month' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'month' ? { color: systemSettings.primaryColor } : {}}>Tháng</button>
+                   <button onClick={() => setStatsPeriod('year')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'year' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'year' ? { color: systemSettings.primaryColor } : {}}>Năm</button>
+                   <button onClick={() => setStatsPeriod('unit')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'unit' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'unit' ? { color: systemSettings.primaryColor } : {}}>Đơn vị</button>
                 </div>
               </div>
 
@@ -284,7 +313,7 @@ const App: React.FC = () => {
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8', fontWeight: '800'}} />
                       <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
                       <Tooltip cursor={{fill: '#f8fafc', radius: 8}} contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '12px'}} />
-                      <Bar dataKey="count" fill={statsPeriod === 'week' ? '#10B981' : statsPeriod === 'month' ? '#3B82F6' : '#8B5CF6'} radius={[8, 8, 0, 0]} barSize={statsPeriod === 'year' ? 60 : 32}>
+                      <Bar dataKey="count" fill={statsPeriod === 'week' ? '#10B981' : statsPeriod === 'month' ? systemSettings.primaryColor : '#8B5CF6'} radius={[8, 8, 0, 0]} barSize={statsPeriod === 'year' ? 60 : 32}>
                         {(statsPeriod === 'week' ? dynamicStats.weekly : statsPeriod === 'month' ? dynamicStats.monthly : dynamicStats.yearly).map((entry, index) => (
                            <Cell key={`cell-${index}`} fillOpacity={0.85} className="hover:fill-opacity-100 transition-all cursor-pointer" />
                         ))}
@@ -317,8 +346,8 @@ const App: React.FC = () => {
                     {dashboardMeetingList.map((meeting) => (
                       <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
                         <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-gray-900">{meeting.title}</div>
-                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{meeting.hostUnit}</div>
+                          <div className="text-sm font-bold text-gray-900 leading-tight">{meeting.title}</div>
+                          <div className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: systemSettings.primaryColor }}>{meeting.hostUnit}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-xs font-bold text-gray-700">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
@@ -326,7 +355,7 @@ const App: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-xs font-bold text-gray-700">{meeting.chairPerson}</td>
                         <td className="px-6 py-4 text-center">
-                          <button onClick={() => setSelectedMeeting(meeting)} className="px-4 py-1.5 bg-white border border-gray-200 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95">Chi tiết</button>
+                          <button onClick={() => setSelectedMeeting(meeting)} className="px-4 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all shadow-sm active:scale-95" style={{ color: systemSettings.primaryColor, borderColor: `${systemSettings.primaryColor}33` }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = systemSettings.primaryColor)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}>Chi tiết</button>
                         </td>
                       </tr>
                     ))}
@@ -351,7 +380,7 @@ const App: React.FC = () => {
 
         {activeTab === 'management' && isAdmin && (
           <ManagementPage 
-            units={units} staff={staff} participantGroups={groups} endpoints={endpoints}
+            units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings}
             onAddUnit={u => { const updated = [...units, { ...u, id: `U${Date.now()}` }]; setUnits(updated); storageService.saveUnits(updated); }}
             onUpdateUnit={u => { const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); }}
             onDeleteUnit={id => { if (window.confirm('Xóa đơn vị?')) { const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); }}}
@@ -364,6 +393,7 @@ const App: React.FC = () => {
             onAddGroup={g => { const updated = [...groups, { ...g, id: `G${Date.now()}` }]; setGroups(updated); storageService.saveGroups(updated); }}
             onUpdateGroup={g => { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }}
             onDeleteGroup={id => { if (window.confirm('Xóa thành phần?')) { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }}}
+            onUpdateSettings={s => { setSystemSettings(s); storageService.saveSystemSettings(s); }}
           />
         )}
 

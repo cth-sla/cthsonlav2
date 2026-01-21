@@ -1,4 +1,3 @@
-
 export enum EndpointStatus {
   CONNECTED = 'CONNECTED',
   DISCONNECTED = 'DISCONNECTED',
@@ -70,4 +69,11 @@ export interface SavedReportConfig {
   startDate: string;
   endDate: string;
   selectedColumns: string[];
+}
+
+export interface SystemSettings {
+  systemName: string;
+  shortName: string;
+  logoBase64?: string;
+  primaryColor: string;
 }
