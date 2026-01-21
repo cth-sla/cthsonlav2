@@ -9,7 +9,7 @@
     "react-dom": "^19.2.3",
     "@google/genai": "^1.37.0",
     "recharts": "^3.6.0",
-    "html2pdf.js": "0.10.1",
+    "html2pdf.js": "^0.14.0",
     "jszip": "^3.10.1",
     "file-saver": "^2.0.5",
     "lucide-react": "^0.344.0"
