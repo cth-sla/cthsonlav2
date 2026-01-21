@@ -157,7 +157,7 @@ const App: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  if (!currentUser) return <LoginView users={users} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
+  if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50" style={{ '--theme-primary': systemSettings.primaryColor } as any}>
