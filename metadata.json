@@ -1,0 +1,8 @@
+{
+  "name": "CTH-SLAv2",
+  "description": "Hệ thống giám sát Cầu truyền hình trực tuyến",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
