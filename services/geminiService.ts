@@ -1,4 +1,4 @@
-
+export {};
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize Gemini API with named parameter and direct environment variable access as per guidelines.
