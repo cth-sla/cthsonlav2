@@ -54,16 +54,22 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
     const yearMap: Record<string, number> = {};
 
     generatedData.forEach(row => {
-      // Đơn vị chủ trì
       const unit = row['Đơn vị chủ trì'];
       unitMap[unit] = (unitMap[unit] || 0) + 1;
       
-      // Xử lý ngày tháng từ chuỗi "DD/MM/YYYY, HH:mm" hoặc định dạng chuẩn
       const dateStr = row['Bắt đầu'];
-      const dateParts = dateStr.includes(',') ? dateStr.split(',')[0].split('/') : dateStr.split(' ')[0].split('/');
+      // Xử lý các định dạng ngày khác nhau có thể trả về từ toLocaleString
+      const dateOnly = dateStr.split(',')[0].split(' ')[0];
+      const dateParts = dateOnly.split('/');
       
-      // Giả định định dạng là DD/MM/YYYY
-      const d = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
+      let d: Date;
+      if (dateParts.length === 3) {
+        // Định dạng DD/MM/YYYY
+        d = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
+      } else {
+        d = new Date(dateStr);
+      }
+
       if (isNaN(d.getTime())) return;
 
       const yearLabel = `${d.getFullYear()}`;
@@ -72,7 +78,6 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
       const monthLabel = `T${d.getMonth() + 1}/${d.getFullYear()}`;
       monthMap[monthLabel] = (monthMap[monthLabel] || 0) + 1;
 
-      // Tính tuần
       const oneJan = new Date(d.getFullYear(), 0, 1);
       const numberOfDays = Math.floor((d.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
       const weekLabel = `W${Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7)}/${d.getFullYear()}`;

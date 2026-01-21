@@ -8,12 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-      // Khởi tạo shim cho process.env trước khi các module khác chạy
-      // Điều này ngăn chặn lỗi "process is not defined" thường gặp khi dùng SDK trên trình duyệt
+      // Khởi tạo shim cho process.env ngay lập tức
+      // Điều này ngăn chặn lỗi "process is not defined" khi các thư viện (như Google GenAI) khởi tạo
       window.process = { 
         env: { 
           NODE_ENV: 'production',
-          API_KEY: "" // Sẽ được hệ thống inject tự động
+          API_KEY: "" // Sẽ được hệ thống tự động inject tại runtime
         } 
       };
     </script>

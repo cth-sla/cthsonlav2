@@ -5,8 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Thay thế process.env trong code bằng object trống để tránh lỗi runtime
-    'process.env': {}
+    // Thay vì gán bằng object trống {}, ta ánh xạ tới biến toàn cục để không làm hỏng shim trong index.html
+    'process.env': 'window.process.env'
   },
   build: {
     // Vercel mặc định tìm thư mục 'dist' cho Vite projects
