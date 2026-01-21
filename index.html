@@ -8,17 +8,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-      // Khởi tạo shim cho process.env ngay lập tức
-      // Điều này ngăn chặn lỗi "process is not defined" khi các thư viện (như Google GenAI) khởi tạo
+      /**
+       * SỬA LỖI TRANG TRẮNG:
+       * 1. Khởi tạo window.process ngay lập tức để SDK Google GenAI không bị crash khi load module.
+       * 2. Xóa bỏ importmap vì Vite sẽ tự xử lý đóng gói (bundle) các thư viện từ package.json.
+       */
       window.process = { 
         env: { 
           NODE_ENV: 'production',
-          API_KEY: "" // Sẽ được hệ thống tự động inject tại runtime
+          API_KEY: "" 
         } 
       };
+      // Một số thư viện cũ có thể tìm kiếm biến 'global'
+      window.global = window;
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
@@ -30,6 +35,7 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
+        #root { min-height: 100vh; display: flex; flex-direction: column; }
     </style>
 <script type="importmap">
 {
@@ -37,19 +43,20 @@
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "recharts": "https://esm.sh/recharts@^3.6.0",
-    "html2pdf.js": "https://esm.sh/html2pdf.js@^0.14.0",
-    "jszip": "https://esm.sh/jszip@^3.10.1",
     "file-saver": "https://esm.sh/file-saver@^2.0.5",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "jszip": "https://esm.sh/jszip@^3.10.1",
+    "html2pdf.js": "https://esm.sh/html2pdf.js@^0.14.0"
   }
 }
 </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
+    <!-- Vite sẽ tự động xử lý file này khi build -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
