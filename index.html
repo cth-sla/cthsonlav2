@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-      // Sửa lỗi "process is not defined" khi chạy các SDK yêu cầu process.env trong trình duyệt
+      // Sửa lỗi "process is not defined" trong trình duyệt
       window.process = { env: { API_KEY: "" } };
     </script>
     <style>
@@ -20,11 +20,10 @@
             main { padding: 0 !important; margin: 0 !important; }
         }
         .print-only { display: none; }
-        
-        /* Custom styles for progress bars and animations */
-        .progress-bar-fill {
-            transition: width 0.5s ease-in-out;
-        }
+        .progress-bar-fill { transition: width 0.5s ease-in-out; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
     </style>
 <script type="importmap">
 {

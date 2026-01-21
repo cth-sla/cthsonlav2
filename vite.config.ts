@@ -5,17 +5,18 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Đảm bảo process.env không gây lỗi ReferenceError trong trình duyệt
     'process.env': {}
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'recharts', 'lucide-react'],
-          'genai': ['@google/genai']
+          'react-vendor': ['react', 'react-dom'],
+          'chart-vendor': ['recharts'],
+          'pdf-vendor': ['html2pdf.js', 'jszip', 'file-saver']
         }
       }
     }
