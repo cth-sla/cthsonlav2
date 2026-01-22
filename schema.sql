@@ -1,76 +1,101 @@
--- MySQL Schema for E-Meeting SLA Platform
-CREATE DATABASE IF NOT EXISTS emeeting_sla CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE emeeting_sla;
+
+-- SQL Schema for Supabase (PostgreSQL) - CTH SLA Platform
+-- Project: cthsla (uhaqofhnfetdkciaswof)
 
 -- 1. Table: Users
-CREATE TABLE users (
-    id VARCHAR(50) PRIMARY KEY,
-    username VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(200) NOT NULL,
-    role ENUM('ADMIN', 'VIEWER') DEFAULT 'VIEWER',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'VIEWER' CHECK (role IN ('ADMIN', 'VIEWER')),
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- 2. Table: Units (Đơn vị)
-CREATE TABLE units (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL,
+CREATE TABLE IF NOT EXISTS public.units (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- 3. Table: Staff (Cán bộ)
-CREATE TABLE staff (
-    id VARCHAR(50) PRIMARY KEY,
-    full_name VARCHAR(200) NOT NULL,
-    unit_id VARCHAR(50),
-    position VARCHAR(100),
-    email VARCHAR(150),
-    phone VARCHAR(20),
-    FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE SET NULL
+CREATE TABLE IF NOT EXISTS public.staff (
+    id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    unit_id TEXT REFERENCES public.units(id) ON DELETE SET NULL,
+    position TEXT,
+    email TEXT,
+    phone TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- 4. Table: Endpoints (Điểm cầu)
-CREATE TABLE endpoints (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    location VARCHAR(255) NOT NULL,
-    status ENUM('CONNECTED', 'DISCONNECTED', 'CONNECTING') DEFAULT 'DISCONNECTED',
-    last_connected VARCHAR(50),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.endpoints (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    location TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'DISCONNECTED' CHECK (status IN ('CONNECTED', 'DISCONNECTED', 'CONNECTING')),
+    last_connected TEXT,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- 5. Table: Meetings (Cuộc họp)
-CREATE TABLE meetings (
-    id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(500) NOT NULL,
-    host_unit_name VARCHAR(255),
-    chair_person_name VARCHAR(255),
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
+CREATE TABLE IF NOT EXISTS public.meetings (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    host_unit_name TEXT,
+    chair_person_name TEXT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    participants JSONB DEFAULT '[]',
+    endpoints JSONB DEFAULT '[]',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- 6. Table: Meeting Participants (Thành phần tham dự - M-M relationship if needed, here stored as list)
-CREATE TABLE meeting_participants (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    meeting_id VARCHAR(50),
-    participant_name VARCHAR(255),
-    FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
+-- 6. Table: Meeting Participants (Thành phần tham dự chi tiết)
+CREATE TABLE IF NOT EXISTS public.meeting_participants (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_id TEXT NOT NULL REFERENCES public.meetings(id) ON DELETE CASCADE,
+    participant_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- 7. Table: Meeting Endpoints (Mapping endpoints to meetings)
-CREATE TABLE meeting_endpoints (
-    meeting_id VARCHAR(50),
-    endpoint_id VARCHAR(50),
-    PRIMARY KEY (meeting_id, endpoint_id),
-    FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE CASCADE,
-    FOREIGN KEY (endpoint_id) REFERENCES endpoints(id) ON DELETE CASCADE
+-- 7. Table: Meeting Endpoints (Liên kết Điểm cầu cho từng Cuộc họp)
+CREATE TABLE IF NOT EXISTS public.meeting_endpoints (
+    meeting_id TEXT NOT NULL REFERENCES public.meetings(id) ON DELETE CASCADE,
+    endpoint_id TEXT NOT NULL REFERENCES public.endpoints(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    PRIMARY KEY (meeting_id, endpoint_id)
 );
 
--- Insert Default Admin
-INSERT INTO users (id, username, password, full_name, role) 
-VALUES ('1', 'admin', 'admin', 'System Administrator', 'ADMIN');
+-- 8. Enable Row Level Security (RLS)
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_endpoints ENABLE ROW LEVEL SECURITY;
+
+-- 9. Basic Policies (Select for all)
+CREATE POLICY "Public read access users" ON public.users FOR SELECT USING (true);
+CREATE POLICY "Public read access units" ON public.units FOR SELECT USING (true);
+CREATE POLICY "Public read access staff" ON public.staff FOR SELECT USING (true);
+CREATE POLICY "Public read access meetings" ON public.meetings FOR SELECT USING (true);
+CREATE POLICY "Public read access endpoints" ON public.endpoints FOR SELECT USING (true);
+CREATE POLICY "Public read access participants" ON public.meeting_participants FOR SELECT USING (true);
+CREATE POLICY "Public read access meeting_endpoints" ON public.meeting_endpoints FOR SELECT USING (true);
+
+-- 10. Admin Policies (Full access)
+CREATE POLICY "Admins manage participants" ON public.meeting_participants FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admins manage meeting_endpoints" ON public.meeting_endpoints FOR ALL TO authenticated USING (true);
+
+-- 11. Default Admin Initialization
+INSERT INTO public.users (username, password, full_name, role) 
+VALUES ('admin', 'admin', 'System Administrator', 'ADMIN')
+ON CONFLICT (username) DO NOTHING;
