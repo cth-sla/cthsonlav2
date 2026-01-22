@@ -68,17 +68,20 @@ const App: React.FC = () => {
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
+        
         const updateState = (setter: any, storageKey: string) => {
           setter((prev: any[]) => {
-            let next;
-            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+            let next = [...prev];
+            if (eventType === 'INSERT') {
               const exists = prev.some(item => item.id === mappedData.id);
-              if (exists) next = prev.map(item => item.id === mappedData.id ? mappedData : item);
-              else next = [mappedData, ...prev];
+              if (!exists) next = [mappedData, ...prev];
+            } else if (eventType === 'UPDATE') {
+              next = prev.map(item => item.id === mappedData.id ? mappedData : item);
             } else if (eventType === 'DELETE') {
-              next = prev.filter(item => item.id !== old.id);
-            } else next = prev;
-            if (next) storageService.saveData(storageKey, next);
+              const deleteId = old?.id;
+              if (deleteId) next = prev.filter(item => item.id !== deleteId);
+            }
+            storageService.saveData(storageKey, next);
             return next;
           });
         };
@@ -115,12 +118,10 @@ const App: React.FC = () => {
     const connecting = endpoints.filter(e => e.status === EndpointStatus.CONNECTING).length;
     const uptime = endpoints.length > 0 ? ((connected / endpoints.length) * 100).toFixed(1) : "0";
 
-    // Recent meetings logic
     const recentMeetings = [...meetings]
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
       .slice(0, 5);
 
-    // Trend data for the last 7 days
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -129,7 +130,6 @@ const App: React.FC = () => {
       return { name: dateStr, count };
     });
 
-    // Endpoint distribution
     const endpointDist = [
       { name: 'Online', value: connected, color: '#10B981' },
       { name: 'Offline', value: disconnected, color: '#EF4444' },
@@ -270,7 +270,6 @@ const App: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              {/* Meeting Trends Chart */}
               <div className="xl:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Xu hướng hoạt động 7 ngày gần nhất</h3>
@@ -298,7 +297,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Endpoint Status Breakdown */}
               <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center">
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest self-start mb-8">Trạng thái hạ tầng</h3>
                 <div className="h-[250px] w-full">
@@ -328,7 +326,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Recent Activity Table */}
             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                   <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Cuộc họp gần nhất</h3>
@@ -440,16 +437,28 @@ const App: React.FC = () => {
             onAddGroup={async g => { 
               const newGroup = { ...g, id: `G${Date.now()}` };
               if (supabaseService.isConfigured()) await supabaseService.upsertGroup(newGroup);
-              else { const updated = [...groups, newGroup]; setGroups(updated); storageService.saveGroups(updated); }
+              else { 
+                const updated = [newGroup, ...groups]; 
+                setGroups(updated); 
+                storageService.saveGroups(updated); 
+              }
             }}
             onUpdateGroup={async g => { 
               if (supabaseService.isConfigured()) await supabaseService.upsertGroup(g);
-              else { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }
+              else { 
+                const updated = groups.map(item => item.id === g.id ? g : item); 
+                setGroups(updated); 
+                storageService.saveGroups(updated); 
+              }
             }}
             onDeleteGroup={async id => { 
               if (window.confirm('Xóa thành phần này?')) { 
                 if (supabaseService.isConfigured()) await supabaseService.deleteGroup(id);
-                else { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }
+                else { 
+                  const updated = groups.filter(g => g.id !== id); 
+                  setGroups(updated); 
+                  storageService.saveGroups(updated); 
+                }
               }
             }}
             onUpdateSettings={async s => { 

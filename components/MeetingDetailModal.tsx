@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Meeting } from '../types';
 import { analyzeMeetingEfficiency } from '../services/geminiService';
+import MeetingPreCheck from './MeetingPreCheck';
 
 interface MeetingDetailModalProps {
   meeting: Meeting;
@@ -15,6 +16,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
   const [notes, setNotes] = useState(meeting.notes || '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [showPreCheck, setShowPreCheck] = useState(false);
 
   useEffect(() => {
     const getAiAnalysis = async () => {
@@ -42,6 +44,12 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
     }
   };
 
+  const handleUpdateMeeting = (updatedMeeting: Meeting) => {
+    if (onUpdate) {
+      onUpdate(updatedMeeting);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -55,9 +63,18 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Chi tiết thông tin cuộc họp • ID: {meeting.id}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-all text-gray-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+          <div className="flex items-center gap-3">
+             <button 
+                onClick={() => setShowPreCheck(true)}
+                className="px-5 py-2.5 bg-slate-900 text-cyan-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+             >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                Kiểm tra Kỹ thuật
+             </button>
+             <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-all text-gray-400">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+             </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -152,15 +169,25 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
              <section>
                 <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Các điểm cầu ({meeting.endpoints.length})</h4>
                 <div className="space-y-3 overflow-y-auto max-h-[200px] pr-2 custom-scrollbar">
-                   {meeting.endpoints.map(ep => (
-                      <div key={ep.id} className="p-3 bg-white border border-gray-100 rounded-2xl flex items-center justify-between shadow-sm">
-                         <div className="min-w-0">
-                            <p className="text-xs font-bold text-gray-800 truncate">{ep.name}</p>
-                            <p className="text-[9px] text-gray-400 font-medium truncate">{ep.location}</p>
-                         </div>
-                         <div className={`w-2 h-2 rounded-full shrink-0 ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                      </div>
-                   ))}
+                   {meeting.endpoints.map(ep => {
+                      const isChecked = meeting.endpointChecks?.[ep.id]?.checked;
+                      return (
+                        <div key={ep.id} className="p-3 bg-white border border-gray-100 rounded-2xl flex items-center justify-between shadow-sm">
+                           <div className="min-w-0 flex items-center gap-3">
+                              <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-gray-800 truncate">{ep.name}</p>
+                                <p className="text-[9px] text-gray-400 font-medium truncate">{ep.location}</p>
+                              </div>
+                           </div>
+                           {isChecked && (
+                              <div className="shrink-0 p-1 bg-emerald-50 text-emerald-600 rounded-lg">
+                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                           )}
+                        </div>
+                      );
+                   })}
                 </div>
              </section>
 
@@ -195,6 +222,14 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
           </button>
         </div>
       </div>
+
+      {showPreCheck && (
+        <MeetingPreCheck 
+          meeting={meeting} 
+          onClose={() => setShowPreCheck(false)} 
+          onUpdate={handleUpdateMeeting}
+        />
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

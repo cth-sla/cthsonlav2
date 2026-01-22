@@ -1,3 +1,4 @@
+
 export enum EndpointStatus {
   CONNECTED = 'CONNECTED',
   DISCONNECTED = 'DISCONNECTED',
@@ -55,6 +56,7 @@ export interface Meeting {
   endpoints: Endpoint[];
   description: string;
   notes?: string;
+  endpointChecks?: Record<string, { checked: boolean; notes: string }>;
 }
 
 export interface StatData {
