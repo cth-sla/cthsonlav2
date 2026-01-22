@@ -1,6 +1,6 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings } from '../types';
+import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup } from '../types';
 
 const supabaseUrl = (window as any).process?.env?.SUPABASE_URL || "";
 const supabaseAnonKey = (window as any).process?.env?.SUPABASE_ANON_KEY || "";
@@ -9,7 +9,7 @@ const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-// Helper mappers to bridge snake_case DB and camelCase App
+// Helper mappers
 const mapMeeting = (m: any): Meeting => ({
   id: m.id,
   title: m.title,
@@ -86,119 +86,121 @@ const unmapUser = (u: User) => ({
   password: u.password
 });
 
+const mapSettings = (data: any): SystemSettings => ({
+  systemName: data.system_name,
+  shortName: data.short_name,
+  logoBase64: data.logo_base_64,
+  primaryColor: data.primary_color
+});
+
 export const supabaseService = {
   isConfigured(): boolean {
     return !!supabase;
   },
 
+  // Real-time Subscription Helper
+  subscribeTable(tableName: string, callback: (payload: any) => void): RealtimeChannel | null {
+    if (!supabase) return null;
+    return supabase
+      .channel(`public:${tableName}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, (payload) => {
+        let mappedData = payload.new;
+        if (tableName === 'meetings' && payload.new) mappedData = mapMeeting(payload.new);
+        else if (tableName === 'endpoints' && payload.new) mappedData = mapEndpoint(payload.new);
+        else if (tableName === 'staff' && payload.new) mappedData = mapStaff(payload.new);
+        else if (tableName === 'users' && payload.new) mappedData = mapUser(payload.new);
+        else if (tableName === 'system_settings' && payload.new) mappedData = mapSettings(payload.new);
+        else if (tableName === 'participant_groups' && payload.new) mappedData = payload.new as ParticipantGroup;
+
+        callback({ ...payload, mappedData });
+      })
+      .subscribe();
+  },
+
   // Meetings
   async getMeetings(): Promise<Meeting[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('meetings')
-      .select('*')
-      .order('start_time', { ascending: false });
-    
-    if (error) {
-      console.error('Lỗi lấy danh sách cuộc họp:', error);
-      return [];
-    }
-    return data.map(mapMeeting);
+    const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
+    return error ? [] : data.map(mapMeeting);
   },
-
   async upsertMeeting(meeting: Meeting) {
     if (!supabase) return;
-    const { error } = await supabase
-      .from('meetings')
-      .upsert(unmapMeeting(meeting));
-    if (error) console.error('Lỗi cập nhật cuộc họp:', error);
+    return await supabase.from('meetings').upsert(unmapMeeting(meeting));
   },
-
   async deleteMeeting(id: string) {
     if (!supabase) return;
-    const { error } = await supabase
-      .from('meetings')
-      .delete()
-      .eq('id', id);
-    if (error) console.error('Lỗi xóa cuộc họp:', error);
+    return await supabase.from('meetings').delete().eq('id', id);
   },
 
   // Units
   async getUnits(): Promise<Unit[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('units').select('*');
-    if (error) return [];
-    return data as Unit[];
+    const { data, error } = await supabase.from('units').select('*').order('name');
+    return error ? [] : data as Unit[];
   },
-
   async upsertUnit(unit: Unit) {
     if (!supabase) return;
-    await supabase.from('units').upsert(unit);
+    return await supabase.from('units').upsert(unit);
   },
-
   async deleteUnit(id: string) {
     if (!supabase) return;
-    await supabase.from('units').delete().eq('id', id);
+    return await supabase.from('units').delete().eq('id', id);
   },
 
   // Staff
   async getStaff(): Promise<Staff[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('staff').select('*');
-    if (error) return [];
-    return data.map(mapStaff);
+    const { data, error } = await supabase.from('staff').select('*').order('full_name');
+    return error ? [] : data.map(mapStaff);
   },
-
   async upsertStaff(staff: Staff) {
     if (!supabase) return;
-    await supabase.from('staff').upsert(unmapStaff(staff));
+    return await supabase.from('staff').upsert(unmapStaff(staff));
   },
-
   async deleteStaff(id: string) {
     if (!supabase) return;
-    await supabase.from('staff').delete().eq('id', id);
+    return await supabase.from('staff').delete().eq('id', id);
+  },
+
+  // Participant Groups
+  async getGroups(): Promise<ParticipantGroup[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('participant_groups').select('*').order('name');
+    return error ? [] : data as ParticipantGroup[];
+  },
+  async upsertGroup(group: ParticipantGroup) {
+    if (!supabase) return;
+    return await supabase.from('participant_groups').upsert(group);
+  },
+  async deleteGroup(id: string) {
+    if (!supabase) return;
+    return await supabase.from('participant_groups').delete().eq('id', id);
   },
 
   // Endpoints
   async getEndpoints(): Promise<Endpoint[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('endpoints').select('*');
-    if (error) return [];
-    return data.map(mapEndpoint);
+    const { data, error } = await supabase.from('endpoints').select('*').order('name');
+    return error ? [] : data.map(mapEndpoint);
   },
-
   async upsertEndpoint(endpoint: Endpoint) {
     if (!supabase) return;
-    await supabase.from('endpoints').upsert(unmapEndpoint(endpoint));
+    return await supabase.from('endpoints').upsert(unmapEndpoint(endpoint));
   },
-
   async deleteEndpoint(id: string) {
     if (!supabase) return;
-    await supabase.from('endpoints').delete().eq('id', id);
+    return await supabase.from('endpoints').delete().eq('id', id);
   },
 
   // Settings
   async getSettings(): Promise<SystemSettings | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('system_settings')
-      .select('*')
-      .eq('id', 'current')
-      .single();
-    if (error) return null;
-    
-    // Map snake_case settings to camelCase
-    return {
-      systemName: data.system_name,
-      shortName: data.short_name,
-      logoBase64: data.logo_base64,
-      primaryColor: data.primary_color
-    };
+    const { data, error } = await supabase.from('system_settings').select('*').eq('id', 'current').single();
+    return error ? null : mapSettings(data);
   },
-
   async updateSettings(settings: SystemSettings) {
     if (!supabase) return;
-    await supabase.from('system_settings').upsert({ 
+    return await supabase.from('system_settings').upsert({ 
       id: 'current', 
       system_name: settings.systemName,
       short_name: settings.shortName,
@@ -210,16 +212,13 @@ export const supabaseService = {
   // Users
   async getUsers(): Promise<User[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('users').select('*');
-    if (error) return [];
-    return data.map(mapUser);
+    const { data, error } = await supabase.from('users').select('*').order('full_name');
+    return error ? [] : data.map(mapUser);
   },
-
   async upsertUser(user: User) {
     if (!supabase) return;
-    await supabase.from('users').upsert(unmapUser(user));
+    return await supabase.from('users').upsert(unmapUser(user));
   },
-
   async deleteUser(id: string) {
     if (!supabase) return;
     await supabase.from('users').delete().eq('id', id);
