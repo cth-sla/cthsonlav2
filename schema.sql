@@ -85,6 +85,16 @@ ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 
 -- 9. Simplified Policies for demo purposes (Allows anon access)
+-- Xóa các policy cũ để tránh xung đột
+DROP POLICY IF EXISTS "Enable all for anon" ON public.users;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.units;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.staff;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.participant_groups;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.meetings;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.endpoints;
+DROP POLICY IF EXISTS "Enable all for anon" ON public.system_settings;
+
+-- Tạo policy mới cho phép tất cả các thao tác
 CREATE POLICY "Enable all for anon" ON public.users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all for anon" ON public.units FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all for anon" ON public.staff FOR ALL USING (true) WITH CHECK (true);

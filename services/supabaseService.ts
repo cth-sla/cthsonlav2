@@ -221,6 +221,6 @@ export const supabaseService = {
   },
   async deleteUser(id: string) {
     if (!supabase) return;
-    await supabase.from('users').delete().eq('id', id);
+    return await supabase.from('users').delete().eq('id', id);
   }
 };

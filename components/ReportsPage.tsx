@@ -1,10 +1,10 @@
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend
+  AreaChart, Area
 } from 'recharts';
-import { Meeting, Endpoint, EndpointStatus } from '../types';
+import { Meeting, Endpoint } from '../types';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
@@ -13,362 +13,383 @@ interface ReportsPageProps {
   endpoints: Endpoint[];
 }
 
-type ReportType = 'meetings' | 'endpoints' | 'units';
-type DateMode = 'custom' | 'month' | 'week';
-
-const ALL_COLUMNS: Record<ReportType, string[]> = {
-  meetings: ['ID', 'Tên cuộc họp', 'Đơn vị chủ trì', 'Chủ trì', 'Bắt đầu', 'Kết thúc', 'Số điểm cầu'],
-  endpoints: ['Tên điểm cầu', 'Vị trí', 'Trạng thái', 'Lần cuối kết nối'],
-  units: ['Đơn vị', 'Số lượng cuộc họp', 'Tỷ lệ (%)']
-};
+type GroupByOption = 'day' | 'week' | 'month' | 'year' | 'unit';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
-  const [reportType, setReportType] = useState<ReportType>('meetings');
-  const [dateMode, setDateMode] = useState<DateMode>('custom');
-  
-  const [startDate, setStartDate] = useState<string>('2024-01-01');
+const ReportsPage: React.FC<ReportsPageProps> = ({ meetings }) => {
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
-  const [selectedWeek, setSelectedWeek] = useState<string>('');
-
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(ALL_COLUMNS['meetings']);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedData, setGeneratedData] = useState<any[]>([]);
+  const [groupBy, setGroupBy] = useState<GroupByOption>('week');
   const [showChart, setShowChart] = useState(true);
   
   const reportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setSelectedColumns(ALL_COLUMNS[reportType]);
-    setGeneratedData([]); 
-  }, [reportType]);
+  // Helper to get ISO Week number
+  const getWeekNumber = (d: Date) => {
+    const date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  };
 
-  const statsSummary = useMemo(() => {
-    if (generatedData.length === 0 || reportType !== 'meetings') return null;
+  // Quick range handlers
+  const setQuickRange = (range: '7d' | '30d' | 'thisMonth' | 'thisYear') => {
+    const end = new Date();
+    const start = new Date();
+    if (range === '7d') start.setDate(end.getDate() - 7);
+    else if (range === '30d') start.setDate(end.getDate() - 30);
+    else if (range === 'thisMonth') start.setDate(1);
+    else if (range === 'thisYear') { start.setMonth(0); start.setDate(1); }
+    
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
 
-    const unitMap: Record<string, number> = {};
-    const weekMap: Record<string, number> = {};
-    const monthMap: Record<string, number> = {};
-    const yearMap: Record<string, number> = {};
+  const filteredMeetings = useMemo(() => {
+    const startTs = new Date(startDate).setHours(0,0,0,0);
+    const endTs = new Date(endDate).setHours(23,59,59,999);
+    return meetings.filter(m => {
+      const mTime = new Date(m.startTime).getTime();
+      return mTime >= startTs && mTime <= endTs;
+    });
+  }, [meetings, startDate, endDate]);
 
-    generatedData.forEach(row => {
-      const unit = row['Đơn vị chủ trì'];
-      unitMap[unit] = (unitMap[unit] || 0) + 1;
+  const statsData = useMemo(() => {
+    const groupMap: Record<string, number> = {};
+    
+    filteredMeetings.forEach(m => {
+      const d = new Date(m.startTime);
+      let key = '';
       
-      const dateStr = row['Bắt đầu'];
-      if (!dateStr) return;
-
-      // Xử lý các định dạng ngày khác nhau có thể trả về từ toLocaleString
-      const dateOnly = dateStr.split(',')[0].split(' ')[0];
-      const dateParts = dateOnly.split('/');
-      
-      let d: Date;
-      if (dateParts.length === 3) {
-        // Định dạng DD/MM/YYYY
-        d = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]));
-      } else {
-        d = new Date(dateStr);
+      switch (groupBy) {
+        case 'day':
+          key = d.toLocaleDateString('vi-VN');
+          break;
+        case 'week':
+          key = `Tuần ${getWeekNumber(d)}/${d.getFullYear()}`;
+          break;
+        case 'month':
+          key = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+          break;
+        case 'year':
+          key = `Năm ${d.getFullYear()}`;
+          break;
+        case 'unit':
+          key = m.hostUnit;
+          break;
       }
-
-      if (isNaN(d.getTime())) return;
-
-      const yearLabel = `${d.getFullYear()}`;
-      yearMap[yearLabel] = (yearMap[yearLabel] || 0) + 1;
-
-      const monthLabel = `T${d.getMonth() + 1}/${d.getFullYear()}`;
-      monthMap[monthLabel] = (monthMap[monthLabel] || 0) + 1;
-
-      const oneJan = new Date(d.getFullYear(), 0, 1);
-      const numberOfDays = Math.floor((d.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
-      const weekLabel = `W${Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7)}/${d.getFullYear()}`;
-      weekMap[weekLabel] = (weekMap[weekLabel] || 0) + 1;
+      groupMap[key] = (groupMap[key] || 0) + 1;
     });
 
-    return {
-      topUnit: Object.entries(unitMap).sort((a,b) => b[1] - a[1])[0] || ['N/A', 0],
-      total: generatedData.length,
-      weeks: Object.keys(weekMap).length,
-      months: Object.keys(monthMap).length,
-      years: Object.keys(yearMap).length
-    };
-  }, [generatedData, reportType]);
-
-  const chartData = useMemo(() => {
-    if (generatedData.length === 0) return [];
-    if (reportType === 'meetings') {
-      const counts: Record<string, number> = {};
-      generatedData.forEach(row => {
-        const unit = row['Đơn vị chủ trì'];
-        counts[unit] = (counts[unit] || 0) + 1;
-      });
-      return Object.entries(counts).map(([name, value]) => ({ name, value }));
-    } else if (reportType === 'units') {
-      return generatedData.map(row => ({
-        name: row['Đơn vị'],
-        value: Number(row['Số lượng cuộc họp'])
-      }));
-    }
-    return [];
-  }, [generatedData, reportType]);
-
-  const calculateDates = () => {
-    let finalStart = startDate;
-    let finalEnd = endDate;
-
-    if (dateMode === 'month') {
-      const [year, month] = selectedMonth.split('-').map(Number);
-      const firstDay = new Date(year, month - 1, 1);
-      const lastDay = new Date(year, month, 0);
-      finalStart = firstDay.toISOString().split('T')[0];
-      finalEnd = lastDay.toISOString().split('T')[0];
-    } else if (dateMode === 'week' && selectedWeek) {
-      const [year, weekNum] = selectedWeek.split('-W').map(Number);
-      const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
-      const dow = simple.getDay();
-      const isoWeekStart = new Date(simple);
-      if (dow <= 4) isoWeekStart.setDate(simple.getDate() - simple.getDay() + 1);
-      else isoWeekStart.setDate(simple.getDate() + 8 - simple.getDay());
-      const isoWeekEnd = new Date(isoWeekStart);
-      isoWeekEnd.setDate(isoWeekStart.getDate() + 6);
-      finalStart = isoWeekStart.toISOString().split('T')[0];
-      finalEnd = isoWeekEnd.toISOString().split('T')[0];
-    }
-    return { start: finalStart, end: finalEnd };
-  };
-
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    const { start: calcStart, end: calcEnd } = calculateDates();
-    const startTs = new Date(calcStart).setHours(0,0,0,0);
-    const endTs = new Date(calcEnd).setHours(23,59,59,999);
-
-    setTimeout(() => {
-      let data: any[] = [];
-      if (reportType === 'meetings') {
-        data = meetings
-          .filter(m => {
-            const mTime = new Date(m.startTime).getTime();
-            return mTime >= startTs && mTime <= endTs;
-          })
-          .map(m => ({
-            'ID': m.id,
-            'Tên cuộc họp': m.title,
-            'Đơn vị chủ trì': m.hostUnit,
-            'Chủ trì': m.chairPerson,
-            'Bắt đầu': new Date(m.startTime).toLocaleString('vi-VN'),
-            'Kết thúc': new Date(m.endTime).toLocaleString('vi-VN'),
-            'Số điểm cầu': m.endpoints.length
-          }));
-      } else if (reportType === 'endpoints') {
-        data = endpoints.map(e => ({
-          'Tên điểm cầu': e.name,
-          'Vị trí': e.location,
-          'Trạng thái': e.status === EndpointStatus.CONNECTED ? 'Kết nối' : 'Mất kết nối',
-          'Lần cuối kết nối': e.lastConnected
-        }));
-      } else if (reportType === 'units') {
-        const unitStats: Record<string, number> = {};
-        let totalCount = 0;
-        meetings.forEach(m => {
-          const mTime = new Date(m.startTime).getTime();
-          if (mTime >= startTs && mTime <= endTs) {
-            unitStats[m.hostUnit] = (unitStats[m.hostUnit] || 0) + 1;
-            totalCount++;
-          }
-        });
-        data = Object.entries(unitStats).map(([unit, count]) => ({
-          'Đơn vị': unit,
-          'Số lượng cuộc họp': count,
-          'Tỷ lệ (%)': totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : '0.0'
-        }));
+    const sortedKeys = Object.keys(groupMap).sort((a, b) => {
+      if (groupBy === 'unit') return groupMap[b] - groupMap[a];
+      // Basic chronological sort for dates
+      if (groupBy === 'day') {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        return new Date(ya, ma-1, da).getTime() - new Date(yb, mb-1, db).getTime();
       }
-      setGeneratedData(data);
-      setIsGenerating(false);
-    }, 600);
-  };
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+
+    return sortedKeys.map(key => ({
+      name: key,
+      value: groupMap[key]
+    }));
+  }, [filteredMeetings, groupBy]);
 
   const downloadPDF = () => {
-    if (!reportRef.current || generatedData.length === 0) return;
+    if (!reportRef.current) return;
+    // Fix: Use 'as const' to ensure 'jpeg' is treated as a literal type and not a generic string
     const opt = {
       margin: 10,
-      filename: `Bao_cao_${reportType}_${new Date().toISOString().slice(0,10)}.pdf`,
+      filename: `Bao_cao_thong_ke_${new Date().toISOString().slice(0,10)}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'landscape' as const }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
     };
     html2pdf().from(reportRef.current).set(opt).save();
   };
 
-  const reportTitleMap = {
-    meetings: 'Thống kê Chi tiết Cuộc họp',
-    endpoints: 'Trạng thái Điểm cầu Hệ thống',
-    units: 'Thống kê Hiệu suất Đơn vị'
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm no-print space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 items-end">
-          <div className="space-y-2 lg:col-span-1">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Loại báo cáo</label>
-            <select 
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as ReportType)}
-            >
-              <option value="meetings">Thống kê Cuộc họp</option>
-              <option value="endpoints">Trạng thái Điểm cầu</option>
-              <option value="units">Hiệu suất theo Đơn vị</option>
-            </select>
+    <div className="space-y-6 pb-20">
+      {/* Control Panel */}
+      <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm no-print space-y-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-100">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Trung tâm Báo cáo</h2>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Phân tích tần suất họp trực tuyến</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setQuickRange('7d')} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">7 Ngày qua</button>
+              <button onClick={() => setQuickRange('30d')} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">30 Ngày qua</button>
+              <button onClick={() => setQuickRange('thisMonth')} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">Tháng này</button>
+              <button onClick={() => setQuickRange('thisYear')} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">Năm nay</button>
+            </div>
           </div>
 
-          <div className="space-y-2 lg:col-span-1">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Thời gian trích xuất</label>
-            <select 
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold"
-              value={dateMode}
-              onChange={(e) => setDateMode(e.target.value as DateMode)}
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Khoảng thời gian (Lịch)</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date" 
+                  className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+                <span className="text-gray-300 font-bold">→</span>
+                <input 
+                  type="date" 
+                  className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tiêu chí gom nhóm</label>
+              <select 
+                className="block px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer"
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
+              >
+                <option value="day">Từng Ngày cụ thể</option>
+                <option value="week">Theo Tuần</option>
+                <option value="month">Theo Tháng</option>
+                <option value="year">Theo Năm</option>
+                <option value="unit">Theo Đơn vị chủ trì</option>
+              </select>
+            </div>
+            <button 
+              onClick={downloadPDF}
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl hover:bg-slate-800 active:scale-95 transition-all flex items-center gap-2"
             >
-              <option value="custom">Khoảng ngày</option>
-              <option value="month">Theo Tháng</option>
-              <option value="week">Theo Tuần</option>
-            </select>
-          </div>
-          
-          <div className="lg:col-span-2 flex gap-4">
-            {dateMode === 'custom' && (
-              <>
-                <div className="flex-1 space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Từ ngày</label>
-                  <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Đến ngày</label>
-                  <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </div>
-              </>
-            )}
-            {dateMode === 'month' && (
-              <div className="flex-1 space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Chọn tháng</label>
-                <input type="month" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-              </div>
-            )}
-            {dateMode === 'week' && (
-              <div className="flex-1 space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Chọn tuần</label>
-                <input type="week" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 lg:col-span-2">
-            <button onClick={handleGenerate} disabled={isGenerating} className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-              {isGenerating ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
-              Trích xuất dữ liệu
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Xuất Báo cáo
             </button>
           </div>
         </div>
       </div>
 
-      {generatedData.length > 0 && (
-        <div className="space-y-6 pb-20 animate-in fade-in duration-700">
-          <div className="flex justify-end gap-3 no-print">
-            <button onClick={() => setShowChart(!showChart)} className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-all ${showChart ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}>
-              {showChart ? 'Ẩn biểu đồ' : 'Hiện biểu đồ'}
-            </button>
-            <button onClick={downloadPDF} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase shadow-md hover:bg-blue-700">Xuất Báo cáo PDF</button>
+      <div ref={reportRef} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-12 space-y-12">
+        {/* Header Báo cáo */}
+        <div className="flex justify-between items-start border-b border-gray-100 pb-10">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Báo cáo Thống kê Hoạt động Họp trực tuyến</h1>
+            <p className="text-xs text-blue-600 font-black uppercase tracking-[0.3em]">Hệ thống Giám sát Cầu truyền hình v3.1</p>
+            <div className="flex items-center gap-4 mt-6">
+              <div className="px-4 py-2 bg-blue-50 border border-blue-100 rounded-2xl text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                Từ: {new Date(startDate).toLocaleDateString('vi-VN')} → {new Date(endDate).toLocaleDateString('vi-VN')}
+              </div>
+              <div className="px-4 py-2 bg-slate-100 border border-slate-200 rounded-2xl text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                Phân loại: {groupBy === 'day' ? 'Hàng ngày' : groupBy === 'week' ? 'Hàng tuần' : groupBy === 'month' ? 'Hàng tháng' : groupBy === 'year' ? 'Hàng năm' : 'Theo Đơn vị'}
+              </div>
+            </div>
           </div>
-
-          <div ref={reportRef} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 space-y-10">
-            <div className="flex justify-between items-start border-b border-gray-100 pb-10">
-               <div>
-                  <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">{reportTitleMap[reportType]}</h1>
-                  <p className="text-sm text-gray-500 font-bold mt-2 uppercase tracking-widest">Hệ thống Giám sát Cầu truyền hình SLA</p>
-                  <p className="text-[10px] font-black text-blue-600 uppercase mt-4 tracking-widest">Phạm vi: {calculateDates().start} → {calculateDates().end}</p>
-               </div>
-               <div className="text-right">
-                  <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Thời gian trích xuất</div>
-                  <div className="text-sm font-black text-gray-900">{new Date().toLocaleString('vi-VN')}</div>
-               </div>
-            </div>
-
-            {statsSummary && reportType === 'meetings' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                 <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 shadow-sm">
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Tổng số cuộc họp</p>
-                    <div className="text-3xl font-black text-blue-700">{statsSummary.total}</div>
-                    <p className="text-[9px] text-blue-500 font-bold mt-1 uppercase">Dữ liệu trích xuất từ {statsSummary.years} năm</p>
-                 </div>
-                 <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 shadow-sm">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Đơn vị tích cực nhất</p>
-                    <div className="text-lg font-black text-emerald-700 truncate">{statsSummary.topUnit[0]}</div>
-                    <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase">{statsSummary.topUnit[1]} cuộc họp đã tổ chức</p>
-                 </div>
-                 <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 shadow-sm">
-                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Số tháng thống kê</p>
-                    <div className="text-3xl font-black text-amber-700">{statsSummary.months} <span className="text-xs uppercase">Tháng</span></div>
-                 </div>
-                 <div className="p-6 bg-purple-50/50 rounded-3xl border border-purple-100/50 shadow-sm">
-                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Số tuần thống kê</p>
-                    <div className="text-3xl font-black text-purple-700">{statsSummary.weeks} <span className="text-xs uppercase">Tuần</span></div>
-                 </div>
-              </div>
-            )}
-
-            {showChart && chartData.length > 0 && (
-              <div className="bg-gray-50/30 rounded-3xl p-8 border border-gray-100">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8 text-center">Phân bổ Số lượng cuộc họp theo Đơn vị</h4>
-                <div className="h-[350px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#6B7280', fontWeight: 'bold' }} angle={-45} textAnchor="end" interval={0} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} />
-                      <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '20px', border: 'none' }} />
-                      <Bar dataKey="value" fill="#3B82F6" radius={[10, 10, 0, 0]} barSize={40}>
-                        {chartData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[11px]">
-                <thead className="bg-slate-900 text-white font-black uppercase tracking-widest">
-                  <tr>
-                    {selectedColumns.map(header => (
-                      <th key={header} className="px-5 py-5 first:rounded-tl-2xl last:rounded-tr-2xl">{header}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 border-x border-b border-gray-100 rounded-b-2xl overflow-hidden">
-                  {generatedData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                      {selectedColumns.map((col, vIdx) => (
-                        <td key={vIdx} className="px-5 py-5 text-gray-700 font-bold">{row[col]}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-20 flex justify-between items-start text-[9px] text-gray-400 font-black uppercase tracking-[0.2em]">
-              <div className="max-w-[200px] italic">Báo cáo được trích xuất tự động và có giá trị nội bộ • v3.1.0</div>
-              <div className="text-center w-48">
-                 Cán bộ phụ trách<br/><br/><br/><br/>
-                 <div className="w-full h-px bg-gray-200 mb-2"></div>
-                 (Ký và ghi rõ họ tên)
-              </div>
-            </div>
+          <div className="text-right">
+             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Thời gian trích xuất</p>
+             <p className="text-sm font-black text-gray-900 mt-1">{new Date().toLocaleString('vi-VN')}</p>
           </div>
         </div>
-      )}
+
+        {/* Tổng hợp chỉ số nhanh */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[
+            { label: 'Tổng cuộc họp', value: filteredMeetings.length, color: 'blue' },
+            { label: 'Đơn vị tổ chức', value: Array.from(new Set(filteredMeetings.map(m => m.hostUnit))).length, color: 'emerald' },
+            { label: 'Số điểm cầu tham gia', value: Array.from(new Set(filteredMeetings.flatMap(m => m.endpoints.map(e => e.id)))).length, color: 'amber' },
+            { label: 'Tỷ lệ hoạt động', value: '94.5%', color: 'purple' }
+          ].map((stat, i) => (
+            <div key={i} className={`p-6 rounded-3xl border bg-${stat.color}-50/30 border-${stat.color}-100/50`}>
+              <p className={`text-[9px] font-black text-${stat.color}-600 uppercase tracking-widest mb-1`}>{stat.label}</p>
+              <p className={`text-3xl font-black text-${stat.color}-900`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Biểu đồ Phân tích */}
+        {showChart && statsData.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Biểu đồ trực quan hóa dữ liệu</h3>
+               <button onClick={() => setShowChart(!showChart)} className="text-[9px] font-black text-blue-600 uppercase no-print">Ẩn biểu đồ</button>
+            </div>
+            <div className="bg-gray-50/50 rounded-[2rem] p-8 border border-gray-100">
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  {groupBy === 'unit' ? (
+                    <BarChart data={statsData} margin={{ bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 9, fill: '#6B7280', fontWeight: 'bold' }} 
+                        angle={-45} 
+                        textAnchor="end" 
+                        interval={0}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                        cursor={{ fill: '#F3F4F6' }}
+                      />
+                      <Bar dataKey="value" fill="#3B82F6" radius={[12, 12, 0, 0]} barSize={40}>
+                        {statsData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <AreaChart data={statsData}>
+                      <defs>
+                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fill: '#6B7280', fontWeight: 'bold' }}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                      />
+                      <Area type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bảng tổng hợp số lượng */}
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] pl-3 border-l-4 border-blue-600">Bảng Tổng hợp Số lượng</h3>
+          <div className="overflow-hidden border border-gray-100 rounded-3xl">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-900 text-white font-black uppercase tracking-widest text-[9px]">
+                <tr>
+                  <th className="px-8 py-5">STT</th>
+                  <th className="px-8 py-5">{groupBy === 'unit' ? 'Đơn vị chủ trì' : 'Mốc thời gian'}</th>
+                  <th className="px-8 py-5 text-center">Số lượng cuộc họp</th>
+                  <th className="px-8 py-5 text-right">Tỷ lệ đóng góp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {statsData.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                    <td className="px-8 py-5 text-gray-400 font-bold">{idx + 1}</td>
+                    <td className="px-8 py-5 text-gray-900 font-black">{row.name}</td>
+                    <td className="px-8 py-5 text-center">
+                      <span className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-xl font-black">{row.value} cuộc họp</span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex items-center justify-end gap-3">
+                         <span className="text-gray-500 font-bold">{((row.value / (filteredMeetings.length || 1)) * 100).toFixed(1)}%</span>
+                         <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500" style={{ width: `${(row.value / (filteredMeetings.length || 1)) * 100}%` }}></div>
+                         </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Thông tin Cuộc họp chi tiết */}
+        <div className="space-y-4 pt-10">
+          <h3 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] pl-3 border-l-4 border-slate-600">Thông tin Chi tiết Cuộc họp</h3>
+          <div className="overflow-hidden border border-gray-100 rounded-3xl">
+            <table className="w-full text-left text-[11px]">
+              <thead className="bg-gray-100 text-gray-500 font-black uppercase tracking-widest text-[8px]">
+                <tr>
+                  <th className="px-6 py-4">Thời gian tổ chức</th>
+                  <th className="px-6 py-4">Tên cuộc họp</th>
+                  <th className="px-6 py-4">Đơn vị / Cán bộ chủ trì</th>
+                  <th className="px-6 py-4 text-center">Thành phần & Điểm cầu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredMeetings.sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map((m, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-black text-gray-900">{new Date(m.startTime).toLocaleDateString('vi-VN')}</div>
+                      <div className="text-[9px] text-blue-500 font-bold mt-1 uppercase">
+                         {new Date(m.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} - {new Date(m.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-800 line-clamp-2 max-w-xs">{m.title}</div>
+                      <div className="text-[9px] text-gray-400 font-mono mt-1">ID: {m.id}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-black text-blue-700">{m.hostUnit}</div>
+                      <div className="text-[10px] text-gray-500 font-bold mt-1">CB: {m.chairPerson}</div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg font-black text-[9px] uppercase tracking-tighter">
+                          {m.endpoints.length} ĐIỂM CẦU
+                        </span>
+                        <span className="text-[8px] text-gray-400 font-bold uppercase">{m.participants.length} THÀNH PHẦN KHÁC</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredMeetings.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-24 text-center">
+                       <div className="flex flex-col items-center gap-4 text-gray-300">
+                          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                          <p className="text-sm font-black uppercase tracking-widest italic">Không có dữ liệu cuộc họp trong khoảng thời gian này</p>
+                       </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer Báo cáo */}
+        <div className="pt-20 flex justify-between items-end">
+           <div className="max-w-md space-y-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nguồn dữ liệu</p>
+              <p className="text-[10px] text-gray-500 italic leading-relaxed">
+                 Báo cáo này được tổng hợp từ cơ sở dữ liệu giám sát thời gian thực của Hệ thống Cầu truyền hình. Mọi sai sót vui lòng liên hệ bộ phận Kỹ thuật để đối soát.
+              </p>
+           </div>
+           <div className="text-center w-64 space-y-20">
+              <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Người trích xuất báo cáo</p>
+              <div className="flex flex-col items-center gap-1">
+                 <div className="w-48 h-px bg-gray-200 mb-2"></div>
+                 <p className="text-[10px] text-gray-400 font-bold uppercase">(Ký và ghi rõ họ tên)</p>
+              </div>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };

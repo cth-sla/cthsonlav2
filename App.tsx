@@ -156,7 +156,11 @@ const App: React.FC = () => {
 
   const handleCreateMeeting = async (newMeeting: Meeting) => {
     if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(newMeeting);
+      const { error } = await supabaseService.upsertMeeting(newMeeting) as any;
+      if (error) {
+        alert("Lỗi khi thêm cuộc họp: " + error.message);
+        return;
+      }
     } else {
       const updated = [newMeeting, ...meetings];
       setMeetings(updated);
@@ -167,7 +171,11 @@ const App: React.FC = () => {
 
   const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
     if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(updatedMeeting);
+      const { error } = await supabaseService.upsertMeeting(updatedMeeting) as any;
+      if (error) {
+        alert("Lỗi khi cập nhật cuộc họp: " + error.message);
+        return;
+      }
     } else {
       const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
       setMeetings(updated);
@@ -180,7 +188,8 @@ const App: React.FC = () => {
   const handleDeleteMeeting = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch họp này?')) {
       if (supabaseService.isConfigured()) {
-        await supabaseService.deleteMeeting(id);
+        const { error } = await supabaseService.deleteMeeting(id) as any;
+        if (error) alert("Lỗi khi xóa cuộc họp: " + error.message);
       } else {
         const updated = meetings.filter(m => m.id !== id);
         setMeetings(updated);
@@ -218,7 +227,7 @@ const App: React.FC = () => {
           {supabaseService.isConfigured() && (
             <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Database Real-time</span>
+              <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Database Cloud Ready</span>
             </div>
           )}
         </div>
@@ -313,8 +322,10 @@ const App: React.FC = () => {
         )}
         
         {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
-          if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-          else {
+          if (supabaseService.isConfigured()) {
+            const { error } = await supabaseService.upsertEndpoint(e) as any;
+            if (error) alert("Lỗi khi cập nhật điểm cầu: " + error.message);
+          } else {
             const updated = endpoints.map(item => item.id === e.id ? e : item);
             setEndpoints(updated);
             storageService.saveEndpoints(updated);
@@ -326,67 +337,93 @@ const App: React.FC = () => {
             units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings}
             onAddUnit={async u => { 
               const newUnit = { ...u, id: `U${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
-              else { const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertUnit(newUnit) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated); }
             }}
             onUpdateUnit={async u => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
-              else { const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertUnit(u) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); }
             }}
             onDeleteUnit={async id => { 
-              if (window.confirm('Xóa đơn vị?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
-                else { const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); }
+              if (window.confirm('Xóa đơn vị này?')) { 
+                if (supabaseService.isConfigured()) {
+                  const { error } = await supabaseService.deleteUnit(id) as any;
+                  if (error) alert("Lỗi: " + error.message);
+                } else { const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); }
               }
             }}
             onAddStaff={async s => { 
               const newStaff = { ...s, id: `S${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
-              else { const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertStaff(newStaff) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated); }
             }}
             onUpdateStaff={async s => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
-              else { const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertStaff(s) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated); }
             }}
             onDeleteStaff={async id => { 
-              if (window.confirm('Xóa cán bộ?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
-                else { const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated); }
+              if (window.confirm('Xóa cán bộ này?')) { 
+                if (supabaseService.isConfigured()) {
+                  const { error } = await supabaseService.deleteStaff(id) as any;
+                  if (error) alert("Lỗi: " + error.message);
+                } else { const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated); }
               }
             }}
             onAddEndpoint={async e => { 
               const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
-              if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
-              else { const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertEndpoint(newEp) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated); }
             }}
             onUpdateEndpoint={async e => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-              else { const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertEndpoint(e) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated); }
             }}
             onDeleteEndpoint={async id => { 
-              if (window.confirm('Xóa điểm cầu?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
-                else { const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated); }
+              if (window.confirm('Xóa điểm cầu này?')) { 
+                if (supabaseService.isConfigured()) {
+                  const { error } = await supabaseService.deleteEndpoint(id) as any;
+                  if (error) alert("Lỗi: " + error.message);
+                } else { const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated); }
               }
             }}
             onAddGroup={async g => { 
               const newGroup = { ...g, id: `G${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertGroup(newGroup);
-              else { const updated = [...groups, newGroup]; setGroups(updated); storageService.saveGroups(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertGroup(newGroup) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = [...groups, newGroup]; setGroups(updated); storageService.saveGroups(updated); }
             }}
             onUpdateGroup={async g => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertGroup(g);
-              else { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertGroup(g) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }
             }}
             onDeleteGroup={async id => { 
-              if (window.confirm('Xóa thành phần?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteGroup(id);
-                else { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }
+              if (window.confirm('Xóa thành phần này?')) { 
+                if (supabaseService.isConfigured()) {
+                  const { error } = await supabaseService.deleteGroup(id) as any;
+                  if (error) alert("Lỗi: " + error.message);
+                } else { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }
               }
             }}
             onUpdateSettings={async s => { 
-              if (supabaseService.isConfigured()) await supabaseService.updateSettings(s);
-              else { setSystemSettings(s); storageService.saveSystemSettings(s); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.updateSettings(s) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { setSystemSettings(s); storageService.saveSystemSettings(s); }
             }}
           />
         )}
@@ -395,17 +432,23 @@ const App: React.FC = () => {
           <UserManagement users={users} currentUser={currentUser} 
             onAddUser={async u => { 
               const newUser = { ...u, id: `${Date.now()}` }; 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser);
-              else { const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertUser(newUser) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated); }
             }} 
             onUpdateUser={async u => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUser(u);
-              else { const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated); }
+              if (supabaseService.isConfigured()) {
+                const { error } = await supabaseService.upsertUser(u) as any;
+                if (error) alert("Lỗi: " + error.message);
+              } else { const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated); }
             }} 
             onDeleteUser={async id => { 
-              if (window.confirm('Xóa người dùng?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteUser(id);
-                else { const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated); }
+              if (window.confirm('Xóa người dùng này?')) { 
+                if (supabaseService.isConfigured()) {
+                  const { error } = await supabaseService.deleteUser(id) as any;
+                  if (error) alert("Lỗi: " + error.message);
+                } else { const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated); }
               }
             }} 
           />

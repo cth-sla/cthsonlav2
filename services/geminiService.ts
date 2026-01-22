@@ -1,15 +1,13 @@
-
 import { GoogleGenAI } from "@google/genai";
 
-// Hàm khởi tạo AI instance an toàn
-const getAI = () => {
-  const apiKey = (window as any).process?.env?.API_KEY || process.env.API_KEY || "";
-  return new GoogleGenAI({ apiKey });
-};
-
+/**
+ * Phân tích hiệu quả cuộc họp bằng AI Gemini
+ * Tuân thủ hướng dẫn SDK Google GenAI: sử dụng process.env.API_KEY trực tiếp.
+ */
 export const analyzeMeetingEfficiency = async (meetingData: any) => {
   try {
-    const ai = getAI();
+    // Fix: Khởi tạo instance GoogleGenAI trực tiếp bằng process.env.API_KEY theo đúng quy định
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{
