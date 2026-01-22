@@ -1,5 +1,5 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings } from '../types';
 
 const supabaseUrl = (window as any).process?.env?.SUPABASE_URL || "";
@@ -86,9 +86,35 @@ const unmapUser = (u: User) => ({
   password: u.password
 });
 
+const mapSettings = (data: any): SystemSettings => ({
+  systemName: data.system_name,
+  shortName: data.short_name,
+  logoBase64: data.logo_base_64,
+  primaryColor: data.primary_color
+});
+
 export const supabaseService = {
   isConfigured(): boolean {
     return !!supabase;
+  },
+
+  // Real-time Subscription Helper
+  subscribeTable(tableName: string, callback: (payload: any) => void): RealtimeChannel | null {
+    if (!supabase) return null;
+    return supabase
+      .channel(`public:${tableName}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, (payload) => {
+        // Map payload based on table
+        let mappedData = payload.new;
+        if (tableName === 'meetings') mappedData = mapMeeting(payload.new);
+        else if (tableName === 'endpoints') mappedData = mapEndpoint(payload.new);
+        else if (tableName === 'staff') mappedData = mapStaff(payload.new);
+        else if (tableName === 'users') mappedData = mapUser(payload.new);
+        else if (tableName === 'system_settings') mappedData = mapSettings(payload.new);
+
+        callback({ ...payload, mappedData });
+      })
+      .subscribe();
   },
 
   // Meetings
@@ -99,28 +125,18 @@ export const supabaseService = {
       .select('*')
       .order('start_time', { ascending: false });
     
-    if (error) {
-      console.error('Lỗi lấy danh sách cuộc họp:', error);
-      return [];
-    }
+    if (error) return [];
     return data.map(mapMeeting);
   },
 
   async upsertMeeting(meeting: Meeting) {
     if (!supabase) return;
-    const { error } = await supabase
-      .from('meetings')
-      .upsert(unmapMeeting(meeting));
-    if (error) console.error('Lỗi cập nhật cuộc họp:', error);
+    await supabase.from('meetings').upsert(unmapMeeting(meeting));
   },
 
   async deleteMeeting(id: string) {
     if (!supabase) return;
-    const { error } = await supabase
-      .from('meetings')
-      .delete()
-      .eq('id', id);
-    if (error) console.error('Lỗi xóa cuộc họp:', error);
+    await supabase.from('meetings').delete().eq('id', id);
   },
 
   // Units
@@ -186,14 +202,7 @@ export const supabaseService = {
       .eq('id', 'current')
       .single();
     if (error) return null;
-    
-    // Map snake_case settings to camelCase
-    return {
-      systemName: data.system_name,
-      shortName: data.short_name,
-      logoBase64: data.logo_base64,
-      primaryColor: data.primary_color
-    };
+    return mapSettings(data);
   },
 
   async updateSettings(settings: SystemSettings) {
