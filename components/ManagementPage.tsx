@@ -322,7 +322,6 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                       onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 font-medium italic">Thay đổi màu sắc này để tùy chỉnh giao diện Dashboard và Sidebar.</p>
                 </div>
               </div>
 
@@ -344,14 +343,6 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <label htmlFor="logo-upload" className="cursor-pointer px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">
                       {settingsForm.logoBase64 ? 'Thay đổi Logo' : 'Tải lên Logo'}
                     </label>
-                    {settingsForm.logoBase64 && (
-                      <button 
-                        onClick={() => setSettingsForm({...settingsForm, logoBase64: undefined})}
-                        className="text-[10px] text-red-500 font-bold uppercase hover:underline"
-                      >
-                        Xóa Logo (Dùng mặc định)
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -367,153 +358,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </div>
           </div>
         )}
-
-        {((filteredUnits.length === 0 && activeTab === 'units') ||
-         (filteredStaff.length === 0 && activeTab === 'staff') ||
-         (filteredEndpoints.length === 0 && activeTab === 'endpoints') ||
-         (filteredGroups.length === 0 && activeTab === 'groups')) ? (
-          <div className="p-12 text-center text-gray-400 italic bg-gray-50/30">
-            Không tìm thấy dữ liệu nào phù hợp với tìm kiếm của bạn.
-          </div>
-        ) : null}
       </div>
-
-      {/* Info Card */}
-      <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-4">
-        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        <div>
-          <h4 className="text-sm font-bold text-blue-800">Thông tin Quản trị</h4>
-          <p className="text-xs text-blue-700 leading-relaxed mt-1 font-medium">
-            Mọi thay đổi tại đây sẽ ảnh hưởng trực tiếp đến dữ liệu nguồn. Việc quản lý điểm cầu giúp đồng bộ hóa danh sách trong các phiên họp SLA.
-          </p>
-        </div>
-      </div>
-
-      {/* Dynamic Modal for Create/Update */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h3 className="text-lg font-bold text-gray-900 uppercase tracking-tight">
-                {editingItem ? 'Cập nhật' : 'Thêm mới'} {
-                  activeTab === 'units' ? 'Đơn vị' : 
-                  activeTab === 'staff' ? 'Cán bộ' : 
-                  activeTab === 'endpoints' ? 'Điểm cầu' : 'Thành phần'
-                }
-              </h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-white rounded-full transition-colors border border-transparent hover:border-gray-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            
-            <form onSubmit={handleSave} className="p-8 space-y-6">
-              {activeTab === 'units' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Tên đơn vị *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all font-medium"
-                      placeholder="Ví dụ: Văn phòng Tổng công ty" value={formData.name || ''}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Mã đơn vị *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all font-mono"
-                      placeholder="Ví dụ: VP-TCT" value={formData.code || ''}
-                      onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                    />
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'staff' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Họ và tên *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.fullName || ''} onChange={e => setFormData({...formData, fullName: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Chức vụ *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.position || ''} onChange={e => setFormData({...formData, position: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Đơn vị công tác *</label>
-                    <select 
-                      required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.unitId || ''} onChange={e => setFormData({...formData, unitId: e.target.value})}
-                    >
-                      <option value="">-- Chọn đơn vị --</option>
-                      {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'endpoints' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Tên điểm cầu *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Ví dụ: Hội trường Hà Nội" value={formData.name || ''}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Vị trí / Địa điểm *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Ví dụ: Tòa nhà A, Tầng 5" value={formData.location || ''}
-                      onChange={e => setFormData({...formData, location: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Trạng thái hiện tại *</label>
-                    <select 
-                      required className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-                      value={formData.status || EndpointStatus.DISCONNECTED}
-                      onChange={e => setFormData({...formData, status: e.target.value as EndpointStatus})}
-                    >
-                      <option value={EndpointStatus.CONNECTED}>Kết nối (Online)</option>
-                      <option value={EndpointStatus.DISCONNECTED}>Mất kết nối (Offline)</option>
-                      <option value={EndpointStatus.CONNECTING}>Đang thử lại (Connecting)</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'groups' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Tên nhóm thành phần *</label>
-                    <input 
-                      required type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})}
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={closeModal} className="px-6 py-3 border border-gray-200 text-gray-600 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95">Hủy bỏ</button>
-                <button type="submit" className="px-10 py-3 bg-blue-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95">
-                  {editingItem ? 'Cập nhật' : 'Xác nhận lưu'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

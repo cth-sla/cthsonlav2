@@ -16,8 +16,6 @@ import CreateMeetingModal from './components/CreateMeetingModal';
 import MeetingDetailModal from './components/MeetingDetailModal';
 import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
-import { databaseService } from './services/databaseService';
-import { supabaseService } from './services/supabaseService';
 
 storageService.init();
 
@@ -33,53 +31,12 @@ const App: React.FC = () => {
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  const [dbStatus, setDbStatus] = useState<'CONNECTING' | 'ONLINE' | 'OFFLINE'>('CONNECTING');
-  
   const [endpoints, setEndpoints] = useState<Endpoint[]>(() => storageService.getEndpoints());
   const [units, setUnits] = useState<Unit[]>(() => storageService.getUnits());
   const [staff, setStaff] = useState<Staff[]>(() => storageService.getStaff());
   const [groups, setGroups] = useState<ParticipantGroup[]>(() => storageService.getGroups());
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
-
-  // --- SUPABASE SYNC ---
-  useEffect(() => {
-    const loadAllData = async () => {
-      // Nếu không cấu hình Supabase, bỏ qua việc tải từ server
-      if (!supabaseService.isConfigured()) {
-        setDbStatus('OFFLINE');
-        return;
-      }
-
-      try {
-        const [supMeetings, supUnits, supStaff, supEndpoints, supSettings] = await Promise.all([
-          supabaseService.getMeetings().catch(() => meetings),
-          supabaseService.getUnits().catch(() => units),
-          supabaseService.getStaff().catch(() => staff),
-          supabaseService.getEndpoints().catch(() => endpoints),
-          supabaseService.getSettings().catch(() => null)
-        ]);
-
-        if (supMeetings.length > 0) setMeetings(supMeetings);
-        if (supUnits.length > 0) setUnits(supUnits);
-        if (supStaff.length > 0) setStaff(supStaff);
-        if (supEndpoints.length > 0) setEndpoints(supEndpoints);
-        if (supSettings) setSystemSettings(supSettings);
-        
-        storageService.saveMeetings(supMeetings);
-        storageService.saveUnits(supUnits);
-        storageService.saveStaff(supStaff);
-        storageService.saveEndpoints(supEndpoints);
-        if (supSettings) storageService.saveSystemSettings(supSettings);
-        
-        setDbStatus('ONLINE');
-      } catch (err) {
-        console.warn("Supabase load failed, using local data", err);
-        setDbStatus('OFFLINE');
-      }
-    };
-    loadAllData();
-  }, []);
 
   // Inject primary color into CSS
   useEffect(() => {
@@ -90,21 +47,6 @@ const App: React.FC = () => {
       root.style.setProperty('--primary-color-hover', `${systemSettings.primaryColor}dd`);
     }
   }, [systemSettings.primaryColor]);
-
-  const checkDb = useCallback(async () => {
-    if (!supabaseService.isConfigured()) {
-        setDbStatus('OFFLINE');
-        return;
-    }
-    const result = await databaseService.checkConnection();
-    setDbStatus(result.status);
-  }, []);
-
-  useEffect(() => {
-    checkDb();
-    const interval = setInterval(() => checkDb(), 60000);
-    return () => clearInterval(interval);
-  }, [checkDb]);
 
   const stats = useMemo(() => {
     const total = meetings.length;
@@ -169,47 +111,29 @@ const App: React.FC = () => {
     setActiveTab('dashboard');
   };
 
-  const handleCreateMeeting = async (newMeeting: Meeting) => {
-    try {
-      if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(newMeeting);
-      const updated = [newMeeting, ...meetings];
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi khi đồng bộ dữ liệu.");
-    }
+  const handleCreateMeeting = (newMeeting: Meeting) => {
+    const updated = [newMeeting, ...meetings];
+    setMeetings(updated);
+    storageService.saveMeetings(updated);
     setIsCreateModalOpen(false);
   };
 
-  const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
-    try {
-      if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(updatedMeeting);
-      const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
-      setEditingMeeting(null);
-      setIsCreateModalOpen(false);
-      if (selectedMeeting?.id === updatedMeeting.id) {
-          setSelectedMeeting(updatedMeeting);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi khi cập nhật dữ liệu.");
+  const handleUpdateMeeting = (updatedMeeting: Meeting) => {
+    const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
+    setMeetings(updated);
+    storageService.saveMeetings(updated);
+    setEditingMeeting(null);
+    setIsCreateModalOpen(false);
+    if (selectedMeeting?.id === updatedMeeting.id) {
+        setSelectedMeeting(updatedMeeting);
     }
   };
 
-  const handleDeleteMeeting = async (id: string) => {
+  const handleDeleteMeeting = (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch họp này?')) {
-      try {
-        if (supabaseService.isConfigured()) await supabaseService.deleteMeeting(id);
-        const updated = meetings.filter(m => m.id !== id);
-        setMeetings(updated);
-        storageService.saveMeetings(updated);
-      } catch (err) {
-        console.error(err);
-        alert("Lỗi khi xóa dữ liệu.");
-      }
+      const updated = meetings.filter(m => m.id !== id);
+      setMeetings(updated);
+      storageService.saveMeetings(updated);
     }
   };
 
@@ -318,10 +242,6 @@ const App: React.FC = () => {
              activeTab === 'accounts' ? 'Quản lý Tài khoản' : 
              activeTab === 'deployment' ? 'Phát hành & Quản lý Từ xa' : 'Triển khai hệ thống'}
           </h2>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl shadow-sm">
-             <div className={`w-2 h-2 rounded-full ${dbStatus === 'ONLINE' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{dbStatus === 'ONLINE' ? 'Database Online' : 'Database Offline'}</span>
-          </div>
         </header>
 
         {activeTab === 'dashboard' && (
@@ -433,71 +353,55 @@ const App: React.FC = () => {
           <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={isAdmin} onEdit={handleEditMeeting} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />
         )}
         
-        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
-          try {
-            if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-            const updated = endpoints.map(item => item.id === e.id ? e : item);
-            setEndpoints(updated);
-            storageService.saveEndpoints(updated);
-          } catch (err) {
-            console.error(err);
-            alert("Lỗi khi đồng bộ điểm cầu.");
-          }
+        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? e => {
+          const updated = endpoints.map(item => item.id === e.id ? e : item);
+          setEndpoints(updated);
+          storageService.saveEndpoints(updated);
         } : undefined} />}
 
         {activeTab === 'management' && isAdmin && (
           <ManagementPage 
             units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings}
-            onAddUnit={async u => { 
+            onAddUnit={u => { 
               const newUnit = { ...u, id: `U${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
               const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated); 
             }}
-            onUpdateUnit={async u => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
+            onUpdateUnit={u => { 
               const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); 
             }}
-            onDeleteUnit={async id => { 
+            onDeleteUnit={id => { 
               if (window.confirm('Xóa đơn vị?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
                 const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); 
               }
             }}
-            onAddStaff={async s => { 
+            onAddStaff={s => { 
               const newStaff = { ...s, id: `S${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
               const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated); 
             }}
-            onUpdateStaff={async s => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
+            onUpdateStaff={s => { 
               const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated); 
             }}
-            onDeleteStaff={async id => { 
+            onDeleteStaff={id => { 
               if (window.confirm('Xóa cán bộ?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
                 const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated); 
               }
             }}
-            onAddEndpoint={async e => { 
+            onAddEndpoint={e => { 
               const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
-              if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
               const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated); 
             }}
-            onUpdateEndpoint={async e => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
+            onUpdateEndpoint={e => { 
               const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated); 
             }}
-            onDeleteEndpoint={async id => { 
+            onDeleteEndpoint={id => { 
               if (window.confirm('Xóa điểm cầu?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
                 const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated); 
               }
             }}
             onAddGroup={g => { const updated = [...groups, { ...g, id: `G${Date.now()}` }]; setGroups(updated); storageService.saveGroups(updated); }}
             onUpdateGroup={g => { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }}
             onDeleteGroup={id => { if (window.confirm('Xóa thành phần?')) { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }}}
-            onUpdateSettings={async s => { 
-              if (supabaseService.isConfigured()) await supabaseService.updateSettings(s);
+            onUpdateSettings={s => { 
               setSystemSettings(s); storageService.saveSystemSettings(s); 
             }}
           />
