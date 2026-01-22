@@ -117,6 +117,25 @@ const App: React.FC = () => {
     return { weekly, monthly: monthlyArr, yearly: yearlyArr, units: unitArr };
   }, [meetings]);
 
+  // THỐNG KÊ ĐƠN VỊ TRONG THÁNG NÀY
+  const unitStatsThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const map: Record<string, number> = {};
+    meetings.forEach(m => {
+      const d = new Date(m.startTime);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        map[m.hostUnit] = (map[m.hostUnit] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(map)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [meetings]);
+
   const dashboardMeetingList = useMemo(() => {
     const now = new Date();
     if (statsPeriod === 'week') {
@@ -290,6 +309,51 @@ const App: React.FC = () => {
               <StatCard title="SLA Khả dụng" value="96.5%" icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" /></svg>} trend="+0.2%" trendUp={true} />
             </div>
 
+            {/* Biểu đồ Đơn vị trong tháng (Mới thêm theo yêu cầu) */}
+            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 tracking-tight">Xếp hạng Cuộc họp theo Đơn vị</h3>
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Dữ liệu trong tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</p>
+                </div>
+              </div>
+
+              <div className="h-[300px] w-full">
+                {unitStatsThisMonth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={unitStatsThisMonth} margin={{ left: 60, right: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                      <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fontSize: 10, fill: '#475569', fontWeight: '700'}} 
+                        width={140}
+                      />
+                      <Tooltip 
+                        cursor={{fill: '#f8fafc', radius: 4}} 
+                        contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '12px'}} 
+                      />
+                      <Bar dataKey="count" fill={systemSettings.primaryColor} radius={[0, 8, 8, 0]} barSize={24}>
+                        {unitStatsThisMonth.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 italic text-sm">
+                    Chưa có cuộc họp nào được ghi nhận trong tháng này.
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Bộ lọc Thống kê Đa chiều */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -298,8 +362,8 @@ const App: React.FC = () => {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 tracking-tight">Thống kê Cuộc họp</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Theo Tuần, Tháng, Năm và Đơn vị chủ trì</p>
+                    <h3 className="text-lg font-bold text-gray-900 tracking-tight">Xu hướng & Tổng hợp</h3>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Phân tích theo dòng thời gian</p>
                   </div>
                 </div>
                 
@@ -307,7 +371,7 @@ const App: React.FC = () => {
                    <button onClick={() => setStatsPeriod('week')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'week' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'week' ? { color: systemSettings.primaryColor } : {}}>Tuần</button>
                    <button onClick={() => setStatsPeriod('month')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'month' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'month' ? { color: systemSettings.primaryColor } : {}}>Tháng</button>
                    <button onClick={() => setStatsPeriod('year')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'year' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'year' ? { color: systemSettings.primaryColor } : {}}>Năm</button>
-                   <button onClick={() => setStatsPeriod('unit')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'unit' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'unit' ? { color: systemSettings.primaryColor } : {}}>Đơn vị</button>
+                   <button onClick={() => setStatsPeriod('unit')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statsPeriod === 'unit' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`} style={statsPeriod === 'unit' ? { color: systemSettings.primaryColor } : {}}>Tổng kết đơn vị</button>
                 </div>
               </div>
 

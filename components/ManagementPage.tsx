@@ -48,7 +48,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Unit | Staff | ParticipantGroup | Endpoint | null>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
 
   // System Settings local state
@@ -75,7 +75,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
   const getUnitName = (id: string) => units.find(u => u.id === id)?.name || 'N/A';
 
-  const openModal = (item: Unit | Staff | ParticipantGroup | Endpoint | null = null) => {
+  const openModal = (item: any = null) => {
     setEditingItem(item);
     if (item) {
       setFormData({ ...item });
@@ -303,7 +303,6 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   />
                 </div>
                 
-                {/* Primary Color Customization Section */}
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700">Màu chủ đạo hệ thống (Theme Color)</label>
                   <div className="flex items-center gap-3">
@@ -359,6 +358,101 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal for Add/Edit */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                {editingItem ? 'Chỉnh sửa' : 'Thêm mới'} {activeTab === 'units' ? 'Đơn vị' : activeTab === 'staff' ? 'Cán bộ' : activeTab === 'endpoints' ? 'Điểm cầu' : 'Nhóm'}
+              </h3>
+              <button onClick={closeModal} className="p-2 hover:bg-white rounded-full transition-all text-gray-400">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleSave} className="p-8 space-y-6">
+              <div className="space-y-4">
+                {activeTab === 'units' && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tên đơn vị *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mã đơn vị *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-mono" value={formData.code || ''} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mô tả</label>
+                      <textarea className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'staff' && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Họ và tên *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" value={formData.fullName || ''} onChange={e => setFormData({...formData, fullName: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Đơn vị *</label>
+                      <select required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" value={formData.unitId || ''} onChange={e => setFormData({...formData, unitId: e.target.value})}>
+                        <option value="">Chọn đơn vị</option>
+                        {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Chức vụ *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" value={formData.position || ''} onChange={e => setFormData({...formData, position: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                      <input type="email" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'endpoints' && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tên điểm cầu *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Vị trí / Địa điểm *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'groups' && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tên nhóm *</label>
+                      <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mô tả</label>
+                      <textarea className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-6 flex flex-col sm:flex-row gap-4">
+                <button type="button" onClick={closeModal} className="flex-1 px-8 py-3.5 bg-white border border-gray-200 text-gray-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Hủy bỏ</button>
+                <button type="submit" className="flex-[2] px-8 py-3.5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                  {editingItem ? 'Cập nhật' : 'Thêm mới'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

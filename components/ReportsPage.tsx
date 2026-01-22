@@ -58,6 +58,8 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, endpoints }) => {
       unitMap[unit] = (unitMap[unit] || 0) + 1;
       
       const dateStr = row['Bắt đầu'];
+      if (!dateStr) return;
+
       // Xử lý các định dạng ngày khác nhau có thể trả về từ toLocaleString
       const dateOnly = dateStr.split(',')[0].split(' ')[0];
       const dateParts = dateOnly.split('/');

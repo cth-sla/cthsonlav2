@@ -204,7 +204,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                     <p className="text-[9px] text-gray-400 truncate uppercase font-bold tracking-widest mt-1">{ep.location}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <div className={`w-1 h-1 rounded-full ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <p className="text-[8px] text-gray-400 font-medium">Cập nhật: {ep.lastConnected.split(' ')[1] || '---'}</p>
+                      <p className="text-[8px] text-gray-400 font-medium">Cập nhật: {ep.lastConnected?.split(' ')[1] || '---'}</p>
                     </div>
                   </div>
                   <div className="text-right">

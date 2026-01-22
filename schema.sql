@@ -103,7 +103,12 @@ CREATE POLICY "Public read access participants" ON public.meeting_participants F
 CREATE POLICY "Public read access meeting_endpoints" ON public.meeting_endpoints FOR SELECT USING (true);
 CREATE POLICY "Public read access settings" ON public.system_settings FOR SELECT USING (true);
 
--- 11. Admin Policies (Full access)
+-- 11. Admin Full Management Policies (Authenticated users as admins)
+CREATE POLICY "Admins manage users" ON public.users FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admins manage units" ON public.units FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admins manage staff" ON public.staff FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admins manage meetings" ON public.meetings FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admins manage endpoints" ON public.endpoints FOR ALL TO authenticated USING (true);
 CREATE POLICY "Admins manage participants" ON public.meeting_participants FOR ALL TO authenticated USING (true);
 CREATE POLICY "Admins manage meeting_endpoints" ON public.meeting_endpoints FOR ALL TO authenticated USING (true);
 CREATE POLICY "Admins manage settings" ON public.system_settings FOR ALL TO authenticated USING (true);

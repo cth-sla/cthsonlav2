@@ -159,7 +159,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${
                           user.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'
                         }`}>
-                          {user.fullName.split(' ').pop()?.[0].toUpperCase()}
+                          {user.fullName?.split(' ').pop()?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-gray-900">{user.fullName} {isMe && <span className="ml-2 px-1.5 py-0.5 bg-blue-600 text-white text-[8px] rounded-md font-black uppercase tracking-tighter">Bạn</span>}</p>

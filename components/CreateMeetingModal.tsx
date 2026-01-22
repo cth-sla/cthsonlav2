@@ -36,8 +36,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         title: editingMeeting.title,
         hostUnit: editingMeeting.hostUnit,
         chairPerson: editingMeeting.chairPerson,
-        startTime: editingMeeting.startTime.slice(0, 16), // datetime-local format
-        endTime: editingMeeting.endTime.slice(0, 16),
+        startTime: editingMeeting.startTime?.slice(0, 16) || '', // datetime-local format
+        endTime: editingMeeting.endTime?.slice(0, 16) || '',
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
       });
