@@ -39,70 +39,29 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
 
-  // Supabase Initial Sync & Real-time Subscriptions
+  // Supabase Data Sync
   useEffect(() => {
-    if (!supabaseService.isConfigured()) return;
+    const syncData = async () => {
+      if (supabaseService.isConfigured()) {
+        console.log('🔄 Đang đồng bộ dữ liệu từ Supabase Cloud...');
+        const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudUsers, cloudSettings] = await Promise.all([
+          supabaseService.getMeetings(),
+          supabaseService.getEndpoints(),
+          supabaseService.getUnits(),
+          supabaseService.getStaff(),
+          supabaseService.getUsers(),
+          supabaseService.getSettings()
+        ]);
 
-    const syncInitialData = async () => {
-      console.log('🔄 Đang đồng bộ dữ liệu ban đầu từ Supabase Cloud...');
-      const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudUsers, cloudSettings] = await Promise.all([
-        supabaseService.getMeetings(),
-        supabaseService.getEndpoints(),
-        supabaseService.getUnits(),
-        supabaseService.getStaff(),
-        supabaseService.getUsers(),
-        supabaseService.getSettings()
-      ]);
-
-      if (cloudMeetings.length > 0) { setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings); }
-      if (cloudEndpoints.length > 0) { setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints); }
-      if (cloudUnits.length > 0) { setUnits(cloudUnits); storageService.saveUnits(cloudUnits); }
-      if (cloudStaff.length > 0) { setStaff(cloudStaff); storageService.saveStaff(cloudStaff); }
-      if (cloudUsers.length > 0) { setUsers(cloudUsers); storageService.saveUsers(cloudUsers); }
-      if (cloudSettings) { setSystemSettings(cloudSettings); storageService.saveSystemSettings(cloudSettings); }
+        if (cloudMeetings.length > 0) { setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings); }
+        if (cloudEndpoints.length > 0) { setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints); }
+        if (cloudUnits.length > 0) { setUnits(cloudUnits); storageService.saveUnits(cloudUnits); }
+        if (cloudStaff.length > 0) { setStaff(cloudStaff); storageService.saveStaff(cloudStaff); }
+        if (cloudUsers.length > 0) { setUsers(cloudUsers); storageService.saveUsers(cloudUsers); }
+        if (cloudSettings) { setSystemSettings(cloudSettings); storageService.saveSystemSettings(cloudSettings); }
+      }
     };
-
-    syncInitialData();
-
-    // Thiết lập Real-time listeners
-    const tables = ['meetings', 'endpoints', 'units', 'staff', 'users', 'system_settings'];
-    const subscriptions = tables.map(table => {
-      return supabaseService.subscribeTable(table, (payload) => {
-        const { eventType, old, mappedData } = payload;
-        
-        console.log(`📡 Real-time update in [${table}]:`, eventType);
-
-        const updateState = (setter: any, storageKey: string) => {
-          setter((prev: any[]) => {
-            let next;
-            if (eventType === 'INSERT') next = [mappedData, ...prev];
-            else if (eventType === 'UPDATE') next = prev.map(item => item.id === mappedData.id ? mappedData : item);
-            else if (eventType === 'DELETE') next = prev.filter(item => item.id !== old.id);
-            else next = prev;
-            
-            // Lưu vào local storage để đồng bộ
-            if (next) storageService.saveData(storageKey, next);
-            return next;
-          });
-        };
-
-        if (table === 'meetings') updateState(setMeetings, 'cth_sla_meetings');
-        else if (table === 'endpoints') updateState(setEndpoints, 'cth_sla_endpoints');
-        else if (table === 'units') updateState(setUnits, 'cth_sla_units');
-        else if (table === 'staff') updateState(setStaff, 'cth_sla_staff');
-        else if (table === 'users') updateState(setUsers, 'cth_sla_users');
-        else if (table === 'system_settings') {
-          if (mappedData) {
-            setSystemSettings(mappedData);
-            storageService.saveSystemSettings(mappedData);
-          }
-        }
-      });
-    });
-
-    return () => {
-      subscriptions.forEach(sub => sub?.unsubscribe());
-    };
+    syncData();
   }, []);
 
   // Inject primary color into CSS
@@ -158,6 +117,7 @@ const App: React.FC = () => {
     return { weekly, monthly: monthlyArr, yearly: yearlyArr, units: unitArr };
   }, [meetings]);
 
+  // THỐNG KÊ ĐƠN VỊ TRONG THÁNG NÀY
   const unitStatsThisMonth = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -197,38 +157,31 @@ const App: React.FC = () => {
   };
 
   const handleCreateMeeting = async (newMeeting: Meeting) => {
-    // Với Real-time, ta chỉ cần gọi API, State sẽ được cập nhật qua Subscription listener
-    if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(newMeeting);
-    } else {
-      const updated = [newMeeting, ...meetings];
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
-    }
+    const updated = [newMeeting, ...meetings];
+    setMeetings(updated);
+    storageService.saveMeetings(updated);
+    if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(newMeeting);
     setIsCreateModalOpen(false);
   };
 
   const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
-    if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(updatedMeeting);
-    } else {
-      const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
-    }
+    const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
+    setMeetings(updated);
+    storageService.saveMeetings(updated);
+    if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(updatedMeeting);
     setEditingMeeting(null);
     setIsCreateModalOpen(false);
+    if (selectedMeeting?.id === updatedMeeting.id) {
+        setSelectedMeeting(updatedMeeting);
+    }
   };
 
   const handleDeleteMeeting = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa lịch họp này?')) {
-      if (supabaseService.isConfigured()) {
-        await supabaseService.deleteMeeting(id);
-      } else {
-        const updated = meetings.filter(m => m.id !== id);
-        setMeetings(updated);
-        storageService.saveMeetings(updated);
-      }
+      const updated = meetings.filter(m => m.id !== id);
+      setMeetings(updated);
+      storageService.saveMeetings(updated);
+      if (supabaseService.isConfigured()) await supabaseService.deleteMeeting(id);
     }
   };
 
@@ -280,7 +233,7 @@ const App: React.FC = () => {
           {supabaseService.isConfigured() && (
             <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Real-time Connected</span>
+              <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Cloud Connected</span>
             </div>
           )}
         </div>
@@ -347,7 +300,7 @@ const App: React.FC = () => {
 
         {activeTab === 'dashboard' && (
           <div className="space-y-8 pb-12">
-            {/* Cards ... */}
+            {/* Thống kê Tổng quan (Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               <StatCard title="Tổng số cuộc họp" value={stats.total} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} trend="+5%" trendUp={true} />
               <StatCard title="Tổng điểm cầu" value={endpoints.length} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3" /></svg>} trend="Cố định" trendUp={true} />
@@ -356,7 +309,7 @@ const App: React.FC = () => {
               <StatCard title="SLA Khả dụng" value="96.5%" icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" /></svg>} trend="+0.2%" trendUp={true} />
             </div>
 
-            {/* Charts ... */}
+            {/* Biểu đồ Đơn vị trong tháng (Mới thêm theo yêu cầu) */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
@@ -401,7 +354,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Thống kê đa chiều */}
+            {/* Bộ lọc Thống kê Đa chiều */}
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
@@ -450,10 +403,49 @@ const App: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Thông tin cuộc họp chi tiết */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
+                  Thông tin Cuộc họp trong kỳ ({dashboardMeetingList.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/30">
+                      <th className="px-6 py-4">Chủ đề & Đơn vị</th>
+                      <th className="px-6 py-4">Thời gian</th>
+                      <th className="px-6 py-4">Chủ trì</th>
+                      <th className="px-6 py-4 text-center">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {dashboardMeetingList.map((meeting) => (
+                      <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-gray-900 leading-tight">{meeting.title}</div>
+                          <div className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: systemSettings.primaryColor }}>{meeting.hostUnit}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-xs font-bold text-gray-700">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
+                          <div className="text-[10px] text-gray-500 font-medium">{new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold text-gray-700">{meeting.chairPerson}</td>
+                        <td className="px-6 py-4 text-center">
+                          <button onClick={() => setSelectedMeeting(meeting)} className="px-4 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-white transition-all shadow-sm active:scale-95" style={{ color: systemSettings.primaryColor, borderColor: `${systemSettings.primaryColor}33` }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = systemSettings.primaryColor)} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}>Chi tiết</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Other tabs ... */}
         {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} />}
 
         {activeTab === 'meetings' && (
@@ -461,12 +453,10 @@ const App: React.FC = () => {
         )}
         
         {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
+          const updated = endpoints.map(item => item.id === e.id ? e : item);
+          setEndpoints(updated);
+          storageService.saveEndpoints(updated);
           if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-          else {
-            const updated = endpoints.map(item => item.id === e.id ? e : item);
-            setEndpoints(updated);
-            storageService.saveEndpoints(updated);
-          }
         } : undefined} />}
 
         {activeTab === 'management' && isAdmin && (
@@ -474,103 +464,61 @@ const App: React.FC = () => {
             units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings}
             onAddUnit={async u => { 
               const newUnit = { ...u, id: `U${Date.now()}` };
+              const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
-              else {
-                const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated); 
-              }
             }}
             onUpdateUnit={async u => { 
+              const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
-              else {
-                const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated); 
-              }
             }}
             onDeleteUnit={async id => { 
               if (window.confirm('Xóa đơn vị?')) { 
+                const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); 
                 if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
-                else {
-                  const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated); 
-                }
               }
             }}
             onAddStaff={async s => { 
               const newStaff = { ...s, id: `S${Date.now()}` };
+              const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
-              else {
-                const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated); 
-              }
             }}
             onUpdateStaff={async s => { 
+              const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
-              else {
-                const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated); 
-              }
             }}
             onDeleteStaff={async id => { 
               if (window.confirm('Xóa cán bộ?')) { 
+                const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated); 
                 if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
-                else {
-                  const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated); 
-                }
               }
             }}
             onAddEndpoint={async e => { 
               const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
+              const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
-              else {
-                const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated); 
-              }
             }}
             onUpdateEndpoint={async e => { 
+              const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated); 
               if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-              else {
-                const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated); 
-              }
             }}
             onDeleteEndpoint={async id => { 
               if (window.confirm('Xóa điểm cầu?')) { 
+                const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated); 
                 if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
-                else {
-                  const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated); 
-                }
               }
             }}
             onAddGroup={async g => { const updated = [...groups, { ...g, id: `G${Date.now()}` }]; setGroups(updated); storageService.saveGroups(updated); }}
             onUpdateGroup={async g => { const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated); }}
             onDeleteGroup={async id => { if (window.confirm('Xóa thành phần?')) { const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated); }}}
             onUpdateSettings={async s => { 
+              setSystemSettings(s); storageService.saveSystemSettings(s); 
               if (supabaseService.isConfigured()) await supabaseService.updateSettings(s);
-              else {
-                setSystemSettings(s); storageService.saveSystemSettings(s); 
-              }
             }}
           />
         )}
 
         {activeTab === 'accounts' && isAdmin && (
-          <UserManagement users={users} currentUser={currentUser} 
-            onAddUser={async u => { 
-              const newUser = { ...u, id: `${Date.now()}` }; 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser);
-              else {
-                const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated); 
-              }
-            }} 
-            onUpdateUser={async u => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUser(u);
-              else {
-                const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated); 
-              }
-            }} 
-            onDeleteUser={async id => { 
-              if (window.confirm('Xóa người dùng?')) { 
-                if (supabaseService.isConfigured()) await supabaseService.deleteUser(id);
-                else {
-                  const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated); 
-                }
-              }
-            }} 
-          />
+          <UserManagement users={users} currentUser={currentUser} onAddUser={async u => { const newUser = { ...u, id: `${Date.now()}` }; const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated); if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser); }} onUpdateUser={async u => { const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated); if (supabaseService.isConfigured()) await supabaseService.upsertUser(u); }} onDeleteUser={async id => { if (window.confirm('Xóa người dùng?')) { const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated); if (supabaseService.isConfigured()) await supabaseService.deleteUser(id); }}} />
         )}
 
         {activeTab === 'deployment' && isAdmin && <ExportPage />}
