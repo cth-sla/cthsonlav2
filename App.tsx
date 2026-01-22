@@ -147,31 +147,42 @@ const App: React.FC = () => {
   };
 
   const handleCreateMeeting = async (newMeeting: Meeting) => {
+    // 1. Optimistic Update (Cập nhật giao diện ngay lập tức)
+    const updatedMeetings = [newMeeting, ...meetings];
+    setMeetings(updatedMeetings);
+    storageService.saveMeetings(updatedMeetings);
+
+    // 2. Sync với Cloud nếu có
     if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(newMeeting);
-    } else {
-      const updated = [newMeeting, ...meetings];
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
+      try {
+        await supabaseService.upsertMeeting(newMeeting);
+      } catch (error) {
+        console.error("Lỗi khi đồng bộ lên Cloud:", error);
+      }
     }
+    
     setIsCreateModalOpen(false);
   };
 
   const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
-    // 1. Update Cloud/Supabase
-    if (supabaseService.isConfigured()) {
-      await supabaseService.upsertMeeting(updatedMeeting);
-    } 
-    
-    // 2. Update local state and selected modal state
+    // 1. Optimistic Update
     const updatedList = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
     setMeetings(updatedList);
     storageService.saveMeetings(updatedList);
     
-    // 3. Update the currently active modal view if applicable
+    // Cập nhật modal đang mở nếu cần
     if (selectedMeeting && selectedMeeting.id === updatedMeeting.id) {
       setSelectedMeeting(updatedMeeting);
     }
+
+    // 2. Sync với Cloud
+    if (supabaseService.isConfigured()) {
+      try {
+        await supabaseService.upsertMeeting(updatedMeeting);
+      } catch (error) {
+        console.error("Lỗi khi cập nhật lên Cloud:", error);
+      }
+    } 
     
     setEditingMeeting(null);
     setIsCreateModalOpen(false);
@@ -179,12 +190,14 @@ const App: React.FC = () => {
 
   const handleDeleteMeeting = async (id: string) => {
     if (window.confirm('Xóa lịch họp này?')) {
+      // 1. Optimistic Delete
+      const updated = meetings.filter(m => m.id !== id);
+      setMeetings(updated);
+      storageService.saveMeetings(updated);
+
+      // 2. Sync
       if (supabaseService.isConfigured()) {
         await supabaseService.deleteMeeting(id);
-      } else {
-        const updated = meetings.filter(m => m.id !== id);
-        setMeetings(updated);
-        storageService.saveMeetings(updated);
       }
     }
   };
