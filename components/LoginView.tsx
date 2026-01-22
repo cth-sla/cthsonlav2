@@ -17,10 +17,11 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
+    // Lấy các cuộc họp đang diễn ra hoặc sắp tới trong vòng 48h
     return meetings
       .filter(m => new Date(m.endTime) >= now)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-      .slice(0, 5);
+      .slice(0, 10); // Hiển thị tối đa 10 cuộc họp gần nhất
   }, [meetings]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,114 +53,117 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-cyan-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-stretch gap-12 py-12">
+      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-16 py-8">
         
         {/* Left Section: Branding & Schedule */}
-        <div className="flex-1 flex flex-col justify-center space-y-12 lg:pr-12">
-          <div className="group">
-            <div className="relative inline-flex mb-8">
+        <div className="flex-1 w-full flex flex-col space-y-8 lg:max-h-[85vh]">
+          <div className="group shrink-0">
+            <div className="relative inline-flex mb-6">
                <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-               <div className="relative p-6 bg-slate-900 border border-slate-800 rounded-[2rem] shadow-2xl flex items-center justify-center w-24 h-24 overflow-hidden">
+               <div className="relative p-5 bg-slate-900 border border-slate-800 rounded-[1.5rem] shadow-2xl flex items-center justify-center w-20 h-20 overflow-hidden">
                   {systemSettings.logoBase64 ? (
                     <img src={systemSettings.logoBase64} alt="System Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
-                    <svg className="w-16 h-16 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-12 h-12 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1"/>
-                      <path d="M12 15L12 15.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
                     </svg>
                   )}
                </div>
             </div>
             <h1 className="flex flex-col items-start text-left">
-              <span className="text-4xl font-black text-white uppercase tracking-tight leading-none">{systemSettings.shortName}</span>
-              <span className="text-sm font-black text-blue-500 uppercase tracking-[0.4em] mt-4">{systemSettings.systemName}</span>
+              <span className="text-3xl lg:text-4xl font-black text-white uppercase tracking-tight leading-none">{systemSettings.shortName}</span>
+              <span className="text-xs font-black text-blue-500 uppercase tracking-[0.3em] mt-3">{systemSettings.systemName}</span>
             </h1>
-            <div className="w-32 h-1.5 bg-gradient-to-r from-blue-600 to-transparent mt-8 rounded-full"></div>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-600/30">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <div className="flex-1 flex flex-col min-h-0 space-y-4">
+            <div className="flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-600/30">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </div>
+                <h3 className="text-base font-black text-slate-200 uppercase tracking-widest">Lịch họp hôm nay</h3>
               </div>
-              <h3 className="text-lg font-black text-slate-200 uppercase tracking-widest">Lịch họp trực tuyến hôm nay</h3>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sắp xếp theo thời gian</span>
             </div>
 
-            <div className="space-y-4">
+            {/* Scrollable Meeting List */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar max-h-[400px] lg:max-h-none">
               {upcomingMeetings.length > 0 ? (
                 upcomingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-all flex items-center gap-6 group">
-                    <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-white/10 pr-6">
-                      <span className="text-xl font-black text-blue-400">{new Date(meeting.startTime).getHours()}:{new Date(meeting.startTime).getMinutes().toString().padStart(2, '0')}</span>
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Bắt đầu</span>
+                  <div key={meeting.id} className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl hover:bg-white/10 transition-all flex items-center gap-4 group">
+                    <div className="flex flex-col items-center justify-center min-w-[64px] border-r border-white/10 pr-4">
+                      <span className="text-lg font-black text-blue-400 leading-none">
+                        {new Date(meeting.startTime).getHours()}:{new Date(meeting.startTime).getMinutes().toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Bắt đầu</span>
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <h4 className="text-sm font-bold text-slate-100 uppercase truncate group-hover:text-white transition-colors">{meeting.title}</h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-slate-100 uppercase line-clamp-1 group-hover:text-white transition-colors">{meeting.title}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-blue-500/80 uppercase tracking-widest">{meeting.hostUnit}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">{meeting.endpoints.length} điểm cầu</span>
+                        <span className="text-[9px] font-bold text-blue-500/80 uppercase tracking-widest truncate max-w-[150px]">{meeting.hostUnit}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-700 shrink-0"></span>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase shrink-0">{meeting.endpoints.length} điểm cầu</span>
                       </div>
                     </div>
-                    <div className="px-3 py-1 bg-blue-600/10 border border-blue-500/20 rounded-full">
-                       <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Hệ thống</span>
+                    <div className="hidden sm:block px-2.5 py-1 bg-blue-600/10 border border-blue-500/20 rounded-full shrink-0">
+                       <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Live</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-10 border border-white/5 bg-white/2 rounded-[2rem] text-center">
-                  <p className="text-slate-500 font-bold text-xs uppercase tracking-widest italic opacity-60">Không có lịch họp nào trong hôm nay</p>
+                <div className="p-8 border border-white/5 bg-white/2 rounded-2xl text-center">
+                  <p className="text-slate-500 font-bold text-xs uppercase tracking-widest italic opacity-60">Không có lịch họp nào sắp tới</p>
                 </div>
               )}
             </div>
             
-            <p className="text-[10px] text-slate-500 font-medium italic pl-2">Ghi chú: Lịch họp có thể thay đổi bởi đơn vị chủ trì.</p>
+            <p className="text-[9px] text-slate-500 font-medium italic pl-1 shrink-0">Cập nhật tự động: {new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</p>
           </div>
         </div>
 
-        {/* Right Section: Login Card */}
-        <div className="w-full lg:w-[450px] flex items-center justify-center">
-          <div className="bg-[#161B22]/80 backdrop-blur-3xl rounded-[3rem] p-10 lg:p-12 shadow-2xl border border-white/5 w-full transform transition-all duration-300">
-            <h2 className="text-2xl font-black text-slate-200 mb-10 text-center uppercase tracking-tighter">Xác thực người dùng</h2>
+        {/* Right Section: Login Card - Fixed width to prevent shrinking */}
+        <div className="w-full lg:w-[420px] shrink-0">
+          <div className="bg-[#161B22]/90 backdrop-blur-3xl rounded-[2.5rem] p-8 lg:p-10 shadow-2xl border border-white/5 w-full transform transition-all duration-300 ring-1 ring-white/10">
+            <h2 className="text-xl font-black text-slate-200 mb-8 text-center uppercase tracking-tighter">Xác thực hệ thống</h2>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 animate-shake">
                   <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <p className="text-[10px] font-black text-red-400 uppercase tracking-widest leading-tight">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên đăng nhập</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Tên đăng nhập</label>
                 <div className="relative group">
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-semibold placeholder:text-slate-700"
-                    placeholder="admin"
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-semibold placeholder:text-slate-700 text-sm"
+                    placeholder="Nhập tài khoản"
                   />
-                  <svg className="w-5 h-5 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg className="w-4 h-4 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mật khẩu</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Mật khẩu</label>
                 <div className="relative group">
                   <input 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-semibold placeholder:text-slate-700"
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-semibold placeholder:text-slate-700 text-sm"
                     placeholder="••••••••"
                   />
-                  <svg className="w-5 h-5 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -168,7 +172,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               <button 
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] text-white shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 ${
+                className={`w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-white shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 mt-4 ${
                   isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 hover:shadow-blue-500/20 active:bg-blue-700'
                 }`}
               >
@@ -186,10 +190,10 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </button>
             </form>
 
-            <div className="mt-12 text-center">
-              <p className="text-slate-600 text-[9px] font-black uppercase tracking-[0.3em] leading-relaxed">
+            <div className="mt-10 text-center">
+              <p className="text-slate-600 text-[8px] font-black uppercase tracking-[0.3em] leading-relaxed">
                 ỦY BAN NHÂN DÂN TỈNH SƠN LA<br/>
-                &copy; 2026 VERSION 3.1.0 • SECURE ACCESS
+                &copy; 2026 • SECURE VERSION 3.1.0
               </p>
             </div>
           </div>
@@ -197,6 +201,20 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       </div>
       
       <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(59, 130, 246, 0.3);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(59, 130, 246, 0.5);
+        }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }

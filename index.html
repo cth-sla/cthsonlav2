@@ -10,12 +10,13 @@
       /**
        * SỬA LỖI TRANG TRẮNG & INITIALIZATION:
        * 1. Khởi tạo window.process ngay lập tức để SDK không bị crash.
-       * 2. Xóa bỏ importmap (đã xóa bên dưới) vì Vite xử lý bundle.
        */
       window.process = { 
         env: { 
           NODE_ENV: 'production',
-          API_KEY: "" 
+          API_KEY: "",
+          SUPABASE_URL: "",
+          SUPABASE_ANON_KEY: ""
         } 
       };
       window.global = window;
@@ -47,7 +48,8 @@
     "jszip": "https://esm.sh/jszip@^3.10.1",
     "file-saver": "https://esm.sh/file-saver@^2.0.5",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1"
   }
 }
 </script>
