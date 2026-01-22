@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -8,15 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
       /**
-       * SỬA LỖI TRANG TRẮNG & INITIALIZATION:
-       * 1. Khởi tạo window.process ngay lập tức để SDK không bị crash.
+       * CẤU HÌNH SUPABASE & HỆ THỐNG:
        */
       window.process = { 
         env: { 
           NODE_ENV: 'production',
           API_KEY: "",
-          SUPABASE_URL: "",
-          SUPABASE_ANON_KEY: ""
+          SUPABASE_URL: "https://uhaqofhnfetdkciaswof.supabase.co",
+          SUPABASE_ANON_KEY: "sb_publishable_JEA1s-x2-E-c2MSf7OyVDg_enF2A82E"
         } 
       };
       window.global = window;
