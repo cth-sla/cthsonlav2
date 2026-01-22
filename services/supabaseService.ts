@@ -123,106 +123,127 @@ export const supabaseService = {
   async getMeetings(): Promise<Meeting[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-    return error ? [] : data.map(mapMeeting);
+    if (error) throw error;
+    return data.map(mapMeeting);
   },
   async upsertMeeting(meeting: Meeting) {
     if (!supabase) return;
-    return await supabase.from('meetings').upsert(unmapMeeting(meeting));
+    const { data, error } = await supabase.from('meetings').upsert(unmapMeeting(meeting));
+    if (error) throw error;
+    return data;
   },
   async deleteMeeting(id: string) {
     if (!supabase) return;
-    return await supabase.from('meetings').delete().eq('id', id);
+    const { error } = await supabase.from('meetings').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Units
   async getUnits(): Promise<Unit[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('units').select('*').order('name');
-    return error ? [] : data as Unit[];
+    if (error) throw error;
+    return data as Unit[];
   },
   async upsertUnit(unit: Unit) {
     if (!supabase) return;
-    return await supabase.from('units').upsert(unit);
+    const { error } = await supabase.from('units').upsert(unit);
+    if (error) throw error;
   },
   async deleteUnit(id: string) {
     if (!supabase) return;
-    return await supabase.from('units').delete().eq('id', id);
+    const { error } = await supabase.from('units').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Staff
   async getStaff(): Promise<Staff[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('staff').select('*').order('full_name');
-    return error ? [] : data.map(mapStaff);
+    if (error) throw error;
+    return data.map(mapStaff);
   },
   async upsertStaff(staff: Staff) {
     if (!supabase) return;
-    return await supabase.from('staff').upsert(unmapStaff(staff));
+    const { error } = await supabase.from('staff').upsert(unmapStaff(staff));
+    if (error) throw error;
   },
   async deleteStaff(id: string) {
     if (!supabase) return;
-    return await supabase.from('staff').delete().eq('id', id);
+    const { error } = await supabase.from('staff').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Participant Groups
   async getGroups(): Promise<ParticipantGroup[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('participant_groups').select('*').order('name');
-    return error ? [] : data as ParticipantGroup[];
+    if (error) throw error;
+    return data as ParticipantGroup[];
   },
   async upsertGroup(group: ParticipantGroup) {
     if (!supabase) return;
-    return await supabase.from('participant_groups').upsert(group);
+    const { error } = await supabase.from('participant_groups').upsert(group);
+    if (error) throw error;
   },
   async deleteGroup(id: string) {
     if (!supabase) return;
-    return await supabase.from('participant_groups').delete().eq('id', id);
+    const { error } = await supabase.from('participant_groups').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Endpoints
   async getEndpoints(): Promise<Endpoint[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('endpoints').select('*').order('name');
-    return error ? [] : data.map(mapEndpoint);
+    if (error) throw error;
+    return data.map(mapEndpoint);
   },
   async upsertEndpoint(endpoint: Endpoint) {
     if (!supabase) return;
-    return await supabase.from('endpoints').upsert(unmapEndpoint(endpoint));
+    const { error } = await supabase.from('endpoints').upsert(unmapEndpoint(endpoint));
+    if (error) throw error;
   },
   async deleteEndpoint(id: string) {
     if (!supabase) return;
-    return await supabase.from('endpoints').delete().eq('id', id);
+    const { error } = await supabase.from('endpoints').delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Settings
   async getSettings(): Promise<SystemSettings | null> {
     if (!supabase) return null;
     const { data, error } = await supabase.from('system_settings').select('*').eq('id', 'current').single();
-    return error ? null : mapSettings(data);
+    if (error && error.code !== 'PGRST116') throw error;
+    return data ? mapSettings(data) : null;
   },
   async updateSettings(settings: SystemSettings) {
     if (!supabase) return;
-    return await supabase.from('system_settings').upsert({ 
+    const { error } = await supabase.from('system_settings').upsert({ 
       id: 'current', 
       system_name: settings.systemName,
       short_name: settings.shortName,
       logo_base_64: settings.logoBase64,
       primary_color: settings.primaryColor
     });
+    if (error) throw error;
   },
 
   // Users
   async getUsers(): Promise<User[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('users').select('*').order('full_name');
-    return error ? [] : data.map(mapUser);
+    if (error) throw error;
+    return data.map(mapUser);
   },
   async upsertUser(user: User) {
     if (!supabase) return;
-    return await supabase.from('users').upsert(unmapUser(user));
+    const { error } = await supabase.from('users').upsert(unmapUser(user));
+    if (error) throw error;
   },
   async deleteUser(id: string) {
     if (!supabase) return;
-    return await supabase.from('users').delete().eq('id', id);
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) throw error;
   }
 };

@@ -36,7 +36,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         title: editingMeeting.title,
         hostUnit: editingMeeting.hostUnit,
         chairPerson: editingMeeting.chairPerson,
-        startTime: editingMeeting.startTime?.slice(0, 16) || '', // datetime-local format
+        startTime: editingMeeting.startTime?.slice(0, 16) || '', // datetime-local format: YYYY-MM-DDTHH:mm
         endTime: editingMeeting.endTime?.slice(0, 16) || '',
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
@@ -65,7 +65,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   }, [formData.hostUnit, units, staff]);
 
   // Reset chairperson if unit changes and current chairperson is not in the new filtered list
-  // Only auto-reset if we are not initializing from an edit
   useEffect(() => {
     if (formData.chairPerson && formData.hostUnit && !editingMeeting) {
       const isStillValid = filteredStaffForUnit.some(s => s.fullName === formData.chairPerson);
@@ -100,13 +99,21 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       return;
     }
 
+    // Chuẩn hóa thời gian sang ISO String (thêm giây và múi giờ nếu thiếu)
+    // datetime-local của trình duyệt thường là YYYY-MM-DDTHH:mm
+    const formatToISO = (dateStr: string) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toISOString();
+    };
+
     const meetingData: Meeting = {
       id: editingMeeting ? editingMeeting.id : `MEET-${Math.floor(1000 + Math.random() * 9000)}`,
       title: formData.title,
       hostUnit: formData.hostUnit,
       chairPerson: formData.chairPerson,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
+      startTime: formatToISO(formData.startTime),
+      endTime: formatToISO(formData.endTime),
       description: formData.description,
       participants: formData.participants.split(',').map(p => p.trim()).filter(p => p !== ""),
       endpoints: selectedEndpoints,
