@@ -20,7 +20,8 @@ const mapMeeting = (m: any): Meeting => ({
   description: m.description,
   participants: Array.isArray(m.participants) ? m.participants : [],
   endpoints: Array.isArray(m.endpoints) ? m.endpoints : [],
-  notes: m.notes
+  notes: m.notes,
+  endpointChecks: m.endpoint_checks || m.endpointChecks || {}
 });
 
 const unmapMeeting = (m: Meeting) => ({
@@ -33,7 +34,8 @@ const unmapMeeting = (m: Meeting) => ({
   description: m.description,
   participants: m.participants,
   endpoints: m.endpoints,
-  notes: m.notes
+  notes: m.notes,
+  endpoint_checks: m.endpointChecks || {}
 });
 
 const mapEndpoint = (e: any): Endpoint => ({

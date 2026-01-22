@@ -158,13 +158,21 @@ const App: React.FC = () => {
   };
 
   const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
+    // 1. Update Cloud/Supabase
     if (supabaseService.isConfigured()) {
       await supabaseService.upsertMeeting(updatedMeeting);
-    } else {
-      const updated = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
-      setMeetings(updated);
-      storageService.saveMeetings(updated);
+    } 
+    
+    // 2. Update local state and selected modal state
+    const updatedList = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
+    setMeetings(updatedList);
+    storageService.saveMeetings(updatedList);
+    
+    // 3. Update the currently active modal view if applicable
+    if (selectedMeeting && selectedMeeting.id === updatedMeeting.id) {
+      setSelectedMeeting(updatedMeeting);
     }
+    
     setEditingMeeting(null);
     setIsCreateModalOpen(false);
   };
