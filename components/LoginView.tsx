@@ -14,14 +14,15 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedPublicMeeting, setSelectedPublicMeeting] = useState<Meeting | null>(null);
 
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
-    // Lấy các cuộc họp đang diễn ra hoặc sắp tới
+    // Lấy các cuộc họp sắp tới hoặc đang diễn ra
     return meetings
       .filter(m => new Date(m.endTime) >= now)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-      .slice(0, 30); // Lấy tối đa 30 mục để hiển thị trong vùng cuộn
+      .slice(0, 30);
   }, [meetings]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +46,16 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
         setIsLoading(false);
       }
     }, 1200);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -84,34 +95,45 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-600/30">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Lịch họp hôm nay</h3>
+                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Lịch họp sắp tới</h3>
               </div>
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800/40 px-3 py-1 rounded-full border border-slate-700/50">
                 {upcomingMeetings.length} CUỘC HỌP
               </div>
             </div>
 
-            {/* Scrollable Schedule List - Optimized height */}
+            {/* Scrollable Schedule List */}
             <div className="flex-1 overflow-y-auto pr-4 space-y-3 custom-scrollbar max-h-[400px] lg:max-h-none">
               {upcomingMeetings.length > 0 ? (
                 upcomingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[1.5rem] hover:bg-white/10 transition-all flex items-center gap-5 group border-l-4 border-l-transparent hover:border-l-blue-500">
-                    <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-white/10 pr-5">
+                  <div 
+                    key={meeting.id} 
+                    onClick={() => setSelectedPublicMeeting(meeting)}
+                    className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[1.5rem] hover:bg-white/10 transition-all flex items-center gap-5 group border-l-4 border-l-transparent hover:border-l-blue-500 cursor-pointer"
+                  >
+                    <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-5">
                       <span className="text-lg font-black text-blue-400">
-                        {new Date(meeting.startTime).getHours()}:{new Date(meeting.startTime).getMinutes().toString().padStart(2, '0')}
+                        {formatTime(meeting.startTime)}
                       </span>
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter mt-1">BẮT ĐẦU</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight mt-1">{formatDate(meeting.startTime)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-bold text-slate-100 uppercase line-clamp-2 group-hover:text-white transition-colors leading-relaxed tracking-tight">{meeting.title}</h4>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest truncate max-w-[150px]">{meeting.hostUnit}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">{meeting.endpoints.length} ĐIỂM CẦU</span>
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest">Chủ trì:</span>
+                          <span className="text-[10px] font-black text-slate-300 uppercase truncate max-w-[120px]">{meeting.chairPerson}</span>
+                        </div>
+                        <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{meeting.hostUnit}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="hidden sm:block shrink-0 px-3 py-1 bg-blue-600/10 border border-blue-500/20 rounded-full">
-                       <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">SẴN SÀNG</span>
+                    <div className="shrink-0">
+                       <button className="px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-400 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
+                         CHI TIẾT
+                       </button>
                     </div>
                   </div>
                 ))
@@ -122,11 +144,11 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               )}
             </div>
             
-            <p className="text-[10px] text-slate-600 font-medium italic pl-1 shrink-0">Ghi chú: Vui lòng đăng nhập để truy cập tài liệu và điều khiển cuộc họp.</p>
+            <p className="text-[10px] text-slate-600 font-medium italic pl-1 shrink-0">Ghi chú: Nhấn vào cuộc họp để xem thành phần tham gia và danh sách các điểm cầu.</p>
           </div>
         </div>
 
-        {/* Right Section: Login Card - FIXED WIDTH & NON-SHRINKABLE */}
+        {/* Right Section: Login Card */}
         <div className="w-full lg:w-[440px] flex-shrink-0 lg:sticky lg:top-12 self-start">
           <div className="bg-[#161B22]/98 backdrop-blur-3xl rounded-[3rem] p-10 lg:p-12 shadow-2xl border border-white/5 w-full ring-1 ring-white/10 flex flex-col">
             <div className="mb-10 text-center">
@@ -204,6 +226,94 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
           </div>
         </div>
       </div>
+
+      {/* Public Meeting Detail Modal */}
+      {selectedPublicMeeting && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6 overflow-y-auto">
+          <div className="bg-[#161B22] border border-white/10 w-full max-w-2xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-600/20 border border-blue-500/30 rounded-2xl flex items-center justify-center text-blue-400">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white uppercase tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Thông tin chi tiết cuộc họp</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedPublicMeeting(null)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-500 hover:text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+              {/* General Quick Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
+                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Thời gian</p>
+                  <p className="text-sm font-black text-blue-400 uppercase">{formatTime(selectedPublicMeeting.startTime)} - {formatDate(selectedPublicMeeting.startTime)}</p>
+                </div>
+                <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
+                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Cán bộ chủ trì</p>
+                  <p className="text-sm font-black text-white uppercase">{selectedPublicMeeting.chairPerson}</p>
+                </div>
+              </div>
+
+              {/* Participants Section */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-l-2 border-blue-600 pl-3">Thành phần tham gia</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPublicMeeting.participants.map((p, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold rounded-lg uppercase tracking-tight">
+                      {p}
+                    </span>
+                  ))}
+                  {selectedPublicMeeting.participants.length === 0 && (
+                    <p className="text-xs text-slate-500 italic">Chưa xác định thành phần cụ thể</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Endpoints Section */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] border-l-2 border-cyan-600 pl-3">Danh sách điểm cầu ({selectedPublicMeeting.endpoints.length})</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {selectedPublicMeeting.endpoints.map(ep => (
+                    <div key={ep.id} className="p-4 bg-white/2 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-white/5 transition-all">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${ep.status === 'CONNECTED' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-slate-200 uppercase truncate">{ep.name}</p>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase truncate tracking-widest">{ep.location}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Public Description */}
+              {selectedPublicMeeting.description && (
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] border-l-2 border-amber-600 pl-3">Nội dung tóm tắt</h4>
+                  <div className="bg-white/2 border border-white/5 p-5 rounded-2xl">
+                    <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
+                      {selectedPublicMeeting.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-8 border-t border-white/5 bg-white/2 flex justify-end">
+              <button 
+                onClick={() => setSelectedPublicMeeting(null)}
+                className="px-8 py-3 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all active:scale-95"
+              >
+                Đóng cửa sổ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

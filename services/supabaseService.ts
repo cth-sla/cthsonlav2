@@ -35,7 +35,7 @@ const unmapMeeting = (m: Meeting) => ({
   participants: m.participants,
   endpoints: m.endpoints,
   notes: m.notes,
-  endpoint_checks: m.endpointChecks || {}
+  endpoint_checks: m.endpointChecks || {} // Đảm bảo trường này khớp với DB
 });
 
 const mapEndpoint = (e: any): Endpoint => ({
@@ -123,13 +123,19 @@ export const supabaseService = {
   async getMeetings(): Promise<Meeting[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-    if (error) throw error;
+    if (error) {
+        console.error("Supabase Error (getMeetings):", error);
+        throw error;
+    }
     return data.map(mapMeeting);
   },
   async upsertMeeting(meeting: Meeting) {
     if (!supabase) return;
     const { data, error } = await supabase.from('meetings').upsert(unmapMeeting(meeting));
-    if (error) throw error;
+    if (error) {
+        console.error("Supabase Error (upsertMeeting):", error);
+        throw error;
+    }
     return data;
   },
   async deleteMeeting(id: string) {
