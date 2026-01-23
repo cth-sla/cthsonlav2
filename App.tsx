@@ -142,6 +142,8 @@ const App: React.FC = () => {
   }, [meetings, endpoints]);
 
   const isAdmin = currentUser?.role === 'ADMIN';
+  const isOperator = currentUser?.role === 'OPERATOR';
+  const canManageMeetings = isAdmin || isOperator;
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -252,8 +254,8 @@ const App: React.FC = () => {
             { id: 'dashboard', label: 'Tổng quan', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6z' },
             { id: 'reports', label: 'Báo cáo', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
             { id: 'meetings', label: 'Lịch họp', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+            { id: 'monitoring', label: 'Giám sát', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2' },
             ...(isAdmin ? [
-              { id: 'monitoring', label: 'Giám sát', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2' },
               { id: 'management', label: 'Danh mục', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4' },
               { id: 'accounts', label: 'Tài khoản', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197' },
               { id: 'deployment', label: 'Triển khai', icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8' }
@@ -290,7 +292,7 @@ const App: React.FC = () => {
 
           {activeTab === 'dashboard' && (
             <div className="flex items-center gap-3">
-               {isAdmin && (
+               {canManageMeetings && (
                  <>
                    <button onClick={() => setActiveTab('monitoring')} className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-500 transition-all">Kiểm tra hạ tầng</button>
                    <button onClick={() => setIsCreateModalOpen(true)} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-2">
@@ -419,7 +421,7 @@ const App: React.FC = () => {
         {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} />}
 
         {activeTab === 'meetings' && (
-          <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={isAdmin} onEdit={(m) => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />
+          <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={(m) => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />
         )}
         
         {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
@@ -553,7 +555,7 @@ const App: React.FC = () => {
         {activeTab === 'deployment' && isAdmin && <ExportPage />}
       </main>
 
-      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
+      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={canManageMeetings ? handleUpdateMeeting : undefined} />}
 
       {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={handleCreateMeeting} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
     </div>

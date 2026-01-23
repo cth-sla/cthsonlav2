@@ -27,6 +27,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const stats = useMemo(() => ({
     total: users.length,
     admins: users.filter(u => u.role === 'ADMIN').length,
+    operators: users.filter(u => u.role === 'OPERATOR').length,
     viewers: users.filter(u => u.role === 'VIEWER').length,
   }), [users]);
 
@@ -87,7 +88,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Quick Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -104,6 +105,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
           <div>
             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Quản trị viên</p>
             <h4 className="text-2xl font-black text-gray-900">{stats.admins}</h4>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          </div>
+          <div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Điều hành viên</p>
+            <h4 className="text-2xl font-black text-gray-900">{stats.operators}</h4>
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -157,7 +167,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${
-                          user.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'
+                          user.role === 'ADMIN' ? 'bg-indigo-100 text-indigo-600' : 
+                          user.role === 'OPERATOR' ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-100 text-slate-600'
                         }`}>
                           {user.fullName?.split(' ').pop()?.[0]?.toUpperCase() || '?'}
                         </div>
@@ -172,9 +183,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     </td>
                     <td className="px-8 py-5">
                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                        user.role === 'ADMIN' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                        user.role === 'ADMIN' ? 'bg-indigo-600 text-white' : 
+                        user.role === 'OPERATOR' ? 'bg-cyan-600 text-white' : 'bg-slate-200 text-slate-600'
                       }`}>
-                        {user.role === 'ADMIN' ? 'Administrator' : 'Viewer'}
+                        {user.role === 'ADMIN' ? 'Administrator' : user.role === 'OPERATOR' ? 'Operator' : 'Viewer'}
                       </span>
                     </td>
                     <td className="px-8 py-5">
@@ -257,6 +269,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                     onChange={e => setFormData({...formData, role: e.target.value as UserRole})}
                   >
                     <option value="VIEWER">Viewer (Người xem báo cáo)</option>
+                    <option value="OPERATOR">Operator (Điều hành lịch họp)</option>
                     <option value="ADMIN">Admin (Quản trị toàn bộ)</option>
                   </select>
                 </div>

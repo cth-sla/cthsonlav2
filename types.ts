@@ -5,7 +5,7 @@ export enum EndpointStatus {
   CONNECTING = 'CONNECTING'
 }
 
-export type UserRole = 'ADMIN' | 'VIEWER';
+export type UserRole = 'ADMIN' | 'OPERATOR' | 'VIEWER';
 
 export interface User {
   id: string;
