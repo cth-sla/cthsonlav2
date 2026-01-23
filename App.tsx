@@ -36,7 +36,6 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
 
-  // Supabase Initial Sync & Real-time Subscriptions
   useEffect(() => {
     if (!supabaseService.isConfigured()) return;
 
@@ -60,7 +59,7 @@ const App: React.FC = () => {
         if (cloudUsers.length > 0) { setUsers(cloudUsers); storageService.saveUsers(cloudUsers); }
         if (cloudSettings) { setSystemSettings(cloudSettings); storageService.saveSystemSettings(cloudSettings); }
       } catch (err) {
-        console.error("Lỗi đồng bộ dữ liệu ban đầu từ Supabase:", err);
+        console.error("Lỗi đồng bộ dữ liệu ban đầu:", err);
       }
     };
 
@@ -101,16 +100,12 @@ const App: React.FC = () => {
       });
     });
 
-    return () => {
-      subscriptions.forEach(sub => sub?.unsubscribe());
-    };
+    return () => subscriptions.forEach(sub => sub?.unsubscribe());
   }, []);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (systemSettings.primaryColor) {
-      root.style.setProperty('--primary-color', systemSettings.primaryColor);
-    }
+    if (systemSettings.primaryColor) root.style.setProperty('--primary-color', systemSettings.primaryColor);
   }, [systemSettings.primaryColor]);
 
   const dashboardStats = useMemo(() => {
@@ -141,9 +136,11 @@ const App: React.FC = () => {
     return { total, connected, disconnected, uptime, recentMeetings, last7Days, endpointDist };
   }, [meetings, endpoints]);
 
+  // Logic phân quyền mới
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOperator = currentUser?.role === 'OPERATOR';
-  const canManageMeetings = isAdmin || isOperator;
+  const canManageMeetings = isAdmin || isOperator; // Cả Admin và Operator đều được quản lý lịch họp
+  const canViewReports = isAdmin || isOperator || currentUser?.role === 'VIEWER';
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -152,18 +149,13 @@ const App: React.FC = () => {
 
   const handleCreateMeeting = async (newMeeting: Meeting) => {
     const previousMeetings = [...meetings];
-    // 1. Optimistic Update
     setMeetings(prev => [newMeeting, ...prev]);
-    
-    // 2. Sync
     if (supabaseService.isConfigured()) {
       try {
         await supabaseService.upsertMeeting(newMeeting);
         storageService.saveMeetings([newMeeting, ...previousMeetings]);
       } catch (error: any) {
-        console.error("Lỗi khi thêm mới lịch họp lên Cloud:", error);
-        alert(`Không thể đồng bộ lịch họp lên Cloud: ${error.message || 'Lỗi không xác định'}`);
-        // Rollback
+        console.error("Lỗi đồng bộ:", error);
         setMeetings(previousMeetings);
       }
     } else {
@@ -174,53 +166,33 @@ const App: React.FC = () => {
 
   const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
     const previousMeetings = [...meetings];
-    // 1. Optimistic Update
     const updatedList = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
     setMeetings(updatedList);
-    
-    if (selectedMeeting && selectedMeeting.id === updatedMeeting.id) {
-      setSelectedMeeting(updatedMeeting);
-    }
-
-    // 2. Sync
+    if (selectedMeeting?.id === updatedMeeting.id) setSelectedMeeting(updatedMeeting);
     if (supabaseService.isConfigured()) {
       try {
         await supabaseService.upsertMeeting(updatedMeeting);
         storageService.saveMeetings(updatedList);
       } catch (error: any) {
-        console.error("Lỗi khi cập nhật lịch họp lên Cloud:", error);
-        alert(`Không thể cập nhật lịch họp lên Cloud: ${error.message || 'Lỗi không xác định'}`);
-        // Rollback
         setMeetings(previousMeetings);
-        if (selectedMeeting && selectedMeeting.id === updatedMeeting.id) {
-          setSelectedMeeting(previousMeetings.find(m => m.id === updatedMeeting.id) || null);
-        }
       }
     } else {
       storageService.saveMeetings(updatedList);
     }
-    
     setEditingMeeting(null);
     setIsCreateModalOpen(false);
   };
 
   const handleDeleteMeeting = async (id: string) => {
     if (!window.confirm('Xóa lịch họp này?')) return;
-    
     const previousMeetings = [...meetings];
-    // 1. Optimistic Delete
     const updated = meetings.filter(m => m.id !== id);
     setMeetings(updated);
-
-    // 2. Sync
     if (supabaseService.isConfigured()) {
       try {
         await supabaseService.deleteMeeting(id);
         storageService.saveMeetings(updated);
       } catch (error: any) {
-        console.error("Lỗi khi xóa lịch họp trên Cloud:", error);
-        alert(`Không thể xóa lịch họp trên Cloud: ${error.message || 'Lỗi không xác định'}`);
-        // Rollback
         setMeetings(previousMeetings);
       }
     } else {
@@ -269,6 +241,11 @@ const App: React.FC = () => {
         </nav>
         
         <div className="p-4 border-t border-slate-800/50">
+          <div className="px-4 py-2 mb-2">
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Đăng nhập với:</p>
+             <p className="text-xs font-bold text-blue-400 truncate">{currentUser.fullName}</p>
+             <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{currentUser.role === 'ADMIN' ? 'Quản trị viên' : currentUser.role === 'OPERATOR' ? 'Điều hành viên' : 'Người xem'}</p>
+          </div>
           <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-semibold text-sm">
             <span>Đăng xuất</span>
           </button>
@@ -307,24 +284,17 @@ const App: React.FC = () => {
 
         {activeTab === 'dashboard' && (
           <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-            {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} tooltipTitle="Tần suất họp" description="Tổng số lượng cuộc họp đã được lên lịch và ghi nhận trên toàn hệ thống." />
-              <StatCard title="Tổng điểm cầu" value={endpoints.length} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9H3m9 9V3" /></svg>} tooltipTitle="Hạ tầng điểm cầu" description="Số lượng các điểm cầu đang được quản lý bởi hệ thống." />
-              <StatCard title="Online" value={dashboardStats.connected} trend="↑ 4" trendUp={true} icon={<svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" /></svg>} tooltipTitle="Trạng thái kết nối" description="Số lượng điểm cầu đang trực tuyến và sẵn sàng kết nối." />
-              <StatCard title="Offline" value={dashboardStats.disconnected} trend="↓ 2" trendUp={false} icon={<svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>} tooltipTitle="Mất kết nối" description="Số lượng điểm cầu đang ngoại tuyến hoặc gặp sự cố kỹ thuật." />
-              <StatCard title="Uptime" value={`${dashboardStats.uptime}%`} icon={<svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>} tooltipTitle="Chỉ số khả dụng" description="Tỉ lệ thời gian hệ thống hoạt động ổn định so với tổng thời gian vận hành." />
+              <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} tooltipTitle="Tần suất họp" description="Tổng số lượng cuộc họp đã được lên lịch." />
+              <StatCard title="Tổng điểm cầu" value={endpoints.length} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9H3m9 9V3" /></svg>} tooltipTitle="Hạ tầng điểm cầu" description="Số lượng các điểm cầu đang quản lý." />
+              <StatCard title="Online" value={dashboardStats.connected} trend="↑ 4" trendUp={true} icon={<svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" /></svg>} tooltipTitle="Trạng thái" description="Số lượng điểm cầu trực tuyến." />
+              <StatCard title="Offline" value={dashboardStats.disconnected} trend="↓ 2" trendUp={false} icon={<svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>} tooltipTitle="Ngoại tuyến" description="Số lượng điểm cầu ngoại tuyến." />
+              <StatCard title="Uptime" value={`${dashboardStats.uptime}%`} icon={<svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>} tooltipTitle="Khả dụng" description="Tỉ lệ thời gian hoạt động ổn định." />
             </div>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <div className="xl:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Xu hướng hoạt động 7 ngày gần nhất</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Cuộc họp</span>
-                  </div>
-                </div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8">Xu hướng hoạt động 7 ngày gần nhất</h3>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dashboardStats.last7Days}>
@@ -366,10 +336,6 @@ const App: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-4 text-center">
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tỉ lệ Online</p>
-                   <p className="text-3xl font-black text-emerald-600">{dashboardStats.uptime}%</p>
-                </div>
               </div>
             </div>
 
@@ -385,8 +351,7 @@ const App: React.FC = () => {
                        <th className="px-8 py-4">Tên cuộc họp</th>
                        <th className="px-8 py-4">Đơn vị chủ trì</th>
                        <th className="px-8 py-4">Thời gian</th>
-                       <th className="px-8 py-4 text-center">Điểm cầu</th>
-                       <th className="px-8 py-4 text-right">Hành động</th>
+                       <th className="px-8 py-4 text-center">Hành động</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-50">
@@ -394,19 +359,12 @@ const App: React.FC = () => {
                        <tr key={m.id} className="hover:bg-blue-50/30 transition-colors group">
                          <td className="px-8 py-5">
                            <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{m.title}</div>
-                           <div className="text-[10px] text-gray-400 mt-1 font-mono uppercase tracking-widest">ID: {m.id}</div>
                          </td>
                          <td className="px-8 py-5 text-gray-600 font-medium">{m.hostUnit}</td>
                          <td className="px-8 py-5">
                             <div className="text-xs font-black text-gray-900">{new Date(m.startTime).toLocaleDateString('vi-VN')}</div>
-                            <div className="text-[10px] text-gray-400 mt-1 font-bold">{new Date(m.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</div>
                          </td>
                          <td className="px-8 py-5 text-center">
-                            <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-tighter">
-                              {m.endpoints.length} ĐIỂM CẦU
-                            </span>
-                         </td>
-                         <td className="px-8 py-5 text-right">
                             <button onClick={() => setSelectedMeeting(m)} className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Chi tiết</button>
                          </td>
                        </tr>
@@ -418,10 +376,17 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} />}
+        {activeTab === 'reports' && canViewReports && <ReportsPage meetings={meetings} endpoints={endpoints} />}
 
         {activeTab === 'meetings' && (
-          <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={(m) => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />
+          <MeetingList 
+            meetings={meetings} 
+            onSelect={setSelectedMeeting} 
+            isAdmin={canManageMeetings} 
+            onEdit={(m) => { setEditingMeeting(m); setIsCreateModalOpen(true); }} 
+            onDelete={handleDeleteMeeting} 
+            onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} 
+          />
         )}
         
         {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
@@ -431,7 +396,7 @@ const App: React.FC = () => {
             setEndpoints(updated);
             storageService.saveEndpoints(updated);
           } catch (err) {
-             console.error("Lỗi cập nhật trạng thái điểm cầu:", err);
+             console.error("Lỗi cập nhật trạng thái:", err);
           }
         } : undefined} />}
 
