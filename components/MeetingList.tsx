@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
 
 interface MeetingListProps {
@@ -14,12 +14,20 @@ interface MeetingListProps {
 type SortField = 'title' | 'hostUnit' | 'chairPerson' | 'startTime';
 type SortOrder = 'asc' | 'desc';
 
+const ITEMS_PER_PAGE = 10;
+
 const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, onEdit, onDelete, onAdd }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortField, setSortField] = useState<SortField>('startTime');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, startDate, endDate, sortField, sortOrder]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -36,31 +44,39 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     setEndDate('');
   };
 
-  const filteredAndSortedMeetings = [...meetings]
-    .filter(m => {
-      const matchesSearch = 
-        m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.hostUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.chairPerson.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const meetingDate = new Date(m.startTime).setHours(0, 0, 0, 0);
-      const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-      const end = endDate ? new Date(endDate).setHours(0, 0, 0, 0) : null;
+  const filteredAndSortedMeetings = useMemo(() => {
+    return [...meetings]
+      .filter(m => {
+        const matchesSearch = 
+          m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.hostUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.chairPerson.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const meetingDate = new Date(m.startTime).setHours(0, 0, 0, 0);
+        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+        const end = endDate ? new Date(endDate).setHours(0, 0, 0, 0) : null;
 
-      const matchesStartDate = !start || meetingDate >= start;
-      const matchesEndDate = !end || meetingDate <= end;
+        const matchesStartDate = !start || meetingDate >= start;
+        const matchesEndDate = !end || meetingDate <= end;
 
-      return matchesSearch && matchesStartDate && matchesEndDate;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      if (sortField === 'startTime') {
-        comparison = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-      } else {
-        comparison = a[sortField].localeCompare(b[sortField], 'vi');
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+        return matchesSearch && matchesStartDate && matchesEndDate;
+      })
+      .sort((a, b) => {
+        let comparison = 0;
+        if (sortField === 'startTime') {
+          comparison = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        } else {
+          comparison = a[sortField].localeCompare(b[sortField], 'vi');
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+  }, [meetings, searchTerm, startDate, endDate, sortField, sortOrder]);
+
+  const totalPages = Math.ceil(filteredAndSortedMeetings.length / ITEMS_PER_PAGE);
+  const paginatedMeetings = filteredAndSortedMeetings.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return (
@@ -76,7 +92,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
       {/* Filters Header */}
       <div className="p-5 border-b border-gray-100 flex flex-col gap-5 bg-gray-50/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -152,7 +168,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       </div>
 
       {/* Table Content */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto flex-1">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/80 text-gray-500 text-[11px] uppercase font-black tracking-widest">
@@ -197,7 +213,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredAndSortedMeetings.map((meeting) => (
+            {paginatedMeetings.map((meeting) => (
               <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
                 <td className="px-6 py-4">
                   <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-xs uppercase">{meeting.title}</div>
@@ -275,6 +291,74 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
           </div>
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            Trang {currentPage} / {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-xl border transition-all ${
+                currentPage === 1 
+                  ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 active:scale-95'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center gap-1 mx-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                // Logic to show limited page numbers if too many
+                if (
+                  totalPages > 7 && 
+                  page !== 1 && 
+                  page !== totalPages && 
+                  Math.abs(page - currentPage) > 1
+                ) {
+                  if (page === 2 && currentPage > 4) return <span key="ellipsis-1" className="text-gray-400">...</span>;
+                  if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="ellipsis-2" className="text-gray-400">...</span>;
+                  if (Math.abs(page - currentPage) > 1) return null;
+                }
+
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${
+                      currentPage === page 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
+                        : 'bg-white text-gray-500 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-xl border transition-all ${
+                currentPage === totalPages 
+                  ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 active:scale-95'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
