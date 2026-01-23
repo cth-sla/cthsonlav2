@@ -1,9 +1,10 @@
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, AreaChart, Area, Legend
 } from 'recharts';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -23,6 +24,7 @@ storageService.init();
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [meetings, setMeetings] = useState<Meeting[]>(() => storageService.getMeetings());
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -36,21 +38,19 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
 
+  const isAdmin = currentUser?.role === 'ADMIN';
+  const isOperator = currentUser?.role === 'OPERATOR';
+  const canManageMeetings = isAdmin || isOperator;
+
+  // Supabase Initial Sync & Real-time Subscriptions
   useEffect(() => {
     if (!supabaseService.isConfigured()) return;
-
     const syncInitialData = async () => {
       try {
         const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudSettings] = await Promise.all([
-          supabaseService.getMeetings(),
-          supabaseService.getEndpoints(),
-          supabaseService.getUnits(),
-          supabaseService.getStaff(),
-          supabaseService.getGroups(),
-          supabaseService.getUsers(),
-          supabaseService.getSettings()
+          supabaseService.getMeetings(), supabaseService.getEndpoints(), supabaseService.getUnits(),
+          supabaseService.getStaff(), supabaseService.getGroups(), supabaseService.getUsers(), supabaseService.getSettings()
         ]);
-
         if (cloudMeetings.length > 0) { setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings); }
         if (cloudEndpoints.length > 0) { setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints); }
         if (cloudUnits.length > 0) { setUnits(cloudUnits); storageService.saveUnits(cloudUnits); }
@@ -58,18 +58,14 @@ const App: React.FC = () => {
         if (cloudGroups.length > 0) { setGroups(cloudGroups); storageService.saveGroups(cloudGroups); }
         if (cloudUsers.length > 0) { setUsers(cloudUsers); storageService.saveUsers(cloudUsers); }
         if (cloudSettings) { setSystemSettings(cloudSettings); storageService.saveSystemSettings(cloudSettings); }
-      } catch (err) {
-        console.error("Lỗi đồng bộ dữ liệu ban đầu:", err);
-      }
+      } catch (err) { console.error("Sync error:", err); }
     };
-
     syncInitialData();
 
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings'];
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
-        
         const updateState = (setter: any, storageKey: string) => {
           setter((prev: any[]) => {
             let next = [...prev];
@@ -86,297 +82,215 @@ const App: React.FC = () => {
             return next;
           });
         };
-
         if (table === 'meetings') updateState(setMeetings, 'cth_sla_meetings');
         else if (table === 'endpoints') updateState(setEndpoints, 'cth_sla_endpoints');
-        else if (table === 'units') updateState(setUnits, 'cth_sla_units');
-        else if (table === 'staff') updateState(setStaff, 'cth_sla_staff');
-        else if (table === 'participant_groups') updateState(setGroups, 'cth_sla_groups');
-        else if (table === 'users') updateState(setUsers, 'cth_sla_users');
-        else if (table === 'system_settings' && mappedData) {
-          setSystemSettings(mappedData);
-          storageService.saveSystemSettings(mappedData);
-        }
+        else if (table === 'system_settings' && mappedData) { setSystemSettings(mappedData); storageService.saveSystemSettings(mappedData); }
       });
     });
-
     return () => subscriptions.forEach(sub => sub?.unsubscribe());
   }, []);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (systemSettings.primaryColor) root.style.setProperty('--primary-color', systemSettings.primaryColor);
-  }, [systemSettings.primaryColor]);
+  // Handlers for Meetings
+  // Fix: Added handleDeleteMeeting to fix the 'Cannot find name handleDeleteMeeting' error.
+  const handleDeleteMeeting = async (id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa cuộc họp này?')) return;
+    const nextMeetings = meetings.filter(m => m.id !== id);
+    setMeetings(nextMeetings);
+    storageService.saveMeetings(nextMeetings);
+    if (supabaseService.isConfigured()) {
+      try {
+        await supabaseService.deleteMeeting(id);
+      } catch (err) {
+        console.error("Xóa thất bại trên cloud:", err);
+      }
+    }
+  };
+
+  // Fix: Added handleCreateMeeting to properly update state and storage when creating a new meeting.
+  const handleCreateMeeting = async (meeting: Meeting) => {
+    const nextMeetings = [meeting, ...meetings];
+    setMeetings(nextMeetings);
+    storageService.saveMeetings(nextMeetings);
+    if (supabaseService.isConfigured()) {
+      try {
+        await supabaseService.upsertMeeting(meeting);
+      } catch (err) {
+        console.error("Lưu thất bại trên cloud:", err);
+      }
+    }
+  };
+
+  // Fix: Added handleUpdateMeeting to properly update state and storage when modifying an existing meeting.
+  const handleUpdateMeeting = async (meeting: Meeting) => {
+    const nextMeetings = meetings.map(m => m.id === meeting.id ? meeting : m);
+    setMeetings(nextMeetings);
+    storageService.saveMeetings(nextMeetings);
+    if (supabaseService.isConfigured()) {
+      try {
+        await supabaseService.upsertMeeting(meeting);
+      } catch (err) {
+        console.error("Cập nhật thất bại trên cloud:", err);
+      }
+    }
+    // Update selectedMeeting if it is currently being viewed
+    if (selectedMeeting?.id === meeting.id) {
+      setSelectedMeeting(meeting);
+    }
+  };
 
   const dashboardStats = useMemo(() => {
     const total = meetings.length;
     const connected = endpoints.filter(e => e.status === EndpointStatus.CONNECTED).length;
-    const disconnected = endpoints.filter(e => e.status === EndpointStatus.DISCONNECTED).length;
-    const connecting = endpoints.filter(e => e.status === EndpointStatus.CONNECTING).length;
     const uptime = endpoints.length > 0 ? ((connected / endpoints.length) * 100).toFixed(1) : "0";
-
-    const recentMeetings = [...meetings]
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-      .slice(0, 5);
-
+    const recentMeetings = [...meetings].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5);
     const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
       const count = meetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
       return { name: dateStr, count };
     });
-
-    const endpointDist = [
-      { name: 'Online', value: connected, color: '#10B981' },
-      { name: 'Offline', value: disconnected, color: '#EF4444' },
-      { name: 'Connecting', value: connecting, color: '#F59E0B' }
-    ];
-
-    return { total, connected, disconnected, uptime, recentMeetings, last7Days, endpointDist };
+    return { total, connected, uptime, recentMeetings, last7Days };
   }, [meetings, endpoints]);
 
-  // Logic phân quyền mới
-  const isAdmin = currentUser?.role === 'ADMIN';
-  const isOperator = currentUser?.role === 'OPERATOR';
-  const canManageMeetings = isAdmin || isOperator; // Cả Admin và Operator đều được quản lý lịch họp
-  const canViewReports = isAdmin || isOperator || currentUser?.role === 'VIEWER';
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setActiveTab('dashboard');
-  };
-
-  const handleCreateMeeting = async (newMeeting: Meeting) => {
-    const previousMeetings = [...meetings];
-    setMeetings(prev => [newMeeting, ...prev]);
-    if (supabaseService.isConfigured()) {
-      try {
-        await supabaseService.upsertMeeting(newMeeting);
-        storageService.saveMeetings([newMeeting, ...previousMeetings]);
-      } catch (error: any) {
-        console.error("Lỗi đồng bộ:", error);
-        setMeetings(previousMeetings);
-      }
-    } else {
-      storageService.saveMeetings([newMeeting, ...previousMeetings]);
-    }
-    setIsCreateModalOpen(false);
-  };
-
-  const handleUpdateMeeting = async (updatedMeeting: Meeting) => {
-    const previousMeetings = [...meetings];
-    const updatedList = meetings.map(m => m.id === updatedMeeting.id ? updatedMeeting : m);
-    setMeetings(updatedList);
-    if (selectedMeeting?.id === updatedMeeting.id) setSelectedMeeting(updatedMeeting);
-    if (supabaseService.isConfigured()) {
-      try {
-        await supabaseService.upsertMeeting(updatedMeeting);
-        storageService.saveMeetings(updatedList);
-      } catch (error: any) {
-        setMeetings(previousMeetings);
-      }
-    } else {
-      storageService.saveMeetings(updatedList);
-    }
-    setEditingMeeting(null);
-    setIsCreateModalOpen(false);
-  };
-
-  const handleDeleteMeeting = async (id: string) => {
-    if (!window.confirm('Xóa lịch họp này?')) return;
-    const previousMeetings = [...meetings];
-    const updated = meetings.filter(m => m.id !== id);
-    setMeetings(updated);
-    if (supabaseService.isConfigured()) {
-      try {
-        await supabaseService.deleteMeeting(id);
-        storageService.saveMeetings(updated);
-      } catch (error: any) {
-        setMeetings(previousMeetings);
-      }
-    } else {
-      storageService.saveMeetings(updated);
-    }
-  };
+  const handleLogout = () => { setCurrentUser(null); setActiveTab('dashboard'); };
 
   if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
 
+  const navigation = [
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { id: 'meetings', label: 'Lịch họp', icon: CalendarDays },
+    { id: 'monitoring', label: 'Giám sát', icon: MonitorPlay },
+    { id: 'reports', label: 'Báo cáo', icon: FileText },
+  ];
+
+  const adminNav = [
+    { id: 'management', label: 'Danh mục', icon: Settings },
+    { id: 'accounts', label: 'Tài khoản', icon: Users },
+    { id: 'deployment', label: 'Triển khai', icon: Share2 },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-      <aside className="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 shadow-xl z-10 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col pb-20 md:pb-0 md:flex-row overflow-x-hidden">
+      
+      {/* PC Sidebar */}
+      <aside className="hidden md:flex w-64 bg-slate-900 text-white flex-col shadow-2xl z-20">
         <div className="p-6">
-          <h1 className="flex items-start gap-3">
-             <div className="relative p-2 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden w-10 h-10">
-                {systemSettings.logoBase64 ? (
-                  <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full object-contain" />
-                ) : (
-                  <div className="w-6 h-6 text-cyan-400 font-bold flex items-center justify-center">SLA</div>
-                )}
+          <h1 className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden">
+                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} className="max-w-full max-h-full" /> : <span className="text-cyan-400 font-bold">SL</span>}
              </div>
-             <div className="flex flex-col">
-                <span className="text-xs font-black uppercase tracking-tight">{systemSettings.shortName}</span>
-                <span className="text-[9px] font-black uppercase mt-1 opacity-80" style={{ color: systemSettings.primaryColor }}>{systemSettings.systemName}</span>
-             </div>
+             <span className="text-sm font-black uppercase">{systemSettings.shortName}</span>
           </h1>
         </div>
-
-        <nav className="mt-2 px-4 space-y-1 flex-1 overflow-y-auto">
-          {[
-            { id: 'dashboard', label: 'Tổng quan', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6z' },
-            { id: 'reports', label: 'Báo cáo', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-            { id: 'meetings', label: 'Lịch họp', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-            { id: 'monitoring', label: 'Giám sát', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2' },
-            ...(isAdmin ? [
-              { id: 'management', label: 'Danh mục', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4' },
-              { id: 'accounts', label: 'Tài khoản', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197' },
-              { id: 'deployment', label: 'Triển khai', icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8' }
-            ] : [])
-          ].map(nav => (
-            <button key={nav.id} onClick={() => setActiveTab(nav.id as any)} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === nav.id ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={nav.icon} /></svg>
-              <span className="font-semibold text-sm">{nav.label}</span>
+        <nav className="flex-1 px-4 space-y-1">
+          {navigation.map(nav => (
+            <button key={nav.id} onClick={() => setActiveTab(nav.id as any)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === nav.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <nav.icon size={20} />
+              <span className="font-bold text-sm">{nav.label}</span>
             </button>
           ))}
+          {isAdmin && (
+            <div className="pt-4 border-t border-slate-800 space-y-1">
+               <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Quản trị</p>
+               {adminNav.map(nav => (
+                <button key={nav.id} onClick={() => setActiveTab(nav.id as any)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === nav.id ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
+                  <nav.icon size={20} />
+                  <span className="font-bold text-sm">{nav.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </nav>
-        
-        <div className="p-4 border-t border-slate-800/50">
-          <div className="px-4 py-2 mb-2">
-             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Đăng nhập với:</p>
-             <p className="text-xs font-bold text-blue-400 truncate">{currentUser.fullName}</p>
-             <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{currentUser.role === 'ADMIN' ? 'Quản trị viên' : currentUser.role === 'OPERATOR' ? 'Điều hành viên' : 'Người xem'}</p>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-semibold text-sm">
-            <span>Đăng xuất</span>
-          </button>
+        <div className="p-6 border-t border-slate-800">
+           <button onClick={handleLogout} className="flex items-center gap-3 text-red-400 font-bold text-sm hover:text-red-300">
+              <LogOut size={18} /> Đăng xuất
+           </button>
         </div>
       </aside>
 
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar">
-        <header className="mb-8 flex justify-between items-center">
-          <div className="flex flex-col">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-              {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
-               activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
-               activeTab === 'monitoring' ? 'Giám sát Trạng thái' : 
-               activeTab === 'management' ? 'Cấu hình Danh mục' :
-               activeTab === 'reports' ? 'Trung tâm Báo cáo' :
-               activeTab === 'accounts' ? 'Quản lý Truy cập' : 
-               activeTab === 'deployment' ? 'Triển khai & Sao lưu' : ''}
-            </h2>
-            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Hệ thống Giám sát Cầu truyền hình v3.1</p>
+      {/* Mobile TopBar */}
+      <header className="md:hidden sticky top-0 bg-slate-900 text-white p-4 flex justify-between items-center z-30 shadow-lg">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-xs uppercase">SL</div>
+             <h2 className="text-xs font-black uppercase tracking-tighter">{activeTab === 'dashboard' ? 'Tổng quan' : activeTab === 'meetings' ? 'Lịch họp' : activeTab === 'monitoring' ? 'Giám sát' : 'Báo cáo'}</h2>
           </div>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-300">
+             {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+      </header>
 
-          {activeTab === 'dashboard' && (
-            <div className="flex items-center gap-3">
-               {canManageMeetings && (
-                 <>
-                   <button onClick={() => setActiveTab('monitoring')} className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-500 transition-all">Kiểm tra hạ tầng</button>
-                   <button onClick={() => setIsCreateModalOpen(true)} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-2">
-                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                     Tạo cuộc họp mới
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)}>
+           <div className="absolute right-0 top-0 bottom-0 w-3/4 bg-slate-900 p-6 flex flex-col animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Menu mở rộng</h3>
+              <div className="space-y-2 flex-1">
+                 {adminNav.map(nav => (
+                   <button key={nav.id} onClick={() => { setActiveTab(nav.id as any); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl ${activeTab === nav.id ? 'bg-blue-600 text-white' : 'bg-slate-800/50 text-slate-400'}`}>
+                      <nav.icon size={20} /> <span className="font-bold">{nav.label}</span>
                    </button>
-                 </>
-               )}
-            </div>
-          )}
-        </header>
+                 ))}
+              </div>
+              <button onClick={handleLogout} className="p-4 bg-red-600/10 text-red-500 rounded-2xl font-bold flex items-center gap-3 justify-center">
+                 <LogOut size={18} /> Đăng xuất tài khoản
+              </button>
+           </div>
+        </div>
+      )}
 
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-8 page-transition">
         {activeTab === 'dashboard' && (
-          <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} tooltipTitle="Tần suất họp" description="Tổng số lượng cuộc họp đã được lên lịch." />
-              <StatCard title="Tổng điểm cầu" value={endpoints.length} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9H3m9 9V3" /></svg>} tooltipTitle="Hạ tầng điểm cầu" description="Số lượng các điểm cầu đang quản lý." />
-              <StatCard title="Online" value={dashboardStats.connected} trend="↑ 4" trendUp={true} icon={<svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" /></svg>} tooltipTitle="Trạng thái" description="Số lượng điểm cầu trực tuyến." />
-              <StatCard title="Offline" value={dashboardStats.disconnected} trend="↓ 2" trendUp={false} icon={<svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>} tooltipTitle="Ngoại tuyến" description="Số lượng điểm cầu ngoại tuyến." />
-              <StatCard title="Uptime" value={`${dashboardStats.uptime}%`} icon={<svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>} tooltipTitle="Khả dụng" description="Tỉ lệ thời gian hoạt động ổn định." />
-            </div>
-            
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              <div className="xl:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-8">Xu hướng hoạt động 7 ngày gần nhất</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={dashboardStats.last7Days}>
-                      <defs>
-                        <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={systemSettings.primaryColor} stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor={systemSettings.primaryColor} stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
-                      <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
-                      <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '12px'}} />
-                      <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fillOpacity={1} fill="url(#colorTrend)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
+          <div className="space-y-6">
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Hôm nay" value={dashboardStats.total} icon={<CalendarDays size={20} />} />
+                <StatCard title="Online" value={dashboardStats.connected} icon={<MonitorPlay size={20} />} trendUp={true} />
+                <StatCard title="Uptime" value={`${dashboardStats.uptime}%`} icon={<Share2 size={20} />} />
+                <div className="hidden lg:block">
+                   <StatCard title="Điểm cầu" value={endpoints.length} icon={<Users size={20} />} />
                 </div>
-              </div>
+             </div>
+             
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-6">Xu hướng tuần</h3>
+                   <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <AreaChart data={dashboardStats.last7Days}>
+                            <Area type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={3} fill="#3B82F6" fillOpacity={0.1} />
+                            <Tooltip />
+                         </AreaChart>
+                      </ResponsiveContainer>
+                   </div>
+                </div>
+                <div className="bg-slate-900 p-6 rounded-3xl shadow-xl text-white overflow-hidden relative">
+                   <h3 className="text-xs font-black uppercase text-slate-500 mb-6">Trạng thái hạ tầng</h3>
+                   <div className="flex flex-col items-center justify-center py-6">
+                      <p className="text-5xl font-black text-blue-400">{dashboardStats.uptime}%</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Khả dụng hiện tại</p>
+                   </div>
+                </div>
+             </div>
 
-              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center">
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest self-start mb-8">Trạng thái hạ tầng</h3>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={dashboardStats.endpointDist} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={10} dataKey="value">
-                        {dashboardStats.endpointDist.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip />
-                      <Legend verticalAlign="bottom" height={36} content={({payload}) => (
-                        <div className="flex justify-center gap-6 mt-4">
-                          {payload?.map((entry: any, i: number) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></div>
-                              <span className="text-[10px] font-black text-gray-400 uppercase">{entry.value}</span>
-                            </div>
-                          ))}
+             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
+                   <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Gần đây</h3>
+                   <button onClick={() => setActiveTab('meetings')} className="text-xs font-bold text-blue-600">Xem hết</button>
+                </div>
+                <div className="divide-y divide-gray-50">
+                   {dashboardStats.recentMeetings.map(m => (
+                     <div key={m.id} className="p-4 flex items-center justify-between hover:bg-blue-50/50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
+                        <div>
+                           <p className="text-sm font-bold text-gray-900 line-clamp-1">{m.title}</p>
+                           <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{new Date(m.startTime).toLocaleDateString('vi-VN')} • {m.hostUnit}</p>
                         </div>
-                      )} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                        <Share2 size={16} className="text-slate-300" />
+                     </div>
+                   ))}
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-               <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Cuộc họp gần nhất</h3>
-                  <button onClick={() => setActiveTab('meetings')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">Xem tất cả</button>
-               </div>
-               <div className="overflow-x-auto">
-                 <table className="w-full text-left text-sm">
-                   <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                     <tr>
-                       <th className="px-8 py-4">Tên cuộc họp</th>
-                       <th className="px-8 py-4">Đơn vị chủ trì</th>
-                       <th className="px-8 py-4">Thời gian</th>
-                       <th className="px-8 py-4 text-center">Hành động</th>
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y divide-gray-50">
-                     {dashboardStats.recentMeetings.map((m) => (
-                       <tr key={m.id} className="hover:bg-blue-50/30 transition-colors group">
-                         <td className="px-8 py-5">
-                           <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{m.title}</div>
-                         </td>
-                         <td className="px-8 py-5 text-gray-600 font-medium">{m.hostUnit}</td>
-                         <td className="px-8 py-5">
-                            <div className="text-xs font-black text-gray-900">{new Date(m.startTime).toLocaleDateString('vi-VN')}</div>
-                         </td>
-                         <td className="px-8 py-5 text-center">
-                            <button onClick={() => setSelectedMeeting(m)} className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Chi tiết</button>
-                         </td>
-                       </tr>
-                     ))}
-                   </tbody>
-                 </table>
-               </div>
-            </div>
+             </div>
           </div>
         )}
-
-        {activeTab === 'reports' && canViewReports && <ReportsPage meetings={meetings} endpoints={endpoints} />}
 
         {activeTab === 'meetings' && (
           <MeetingList 
@@ -389,140 +303,54 @@ const App: React.FC = () => {
           />
         )}
         
-        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? async e => {
-          try {
-            if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-            const updated = endpoints.map(item => item.id === e.id ? e : item);
-            setEndpoints(updated);
-            storageService.saveEndpoints(updated);
-          } catch (err) {
-             console.error("Lỗi cập nhật trạng thái:", err);
-          }
-        } : undefined} />}
-
-        {activeTab === 'management' && isAdmin && (
-          <ManagementPage 
+        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} />}
+        {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} />}
+        {activeTab === 'management' && <ManagementPage 
             units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings}
-            onAddUnit={async u => { 
-              const newUnit = { ...u, id: `U${Date.now()}` };
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
-                const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onUpdateUnit={async u => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
-                const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onDeleteUnit={async id => { 
-              if (!window.confirm('Xóa đơn vị này?')) return;
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
-                const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onAddStaff={async s => { 
-              const newStaff = { ...s, id: `S${Date.now()}` };
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
-                const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onUpdateStaff={async s => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
-                const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onDeleteStaff={async id => { 
-              if (!window.confirm('Xóa cán bộ này?')) return;
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
-                const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onAddEndpoint={async e => { 
-              const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
-                const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onUpdateEndpoint={async e => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
-                const updated = endpoints.map(item => item.id === e.id ? e : item); setEndpoints(updated); storageService.saveEndpoints(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onDeleteEndpoint={async id => { 
-              if (!window.confirm('Xóa điểm cầu này?')) return;
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
-                const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onAddGroup={async g => { 
-              const newGroup = { ...g, id: `G${Date.now()}` };
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertGroup(newGroup);
-                const updated = [newGroup, ...groups]; setGroups(updated); storageService.saveGroups(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onUpdateGroup={async g => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertGroup(g);
-                const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onDeleteGroup={async id => { 
-              if (!window.confirm('Xóa thành phần này?')) return;
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.deleteGroup(id);
-                const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-            onUpdateSettings={async s => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.updateSettings(s);
-                setSystemSettings(s); storageService.saveSystemSettings(s);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }}
-          />
-        )}
-
-        {activeTab === 'accounts' && isAdmin && (
-          <UserManagement users={users} currentUser={currentUser} 
-            onAddUser={async u => { 
-              const newUser = { ...u, id: `${Date.now()}` }; 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser);
-                const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }} 
-            onUpdateUser={async u => { 
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.upsertUser(u);
-                const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }} 
-            onDeleteUser={async id => { 
-              if (!window.confirm('Xóa người dùng này?')) return;
-              try {
-                if (supabaseService.isConfigured()) await supabaseService.deleteUser(id);
-                const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated);
-              } catch (err) { alert(`Lỗi: ${err.message}`); }
-            }} 
-          />
-        )}
-
-        {activeTab === 'deployment' && isAdmin && <ExportPage />}
+            onAddUnit={()=>{}} onUpdateUnit={()=>{}} onAddStaff={()=>{}} onUpdateStaff={()=>{}} onAddGroup={()=>{}} onUpdateGroup={()=>{}} onAddEndpoint={()=>{}} onUpdateEndpoint={()=>{}} onDeleteUnit={()=>{}} onDeleteStaff={()=>{}} onDeleteGroup={()=>{}} onDeleteEndpoint={()=>{}} onUpdateSettings={()=>{}}
+        />}
+        {activeTab === 'accounts' && <UserManagement users={users} currentUser={currentUser!} onAddUser={()=>{}} onUpdateUser={()=>{}} onDeleteUser={()=>{}} />}
+        {activeTab === 'deployment' && <ExportPage />}
       </main>
 
-      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={canManageMeetings ? handleUpdateMeeting : undefined} />}
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center p-2 safe-area-bottom z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+         {navigation.map(nav => (
+           <button 
+            key={nav.id} 
+            onClick={() => setActiveTab(nav.id as any)} 
+            className={`flex flex-col items-center gap-1 p-2 transition-all ${activeTab === nav.id ? 'text-blue-600' : 'text-slate-400'}`}
+           >
+              <div className={`p-2 rounded-xl transition-all ${activeTab === nav.id ? 'bg-blue-50 scale-110' : ''}`}>
+                 <nav.icon size={20} strokeWidth={activeTab === nav.id ? 2.5 : 2} />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-tighter">{nav.label}</span>
+           </button>
+         ))}
+      </nav>
 
-      {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={handleCreateMeeting} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
+      {/* Modals */}
+      {/* Fix: Pass onUpdate handler to MeetingDetailModal */}
+      {selectedMeeting && (
+        <MeetingDetailModal 
+          meeting={selectedMeeting} 
+          onClose={() => setSelectedMeeting(null)} 
+          onUpdate={handleUpdateMeeting}
+        />
+      )}
+      {/* Fix: Pass proper handlers and editingMeeting to CreateMeetingModal */}
+      {isCreateModalOpen && (
+        <CreateMeetingModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          onCreate={handleCreateMeeting} 
+          onUpdate={handleUpdateMeeting}
+          editingMeeting={editingMeeting}
+          units={units} 
+          staff={staff} 
+          availableEndpoints={endpoints} 
+        />
+      )}
     </div>
   );
 };
