@@ -4,20 +4,21 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { Meeting, Endpoint } from '../types';
+import { Meeting, Endpoint, User } from '../types';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
 interface ReportsPageProps {
   meetings: Meeting[];
   endpoints: Endpoint[];
+  currentUser?: User | null;
 }
 
 type GroupByOption = 'day' | 'week' | 'month' | 'year' | 'unit';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ meetings }) => {
+const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 3);
@@ -288,7 +289,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings }) => {
                  <p className="text-[10px] text-slate-400 font-bold">(Ký và ghi rõ họ tên)</p>
               </div>
               <div>
-                 <p className="font-black text-sm uppercase text-slate-900 italic">Hệ thống SLA v3.1</p>
+                 <p className="font-black text-sm uppercase text-slate-900 italic">
+                   {currentUser?.fullName || 'Hệ thống SLA v3.1'}
+                 </p>
               </div>
            </div>
         </div>

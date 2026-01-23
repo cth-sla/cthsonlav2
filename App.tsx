@@ -183,7 +183,7 @@ const App: React.FC = () => {
         <div className="p-6">
           <h1 className="flex items-center gap-3">
              <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden">
-                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold">SL</span>}
+                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold">SL</span>}
              </div>
              <div className="flex flex-col">
                 <span className="text-xs font-black uppercase tracking-tight">{systemSettings.shortName}</span>
@@ -341,7 +341,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} />}
+        {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
         {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
         {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={canManageMeetings ? handleUpdateEndpoint : undefined} />}
         {activeTab === 'management' && <ManagementPage 
