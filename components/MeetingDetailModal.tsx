@@ -84,19 +84,23 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 <div className="grid grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Đơn vị chủ trì</p>
-                      <p className="text-sm font-black text-gray-800 mt-1">{meeting.hostUnit}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1 uppercase text-xs">{meeting.hostUnit}</p>
                    </div>
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Cán bộ chủ trì</p>
-                      <p className="text-sm font-black text-gray-800 mt-1">{meeting.chairPerson}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1 uppercase text-xs">{meeting.chairPerson}</p>
                    </div>
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Thời gian bắt đầu</p>
-                      <p className="text-sm font-black text-gray-800 mt-1">{new Date(meeting.startTime).toLocaleString('vi-VN')}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1">
+                        {new Date(meeting.startTime).toLocaleString('vi-VN', { hour12: false })}
+                      </p>
                    </div>
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Thời gian kết thúc</p>
-                      <p className="text-sm font-black text-gray-800 mt-1">{new Date(meeting.endTime).toLocaleString('vi-VN')}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1">
+                        {new Date(meeting.endTime).toLocaleString('vi-VN', { hour12: false })}
+                      </p>
                    </div>
                 </div>
              </section>
@@ -161,7 +165,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4">Thành phần ({meeting.participants.length})</h4>
                 <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
                    {meeting.participants.map((p, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-lg border border-indigo-100">{p}</span>
+                      <span key={i} className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-lg border border-indigo-100 uppercase tracking-tight">{p}</span>
                    ))}
                 </div>
              </section>
@@ -176,8 +180,8 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                            <div className="min-w-0 flex items-center gap-3">
                               <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
                               <div className="min-w-0">
-                                <p className="text-xs font-bold text-gray-800 truncate">{ep.name}</p>
-                                <p className="text-[9px] text-gray-400 font-medium truncate">{ep.location}</p>
+                                <p className="text-xs font-bold text-gray-800 truncate uppercase">{ep.name}</p>
+                                <p className="text-[9px] text-gray-400 font-medium truncate uppercase tracking-widest">{ep.location}</p>
                               </div>
                            </div>
                            {isChecked && (

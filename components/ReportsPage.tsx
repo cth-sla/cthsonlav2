@@ -158,7 +158,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
             <h2 className="text-lg font-black text-blue-600 uppercase tracking-[0.2em]">Hệ thống Cầu truyền hình tỉnh Sơn La</h2>
           </div>
           <div className="text-right space-y-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian trích xuất: {new Date().toLocaleString('vi-VN')}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian trích xuất: {new Date().toLocaleString('vi-VN', { hour12: false })}</p>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giai đoạn báo cáo: {new Date(startDate).toLocaleDateString('vi-VN')} - {new Date(endDate).toLocaleDateString('vi-VN')}</p>
           </div>
         </div>
@@ -255,7 +255,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
                     <td className="px-6 py-4 text-slate-500 font-bold">
                       {new Date(m.startTime).toLocaleString('vi-VN', { 
                         day: '2-digit', month: '2-digit', year: 'numeric', 
-                        hour: '2-digit', minute: '2-digit' 
+                        hour: '2-digit', minute: '2-digit', hour12: false
                       })}
                     </td>
                     <td className="px-6 py-4 text-center">

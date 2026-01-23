@@ -326,9 +326,14 @@ const App: React.FC = () => {
                       <tbody className="divide-y divide-gray-50">
                          {dashboardStats.recentMeetings.map(m => (
                            <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
-                              <td className="px-8 py-5 font-bold text-gray-900">{m.title}</td>
-                              <td className="px-8 py-5 text-gray-500">{m.hostUnit}</td>
-                              <td className="px-8 py-5 font-mono text-xs">{new Date(m.startTime).toLocaleString('vi-VN')}</td>
+                              <td className="px-8 py-5 font-bold text-gray-900 uppercase text-xs">{m.title}</td>
+                              <td className="px-8 py-5 text-gray-500 uppercase text-[11px]">{m.hostUnit}</td>
+                              <td className="px-8 py-5 font-mono text-[11px]">
+                                {new Date(m.startTime).toLocaleString('vi-VN', { 
+                                  day: '2-digit', month: '2-digit', year: 'numeric', 
+                                  hour: '2-digit', minute: '2-digit', hour12: false 
+                                })}
+                              </td>
                               <td className="px-8 py-5 text-center">
                                  <button className="px-4 py-2 text-[10px] font-black uppercase rounded-lg" style={{...primaryLightBgStyle, ...primaryTextStyle}}>Chi tiết</button>
                               </td>

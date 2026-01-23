@@ -200,24 +200,24 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             {filteredAndSortedMeetings.map((meeting) => (
               <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
                 <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight">{meeting.title}</div>
+                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-xs uppercase">{meeting.title}</div>
                   <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter">REF: {meeting.id}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-700 font-medium">{meeting.hostUnit}</div>
+                  <div className="text-xs text-gray-700 font-medium uppercase">{meeting.hostUnit}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100">
                       {meeting.chairPerson.charAt(0)}
                     </div>
-                    <span className="text-sm text-gray-700 font-semibold">{meeting.chairPerson}</span>
+                    <span className="text-xs text-gray-700 font-semibold uppercase">{meeting.chairPerson}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm font-bold text-gray-800">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
+                  <div className="text-xs font-bold text-gray-800">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
                   <div className="text-[11px] text-gray-500 font-medium mt-0.5">
-                    {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -270,7 +270,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p className="text-sm font-bold tracking-tight">Không tìm thấy cuộc họp nào</p>
+            <p className="text-sm font-bold tracking-tight uppercase">Không tìm thấy cuộc họp nào</p>
             <p className="text-xs mt-1">Hãy thử thay đổi từ khóa tìm kiếm hoặc bộ lọc ngày của bạn.</p>
           </div>
         )}
