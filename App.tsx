@@ -348,7 +348,7 @@ const App: React.FC = () => {
 
         {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
         {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
-        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={canManageMeetings ? handleUpdateEndpoint : undefined} />}
+        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? handleUpdateEndpoint : undefined} />}
         {activeTab === 'management' && <ManagementPage 
             units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 
             onAddUnit={async u => { 
