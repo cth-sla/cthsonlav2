@@ -18,7 +18,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  const ROW_HEIGHT = 90; 
+  const ROW_HEIGHT = 100; 
   const GAP = 16;        
   const ITEM_HEIGHT = ROW_HEIGHT + GAP;
   const BUFFER_ROWS = 2;
@@ -104,21 +104,55 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
     });
   };
 
+  const getStatusStyles = (status: EndpointStatus) => {
+    switch (status) {
+      case EndpointStatus.CONNECTED:
+        return {
+          card: "bg-emerald-50 border-emerald-200 hover:border-emerald-400 shadow-emerald-100/50",
+          icon: "text-emerald-600",
+          dot: "bg-emerald-500",
+          label: "Online"
+        };
+      case EndpointStatus.DISCONNECTED:
+        return {
+          card: "bg-red-50 border-red-200 hover:border-red-400 shadow-red-100/50",
+          icon: "text-red-600",
+          dot: "bg-red-500",
+          label: "Offline"
+        };
+      case EndpointStatus.CONNECTING:
+        return {
+          card: "bg-amber-50 border-amber-200 hover:border-amber-400 shadow-amber-100/50",
+          icon: "text-amber-600",
+          dot: "bg-amber-500",
+          label: "Wait"
+        };
+      default:
+        return {
+          card: "bg-white border-gray-100 hover:border-blue-200 shadow-sm",
+          icon: "text-gray-400",
+          dot: "bg-gray-300",
+          label: "Unknown"
+        };
+    }
+  };
+
   const getStatusIndicator = (status: EndpointStatus) => {
+    const styles = getStatusStyles(status);
     switch (status) {
       case EndpointStatus.CONNECTED:
         return (
           <div className="relative flex items-center justify-center">
-            <Radio className="w-5 h-5 text-green-500 animate-pulse" />
-            <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+            <Radio className={`w-6 h-6 ${styles.icon} animate-pulse`} />
+            <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
           </div>
         );
       case EndpointStatus.DISCONNECTED:
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <AlertCircle className={`w-6 h-6 ${styles.icon}`} />;
       case EndpointStatus.CONNECTING:
-        return <RefreshCw className="w-5 h-5 text-yellow-500 animate-spin" />;
+        return <RefreshCw className={`w-6 h-6 ${styles.icon} animate-spin`} />;
       default:
-        return <Activity className="w-5 h-5 text-gray-400" />;
+        return <Activity className={`w-6 h-6 ${styles.icon}`} />;
     }
   };
 
@@ -190,38 +224,41 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                 gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`
               }}
             >
-              {visibleEndpoints.map((ep) => (
-                <div 
-                  key={ep.id} 
-                  style={{ height: `${ROW_HEIGHT}px` }}
-                  className="group bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-4 hover:border-blue-200 hover:shadow-md transition-all animate-in fade-in duration-300"
-                >
-                  <div className="shrink-0">
-                    {getStatusIndicator(ep.status)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-[13px] font-black text-gray-900 truncate group-hover:text-blue-600 transition-colors leading-tight">{ep.name}</h4>
-                    <p className="text-[9px] text-gray-400 truncate uppercase font-bold tracking-widest mt-1">{ep.location}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <div className={`w-1 h-1 rounded-full ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <p className="text-[8px] text-gray-400 font-medium">Cập nhật: {ep.lastConnected?.split(' ')[1] || '---'}</p>
+              {visibleEndpoints.map((ep) => {
+                const styles = getStatusStyles(ep.status);
+                return (
+                  <div 
+                    key={ep.id} 
+                    style={{ height: `${ROW_HEIGHT}px` }}
+                    className={`group ${styles.card} p-4 rounded-2xl border shadow-sm flex items-center space-x-4 transition-all duration-300 animate-in fade-in`}
+                  >
+                    <div className="shrink-0">
+                      {getStatusIndicator(ep.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[13px] font-black text-gray-900 truncate group-hover:text-blue-600 transition-colors leading-tight uppercase">{ep.name}</h4>
+                      <p className="text-[9px] text-gray-500 truncate uppercase font-bold tracking-widest mt-1">{ep.location}</p>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <div className={`w-1.5 h-1.5 rounded-full ${styles.dot}`}></div>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-tight">Cập nhật: {ep.lastConnected?.split(' ')[1] || '---'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <button
+                        onClick={() => toggleStatus(ep)}
+                        disabled={!onUpdateEndpoint}
+                        className={`text-[10px] font-black uppercase px-3 py-2 rounded-xl transition-all shadow-sm ring-1 ring-inset ${
+                          ep.status === EndpointStatus.CONNECTED ? 'text-emerald-700 bg-emerald-100 ring-emerald-200 hover:bg-emerald-200' : 
+                          ep.status === EndpointStatus.DISCONNECTED ? 'text-red-700 bg-red-100 ring-red-200 hover:bg-red-200' : 
+                          'text-amber-700 bg-amber-100 ring-amber-200 hover:bg-amber-200'
+                        } ${!onUpdateEndpoint ? 'cursor-default opacity-80' : 'cursor-pointer active:scale-95'}`}
+                      >
+                        {styles.label}
+                      </button>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <button
-                      onClick={() => toggleStatus(ep)}
-                      disabled={!onUpdateEndpoint}
-                      className={`text-[9px] font-black uppercase px-2.5 py-1.5 rounded-xl transition-all shadow-sm ${
-                        ep.status === EndpointStatus.CONNECTED ? 'text-green-700 bg-green-50 hover:bg-green-100 border border-green-100' : 
-                        ep.status === EndpointStatus.DISCONNECTED ? 'text-red-700 bg-red-50 hover:bg-red-100 border border-red-100' : 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-100'
-                      } ${!onUpdateEndpoint ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
-                    >
-                      {ep.status === EndpointStatus.CONNECTED ? 'Online' : 
-                       ep.status === EndpointStatus.DISCONNECTED ? 'Offline' : 'Wait'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -229,7 +266,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
             <div className="p-4 bg-white rounded-full shadow-sm mb-4">
               <Activity className="w-10 h-10 text-gray-200" />
             </div>
-            <p className="text-gray-500 font-bold text-sm">Không tìm thấy dữ liệu phù hợp</p>
+            <p className="text-gray-500 font-bold text-sm uppercase tracking-widest">Không tìm thấy dữ liệu phù hợp</p>
             <button 
               onClick={() => { setStatusFilter('ALL'); setLocationFilter('ALL'); setSearchTerm(''); }}
               className="mt-4 text-[10px] text-blue-600 font-black uppercase tracking-widest hover:underline"

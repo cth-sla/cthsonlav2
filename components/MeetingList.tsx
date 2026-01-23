@@ -78,6 +78,29 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     currentPage * ITEMS_PER_PAGE
   );
 
+  const handleExportExcel = () => {
+    if (filteredAndSortedMeetings.length === 0) {
+      alert("Không có dữ liệu để xuất.");
+      return;
+    }
+
+    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Mô tả\n";
+    const rows = filteredAndSortedMeetings.map(m => {
+      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${(m.description || '').replace(/"/g, '""')}"`;
+    }).join("\n");
+    
+    const csvContent = "\uFEFF" + header + rows; // Add BOM for Excel Vietnamese support
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Danh_sach_Lich_Hop_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return (
       <svg className="w-3 h-3 ml-1.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,15 +144,26 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            {isAdmin && onAdd && (
+            
+            <div className="flex gap-2">
               <button 
-                onClick={onAdd}
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                onClick={handleExportExcel}
+                className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                Lên lịch mới
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Xuất Excel
               </button>
-            )}
+              
+              {isAdmin && onAdd && (
+                <button 
+                  onClick={onAdd}
+                  className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
+                  Lên lịch mới
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
