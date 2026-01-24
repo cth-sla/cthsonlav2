@@ -250,18 +250,18 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             {paginatedMeetings.map((meeting) => (
               <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
                 <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-xs uppercase">{meeting.title}</div>
+                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm">{meeting.title}</div>
                   <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter">REF: {meeting.id}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-xs text-gray-700 font-medium uppercase">{meeting.hostUnit}</div>
+                  <div className="text-sm text-gray-700 font-medium">{meeting.hostUnit}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100">
                       {meeting.chairPerson.charAt(0)}
                     </div>
-                    <span className="text-xs text-gray-700 font-semibold uppercase">{meeting.chairPerson}</span>
+                    <span className="text-sm text-gray-700 font-semibold">{meeting.chairPerson}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">

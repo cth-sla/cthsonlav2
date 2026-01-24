@@ -84,11 +84,11 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 <div className="grid grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Đơn vị chủ trì</p>
-                      <p className="text-sm font-black text-gray-800 mt-1 uppercase text-xs">{meeting.hostUnit}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1">{meeting.hostUnit}</p>
                    </div>
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Cán bộ chủ trì</p>
-                      <p className="text-sm font-black text-gray-800 mt-1 uppercase text-xs">{meeting.chairPerson}</p>
+                      <p className="text-sm font-black text-gray-800 mt-1">{meeting.chairPerson}</p>
                    </div>
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Thời gian bắt đầu</p>

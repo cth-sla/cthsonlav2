@@ -118,7 +118,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight mt-1">{formatDate(meeting.startTime)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-slate-100 uppercase line-clamp-2 group-hover:text-white transition-colors leading-relaxed tracking-tight">{meeting.title}</h4>
+                      <h4 className="text-sm font-bold text-slate-100 line-clamp-2 group-hover:text-white transition-colors leading-relaxed tracking-tight">{meeting.title}</h4>
                       <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest">Chủ trì:</span>
@@ -237,7 +237,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
+                  <h3 className="text-lg font-black text-white tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Thông tin chi tiết cuộc họp</p>
                 </div>
               </div>
@@ -255,7 +255,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 </div>
                 <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
                   <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Cán bộ chủ trì</p>
-                  <p className="text-sm font-black text-white uppercase">{selectedPublicMeeting.chairPerson}</p>
+                  <p className="text-sm font-black text-white">{selectedPublicMeeting.chairPerson}</p>
                 </div>
               </div>
 
@@ -264,7 +264,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-l-2 border-blue-600 pl-3">Thành phần tham gia</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedPublicMeeting.participants.map((p, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold rounded-lg uppercase tracking-tight">
+                    <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold rounded-lg tracking-tight">
                       {p}
                     </span>
                   ))}
@@ -282,7 +282,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                     <div key={ep.id} className="p-4 bg-white/2 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-white/5 transition-all">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${ep.status === 'CONNECTED' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
                       <div className="min-w-0">
-                        <p className="text-xs font-black text-slate-200 uppercase truncate">{ep.name}</p>
+                        <p className="text-xs font-black text-slate-200 truncate">{ep.name}</p>
                         <p className="text-[9px] text-slate-500 font-bold uppercase truncate tracking-widest">{ep.location}</p>
                       </div>
                     </div>

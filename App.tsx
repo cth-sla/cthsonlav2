@@ -326,8 +326,8 @@ const App: React.FC = () => {
                       <tbody className="divide-y divide-gray-50">
                          {dashboardStats.recentMeetings.map(m => (
                            <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
-                              <td className="px-8 py-5 font-bold text-gray-900 uppercase text-xs">{m.title}</td>
-                              <td className="px-8 py-5 text-gray-500 uppercase text-[11px]">{m.hostUnit}</td>
+                              <td className="px-8 py-5 font-bold text-gray-900 text-sm">{m.title}</td>
+                              <td className="px-8 py-5 text-gray-500 text-[11px]">{m.hostUnit}</td>
                               <td className="px-8 py-5 font-mono text-[11px]">
                                 {new Date(m.startTime).toLocaleString('vi-VN', { 
                                   day: '2-digit', month: '2-digit', year: 'numeric', 
