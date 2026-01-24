@@ -18,6 +18,7 @@ import MeetingDetailModal from './components/MeetingDetailModal';
 import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
+import { Analytics } from '@vercel/analytics/react';
 
 storageService.init();
 
@@ -418,6 +419,7 @@ const App: React.FC = () => {
 
       {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
       {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={handleCreateMeeting} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
+      <Analytics />
     </div>
   );
 };
