@@ -210,7 +210,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   </>
                 ) : (
                   <>
-                    XÁC NHẬN TRUY CẬP
+                    ĐĂNG NHẬP
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                   </>
                 )}
@@ -220,7 +220,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             <div className="mt-12 pt-8 border-t border-white/5 text-center">
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em] leading-relaxed">
                 ỦY BAN NHÂN DÂN TỈNH SƠN LA<br/>
-                &copy; 2026 • PHIÊN BẢN BẢO MẬT 3.1.0
+                &copy; 2026 • VIETTEL SƠN LA
               </p>
             </div>
           </div>

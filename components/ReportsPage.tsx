@@ -280,7 +280,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
            <div className="max-w-md space-y-2">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ghi chú hệ thống:</p>
               <p className="text-[10px] italic text-slate-400 leading-relaxed font-medium">
-                Báo cáo này được tạo tự động từ Hệ thống Giám sát SLA Cầu truyền hình tỉnh Sơn La. Dữ liệu bao gồm các thông tin về lịch họp, đơn vị chủ trì và danh sách điểm cầu tham gia.
+                Báo cáo này được tạo tự động từ Hệ thống Giám sát Cầu truyền hình tỉnh Sơn La. Dữ liệu bao gồm các thông tin về lịch họp, đơn vị chủ trì và danh sách điểm cầu tham gia.
               </p>
            </div>
            <div className="text-center w-64 space-y-24">
