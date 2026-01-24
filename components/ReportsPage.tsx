@@ -214,7 +214,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               <tbody className="divide-y divide-slate-100">
                 {statsData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-4 font-bold text-slate-700 uppercase">{row.name}</td>
+                    <td className="px-8 py-4 font-bold text-slate-700">{row.name}</td>
                     <td className="px-8 py-4 text-center font-black text-blue-600 text-lg">{row.value}</td>
                     <td className="px-8 py-4 text-right font-black text-slate-500">{((row.value / (filteredMeetings.length || 1)) * 100).toFixed(1)}%</td>
                   </tr>
@@ -249,9 +249,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               <tbody className="divide-y divide-slate-100">
                 {filteredMeetings.map((m, idx) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900 max-w-[250px] leading-relaxed uppercase">{m.title}</td>
-                    <td className="px-6 py-4 font-medium text-slate-600 uppercase">{m.hostUnit}</td>
-                    <td className="px-6 py-4 font-medium text-slate-600 uppercase">{m.chairPerson}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900 max-w-[250px] leading-relaxed">{m.title}</td>
+                    <td className="px-6 py-4 font-medium text-slate-600">{m.hostUnit}</td>
+                    <td className="px-6 py-4 font-medium text-slate-600">{m.chairPerson}</td>
                     <td className="px-6 py-4 text-slate-500 font-bold">
                       {new Date(m.startTime).toLocaleString('vi-VN', { 
                         day: '2-digit', month: '2-digit', year: 'numeric', 
