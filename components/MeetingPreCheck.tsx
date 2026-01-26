@@ -53,11 +53,12 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
   };
 
   const handleSave = () => {
+    // Gọi hàm onUpdate với toàn bộ dữ liệu cuộc họp và dữ liệu kiểm tra mới nhất
     onUpdate({
       ...meeting,
       endpointChecks: localChecks
     });
-    alert('Đã lưu trạng thái kiểm tra kỹ thuật!');
+    alert('Đã lưu trạng thái và ghi chú kiểm tra kỹ thuật thành công!');
   };
 
   const handleExportExcel = () => {
@@ -177,17 +178,17 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                   key={ep.id} 
                   className={`group bg-white p-6 rounded-[2rem] border transition-all duration-300 flex flex-col gap-4 ${
                     checkInfo.checked 
-                      ? 'border-emerald-100 opacity-80' 
+                      ? 'border-emerald-100 bg-emerald-50/10' 
                       : 'border-slate-100 shadow-sm hover:border-cyan-200 hover:shadow-lg hover:-translate-y-1'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className={`text-sm font-black uppercase tracking-tight truncate ${checkInfo.checked ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                        <h4 className={`text-sm font-black uppercase tracking-tight truncate ${checkInfo.checked ? 'text-emerald-700' : 'text-slate-900'}`}>
                           {ep.name}
                         </h4>
-                        <div className={`w-1.5 h-1.5 rounded-full ${ep.status === EndpointStatus.CONNECTED ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                        <div className={`w-1.5 h-1.5 rounded-full ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
                       </div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{ep.location}</p>
                     </div>
@@ -195,7 +196,7 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                       onClick={() => handleToggleCheck(ep.id)}
                       className={`shrink-0 p-2 rounded-xl transition-all ${
                         checkInfo.checked 
-                          ? 'bg-emerald-50 text-emerald-600' 
+                          ? 'bg-emerald-600 text-white' 
                           : 'bg-slate-100 text-slate-300 hover:text-cyan-600 hover:bg-cyan-50'
                       }`}
                     >
@@ -205,14 +206,14 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <AlertCircle className={`w-3 h-3 ${checkInfo.checked ? 'text-slate-300' : 'text-cyan-500'}`} />
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ghi chú kiểm tra:</span>
+                      <AlertCircle className={`w-3 h-3 ${checkInfo.checked ? 'text-emerald-500' : 'text-cyan-500'}`} />
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${checkInfo.checked ? 'text-emerald-600' : 'text-slate-400'}`}>Ghi chú kỹ thuật:</span>
                     </div>
                     <textarea 
                       rows={2}
                       placeholder="Nhập tình trạng: âm thanh, hình ảnh..."
                       className={`w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-medium focus:ring-2 focus:ring-cyan-500 outline-none resize-none transition-all ${
-                        checkInfo.checked ? 'opacity-50 grayscale' : 'hover:border-slate-200'
+                        checkInfo.checked ? 'border-emerald-200 bg-emerald-50/20' : 'hover:border-slate-200 focus:bg-white'
                       }`}
                       value={checkInfo.notes}
                       onChange={e => handleNoteChange(ep.id, e.target.value)}
@@ -220,9 +221,9 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                   </div>
                   
                   {checkInfo.checked && (
-                    <div className="mt-auto flex items-center gap-2 py-1.5 px-3 bg-emerald-50 rounded-lg self-start">
+                    <div className="mt-auto flex items-center gap-2 py-1.5 px-3 bg-emerald-100/50 rounded-lg self-start">
                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                       <span className="text-[8px] font-black text-emerald-700 uppercase">Đã xác nhận kỹ thuật</span>
+                       <span className="text-[8px] font-black text-emerald-700 uppercase">Đã xác nhận hạ tầng</span>
                     </div>
                   )}
                 </div>
@@ -244,7 +245,7 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm"></div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Hệ thống Online</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Điểm cầu Online</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-slate-200 shadow-sm"></div>
@@ -252,7 +253,7 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
             </div>
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            BÁO CÁO KỸ THUẬT v3.1 • {new Date().toLocaleDateString('vi-VN')}
+            HỆ THỐNG GIÁM SÁT SLA v3.1 • {new Date().toLocaleDateString('vi-VN')}
           </div>
         </div>
       </div>

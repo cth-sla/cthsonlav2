@@ -173,21 +173,34 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
 
              <section>
                 <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Các điểm cầu ({meeting.endpoints.length})</h4>
-                <div className="space-y-3 overflow-y-auto max-h-[200px] pr-2 custom-scrollbar">
+                <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
                    {meeting.endpoints.map(ep => {
-                      const isChecked = meeting.endpointChecks?.[ep.id]?.checked;
+                      const checkInfo = meeting.endpointChecks?.[ep.id];
+                      const isChecked = checkInfo?.checked;
+                      const techNotes = checkInfo?.notes;
+                      
                       return (
-                        <div key={ep.id} className="p-3 bg-white border border-gray-100 rounded-2xl flex items-center justify-between shadow-sm">
-                           <div className="min-w-0 flex items-center gap-3">
-                              <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-gray-800 truncate uppercase">{ep.name}</p>
-                                <p className="text-[9px] text-gray-400 font-medium truncate uppercase tracking-widest">{ep.location}</p>
+                        <div key={ep.id} className="p-3 bg-white border border-gray-100 rounded-2xl flex flex-col gap-2 shadow-sm transition-all hover:border-blue-100">
+                           <div className="flex items-center justify-between">
+                              <div className="min-w-0 flex items-center gap-3">
+                                 <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                                 <div className="min-w-0">
+                                   <p className="text-xs font-bold text-gray-800 truncate uppercase">{ep.name}</p>
+                                   <p className="text-[9px] text-gray-400 font-medium truncate uppercase tracking-widest">{ep.location}</p>
+                                 </div>
                               </div>
+                              {isChecked && (
+                                 <div className="shrink-0 p-1 bg-emerald-50 text-emerald-600 rounded-lg" title="Đã kiểm tra kỹ thuật">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                 </div>
+                              )}
                            </div>
-                           {isChecked && (
-                              <div className="shrink-0 p-1 bg-emerald-50 text-emerald-600 rounded-lg">
-                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                           {techNotes && (
+                              <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                 <p className="text-[10px] text-slate-500 font-medium italic leading-tight">
+                                    <span className="font-black uppercase text-[8px] text-slate-400 mr-1">Ghi chú KT:</span>
+                                    {techNotes}
+                                 </p>
                               </div>
                            )}
                         </div>
