@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -24,6 +24,7 @@ storageService.init();
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [meetings, setMeetings] = useState<Meeting[]>(() => storageService.getMeetings());
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -170,6 +171,11 @@ const App: React.FC = () => {
   }, [meetings, endpoints]);
 
   const handleLogout = () => { setCurrentUser(null); setActiveTab('dashboard'); };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+  };
 
   if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
 
@@ -178,44 +184,60 @@ const App: React.FC = () => {
   const primaryLightBgStyle = { backgroundColor: 'var(--primary-color-light)' };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 overflow-hidden">
-      <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-20">
-        <div className="p-6">
+    <div className="min-h-screen flex bg-gray-50 overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside 
+        className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="p-6 flex justify-between items-center">
           <h1 className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden">
+             <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold">SL</span>}
              </div>
-             <div className="flex flex-col">
-                <span className="text-xs font-black uppercase tracking-tight">{systemSettings.shortName}</span>
+             <div className="flex flex-col min-w-0">
+                <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
                 <span className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">SLA MONITOR v3.1</span>
              </div>
           </h1>
+          <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white">
+            <X size={20} />
+          </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 mt-4">
+        <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto custom-scrollbar">
           <button 
-            onClick={() => setActiveTab('dashboard')} 
+            onClick={() => handleTabChange('dashboard')} 
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
             style={activeTab === 'dashboard' ? primaryBgStyle : {}}
           >
             <LayoutDashboard size={20} /> <span className="font-bold text-sm">Tổng quan</span>
           </button>
           <button 
-            onClick={() => setActiveTab('reports')} 
+            onClick={() => handleTabChange('reports')} 
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
             style={activeTab === 'reports' ? primaryBgStyle : {}}
           >
             <FileText size={20} /> <span className="font-bold text-sm">Báo cáo</span>
           </button>
           <button 
-            onClick={() => setActiveTab('meetings')} 
+            onClick={() => handleTabChange('meetings')} 
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'meetings' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
             style={activeTab === 'meetings' ? primaryBgStyle : {}}
           >
             <CalendarDays size={20} /> <span className="font-bold text-sm">Lịch họp</span>
           </button>
           <button 
-            onClick={() => setActiveTab('monitoring')} 
+            onClick={() => handleTabChange('monitoring')} 
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
             style={activeTab === 'monitoring' ? primaryBgStyle : {}}
           >
@@ -226,21 +248,21 @@ const App: React.FC = () => {
             <div className="pt-4 border-t border-slate-800 space-y-1">
                <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Hệ thống</p>
                <button 
-                onClick={() => setActiveTab('management')} 
+                onClick={() => handleTabChange('management')} 
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'management' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
                 style={activeTab === 'management' ? primaryBgStyle : {}}
                >
                   <Settings size={20} /> <span className="font-bold text-sm">Danh mục</span>
                </button>
                <button 
-                onClick={() => setActiveTab('accounts')} 
+                onClick={() => handleTabChange('accounts')} 
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
                 style={activeTab === 'accounts' ? primaryBgStyle : {}}
                >
                   <Users size={20} /> <span className="font-bold text-sm">Tài khoản</span>
                </button>
                <button 
-                onClick={() => setActiveTab('deployment')} 
+                onClick={() => handleTabChange('deployment')} 
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
                 style={activeTab === 'deployment' ? primaryBgStyle : {}}
                >
@@ -261,159 +283,188 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-y-auto custom-scrollbar">
-        <header className="mb-8 flex justify-between items-center">
-          <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-             {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
-              activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
-              activeTab === 'monitoring' ? 'Giám sát hạ tầng' : 
-              activeTab === 'reports' ? 'Báo cáo thống kê' : 'Cấu hình hệ thống'}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden h-16 bg-white border-b border-gray-200 flex items-center px-4 justify-between shrink-0">
+          <button onClick={toggleSidebar} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <Menu size={24} />
+          </button>
+          <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">
+             {activeTab === 'dashboard' ? 'Tổng quan' : 
+              activeTab === 'meetings' ? 'Lịch họp' : 
+              activeTab === 'monitoring' ? 'Giám sát' : 
+              activeTab === 'reports' ? 'Báo cáo' : 'Cấu hình'}
           </h2>
-          {activeTab === 'dashboard' && canManageMeetings && (
-            <button 
-              onClick={() => setIsCreateModalOpen(true)} 
-              style={primaryBgStyle}
-              className="px-6 py-2.5 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-95 flex items-center gap-2"
-            >
-              <CalendarDays size={16} /> Tạo cuộc họp mới
-            </button>
-          )}
+          <div className="w-10"></div> {/* Spacer for center alignment */}
         </header>
 
-        {activeTab === 'dashboard' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<CalendarDays color={systemSettings.primaryColor} />} />
-                <StatCard title="Điểm cầu Online" value={dashboardStats.connected} trendUp={true} icon={<MonitorPlay color={systemSettings.primaryColor} />} />
-                <StatCard title="Điểm cầu Offline" value={endpoints.length - dashboardStats.connected} trendUp={false} icon={<MonitorPlay className="text-red-500" />} />
-                <StatCard title="Uptime Khả dụng" value={`${dashboardStats.uptime}%`} icon={<Share2 color={systemSettings.primaryColor} />} />
-             </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
+          <header className="mb-8 hidden lg:flex justify-between items-center">
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
+               {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
+                activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
+                activeTab === 'monitoring' ? 'Giám sát hạ tầng' : 
+                activeTab === 'reports' ? 'Báo cáo thống kê' : 'Cấu hình hệ thống'}
+            </h2>
+            {activeTab === 'dashboard' && canManageMeetings && (
+              <button 
+                onClick={() => setIsCreateModalOpen(true)} 
+                style={primaryBgStyle}
+                className="px-6 py-2.5 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-95 flex items-center gap-2"
+              >
+                <CalendarDays size={16} /> Tạo cuộc họp mới
+              </button>
+            )}
+          </header>
 
-             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Xu hướng họp 7 ngày qua</h3>
-                   <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                         <AreaChart data={dashboardStats.last7Days}>
-                            <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill={systemSettings.primaryColor} fillOpacity={0.1} />
-                            <Tooltip />
-                         </AreaChart>
-                      </ResponsiveContainer>
-                   </div>
-                </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center">
-                   <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8 self-start">Hiệu suất hạ tầng</h3>
-                   <div style={primaryTextStyle} className="text-6xl font-black">{dashboardStats.uptime}%</div>
-                   <p className="text-[10px] font-bold text-gray-400 mt-4 uppercase tracking-widest">Tỉ lệ tín hiệu sạch</p>
-                </div>
-             </div>
+          {/* Mobile Create Button for Dashboard */}
+          {activeTab === 'dashboard' && canManageMeetings && (
+            <div className="lg:hidden mb-6">
+               <button 
+                  onClick={() => setIsCreateModalOpen(true)} 
+                  style={primaryBgStyle}
+                  className="w-full px-6 py-3 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <CalendarDays size={16} /> Tạo cuộc họp mới
+                </button>
+            </div>
+          )}
 
-             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-                   <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
-                   <button onClick={() => setActiveTab('meetings')} style={primaryTextStyle} className="text-xs font-bold hover:underline">Xem tất cả</button>
-                </div>
-                <div className="overflow-x-auto">
-                   <table className="w-full text-left text-sm">
-                      <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                         <tr>
-                            <th className="px-8 py-4">Tên cuộc họp</th>
-                            <th className="px-8 py-4">Đơn vị chủ trì</th>
-                            <th className="px-8 py-4">Thời gian</th>
-                            <th className="px-8 py-4 text-center">Hành động</th>
-                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                         {dashboardStats.recentMeetings.map(m => (
-                           <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
-                              <td className="px-8 py-5 font-bold text-gray-900 text-sm">{m.title}</td>
-                              <td className="px-8 py-5 text-gray-500 text-[11px]">{m.hostUnit}</td>
-                              <td className="px-8 py-5 font-mono text-[11px]">
-                                {new Date(m.startTime).toLocaleString('vi-VN', { 
-                                  day: '2-digit', month: '2-digit', year: 'numeric', 
-                                  hour: '2-digit', minute: '2-digit', hour12: false 
-                                })}
-                              </td>
-                              <td className="px-8 py-5 text-center">
-                                 <button className="px-4 py-2 text-[10px] font-black uppercase rounded-lg" style={{...primaryLightBgStyle, ...primaryTextStyle}}>Chi tiết</button>
-                              </td>
+          {activeTab === 'dashboard' && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                  <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<CalendarDays color={systemSettings.primaryColor} />} />
+                  <StatCard title="Điểm cầu Online" value={dashboardStats.connected} trendUp={true} icon={<MonitorPlay color={systemSettings.primaryColor} />} />
+                  <StatCard title="Điểm cầu Offline" value={endpoints.length - dashboardStats.connected} trendUp={false} icon={<MonitorPlay className="text-red-500" />} />
+                  <StatCard title="Uptime Khả dụng" value={`${dashboardStats.uptime}%`} icon={<Share2 color={systemSettings.primaryColor} />} />
+               </div>
+
+               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                  <div className="xl:col-span-2 bg-white p-4 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Xu hướng họp 7 ngày qua</h3>
+                     <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <AreaChart data={dashboardStats.last7Days}>
+                              <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill={systemSettings.primaryColor} fillOpacity={0.1} />
+                              <Tooltip />
+                           </AreaChart>
+                        </ResponsiveContainer>
+                     </div>
+                  </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center">
+                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8 self-start">Hiệu suất hạ tầng</h3>
+                     <div style={primaryTextStyle} className="text-6xl font-black">{dashboardStats.uptime}%</div>
+                     <p className="text-[10px] font-bold text-gray-400 mt-4 uppercase tracking-widest">Tỉ lệ tín hiệu sạch</p>
+                  </div>
+               </div>
+
+               <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+                     <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
+                     <button onClick={() => setActiveTab('meetings')} style={primaryTextStyle} className="text-xs font-bold hover:underline">Xem tất cả</button>
+                  </div>
+                  <div className="overflow-x-auto">
+                     <table className="w-full text-left text-sm min-w-[600px]">
+                        <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                           <tr>
+                              <th className="px-6 md:px-8 py-4">Tên cuộc họp</th>
+                              <th className="px-6 md:px-8 py-4">Đơn vị chủ trì</th>
+                              <th className="px-6 md:px-8 py-4">Thời gian</th>
+                              <th className="px-6 md:px-8 py-4 text-center">Hành động</th>
                            </tr>
-                         ))}
-                      </tbody>
-                   </table>
-                </div>
-             </div>
-          </div>
-        )}
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                           {dashboardStats.recentMeetings.map(m => (
+                             <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
+                                <td className="px-6 md:px-8 py-5 font-bold text-gray-900 text-sm whitespace-nowrap md:whitespace-normal max-w-[200px] truncate">{m.title}</td>
+                                <td className="px-6 md:px-8 py-5 text-gray-500 text-[11px] whitespace-nowrap">{m.hostUnit}</td>
+                                <td className="px-6 md:px-8 py-5 font-mono text-[11px] whitespace-nowrap">
+                                  {new Date(m.startTime).toLocaleString('vi-VN', { 
+                                    day: '2-digit', month: '2-digit', year: 'numeric', 
+                                    hour: '2-digit', minute: '2-digit', hour12: false 
+                                  })}
+                                </td>
+                                <td className="px-6 md:px-8 py-5 text-center">
+                                   <button className="px-4 py-2 text-[10px] font-black uppercase rounded-lg" style={{...primaryLightBgStyle, ...primaryTextStyle}}>Chi tiết</button>
+                                </td>
+                             </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+            </div>
+          )}
 
-        {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
-        {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
-        {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? handleUpdateEndpoint : undefined} />}
-        {activeTab === 'management' && <ManagementPage 
-            units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 
-            onAddUnit={async u => { 
-              const newUnit = { ...u, id: `U${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
-              const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated);
-            }} 
-            onUpdateUnit={async u => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
-              const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated);
-            }} 
-            onDeleteUnit={async id => { 
-              if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
-              const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated);
-            }}
-            onAddStaff={async s => { 
-              const newStaff = { ...s, id: `S${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
-              const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated);
-            }}
-            onUpdateStaff={async s => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
-              const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated);
-            }}
-            onDeleteStaff={async id => { 
-              if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
-              const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated);
-            }}
-            onAddGroup={async g => { 
-              const newGroup = { ...g, id: `G${Date.now()}` };
-              if (supabaseService.isConfigured()) await supabaseService.upsertGroup(newGroup);
-              const updated = [newGroup, ...groups]; setGroups(updated); storageService.saveGroups(updated);
-            }}
-            onUpdateGroup={async g => { 
-              if (supabaseService.isConfigured()) await supabaseService.upsertGroup(g);
-              const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated);
-            }}
-            onDeleteGroup={async id => { 
-              if (supabaseService.isConfigured()) await supabaseService.deleteGroup(id);
-              const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated);
-            }}
-            onAddEndpoint={async e => { 
-              const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
-              if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
-              const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated);
-            }}
-            onUpdateEndpoint={handleUpdateEndpoint}
-            onDeleteEndpoint={async id => { 
-              if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
-              const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated);
-            }}
-            onUpdateSettings={handleUpdateSettings} 
-        />}
-        {activeTab === 'accounts' && <UserManagement users={users} currentUser={currentUser!} onAddUser={async u => {
-            const newUser = { ...u, id: `${Date.now()}` };
-            if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser);
-            const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated);
-        }} onUpdateUser={async u => {
-            if (supabaseService.isConfigured()) await supabaseService.upsertUser(u);
-            const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated);
-        }} onDeleteUser={async id => {
-            if (supabaseService.isConfigured()) await supabaseService.deleteUser(id);
-            const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated);
-        }} />}
-        {activeTab === 'deployment' && <ExportPage />}
+          {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
+          {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
+          {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? handleUpdateEndpoint : undefined} />}
+          {activeTab === 'management' && <ManagementPage 
+              units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 
+              onAddUnit={async u => { 
+                const newUnit = { ...u, id: `U${Date.now()}` };
+                if (supabaseService.isConfigured()) await supabaseService.upsertUnit(newUnit);
+                const updated = [...units, newUnit]; setUnits(updated); storageService.saveUnits(updated);
+              }} 
+              onUpdateUnit={async u => { 
+                if (supabaseService.isConfigured()) await supabaseService.upsertUnit(u);
+                const updated = units.map(item => item.id === u.id ? u : item); setUnits(updated); storageService.saveUnits(updated);
+              }} 
+              onDeleteUnit={async id => { 
+                if (supabaseService.isConfigured()) await supabaseService.deleteUnit(id);
+                const updated = units.filter(u => u.id !== id); setUnits(updated); storageService.saveUnits(updated);
+              }}
+              onAddStaff={async s => { 
+                const newStaff = { ...s, id: `S${Date.now()}` };
+                if (supabaseService.isConfigured()) await supabaseService.upsertStaff(newStaff);
+                const updated = [...staff, newStaff]; setStaff(updated); storageService.saveStaff(updated);
+              }}
+              onUpdateStaff={async s => { 
+                if (supabaseService.isConfigured()) await supabaseService.upsertStaff(s);
+                const updated = staff.map(item => item.id === s.id ? s : item); setStaff(updated); storageService.saveStaff(updated);
+              }}
+              onDeleteStaff={async id => { 
+                if (supabaseService.isConfigured()) await supabaseService.deleteStaff(id);
+                const updated = staff.filter(s => s.id !== id); setStaff(updated); storageService.saveStaff(updated);
+              }}
+              onAddGroup={async g => { 
+                const newGroup = { ...g, id: `G${Date.now()}` };
+                if (supabaseService.isConfigured()) await supabaseService.upsertGroup(newGroup);
+                const updated = [newGroup, ...groups]; setGroups(updated); storageService.saveGroups(updated);
+              }}
+              onUpdateGroup={async g => { 
+                if (supabaseService.isConfigured()) await supabaseService.upsertGroup(g);
+                const updated = groups.map(item => item.id === g.id ? g : item); setGroups(updated); storageService.saveGroups(updated);
+              }}
+              onDeleteGroup={async id => { 
+                if (supabaseService.isConfigured()) await supabaseService.deleteGroup(id);
+                const updated = groups.filter(g => g.id !== id); setGroups(updated); storageService.saveGroups(updated);
+              }}
+              onAddEndpoint={async e => { 
+                const newEp = { ...e, id: `${Date.now()}`, status: EndpointStatus.DISCONNECTED, lastConnected: 'N/A' };
+                if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(newEp);
+                const updated = [...endpoints, newEp]; setEndpoints(updated); storageService.saveEndpoints(updated);
+              }}
+              onUpdateEndpoint={handleUpdateEndpoint}
+              onDeleteEndpoint={async id => { 
+                if (supabaseService.isConfigured()) await supabaseService.deleteEndpoint(id);
+                const updated = endpoints.filter(e => e.id !== id); setEndpoints(updated); storageService.saveEndpoints(updated);
+              }}
+              onUpdateSettings={handleUpdateSettings} 
+          />}
+          {activeTab === 'accounts' && <UserManagement users={users} currentUser={currentUser!} onAddUser={async u => {
+              const newUser = { ...u, id: `${Date.now()}` };
+              if (supabaseService.isConfigured()) await supabaseService.upsertUser(newUser);
+              const updated = [...users, newUser]; setUsers(updated); storageService.saveUsers(updated);
+          }} onUpdateUser={async u => {
+              if (supabaseService.isConfigured()) await supabaseService.upsertUser(u);
+              const updated = users.map(item => item.id === u.id ? u : item); setUsers(updated); storageService.saveUsers(updated);
+          }} onDeleteUser={async id => {
+              if (supabaseService.isConfigured()) await supabaseService.deleteUser(id);
+              const updated = users.filter(u => u.id !== id); setUsers(updated); storageService.saveUsers(updated);
+          }} />}
+          {activeTab === 'deployment' && <ExportPage />}
+        </div>
       </main>
 
       {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Meeting, EndpointStatus } from '../types';
-import { CheckCircle2, Circle, ClipboardList, Search, AlertCircle, Save } from 'lucide-react';
+import { CheckCircle2, Circle, ClipboardList, Search, AlertCircle, Save, FileSpreadsheet } from 'lucide-react';
 
 interface MeetingPreCheckProps {
   meeting: Meeting;
@@ -58,6 +58,34 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
       endpointChecks: localChecks
     });
     alert('Đã lưu trạng thái kiểm tra kỹ thuật!');
+  };
+
+  const handleExportExcel = () => {
+    if (meeting.endpoints.length === 0) {
+      alert("Không có dữ liệu điểm cầu để xuất.");
+      return;
+    }
+
+    const header = "Tên điểm cầu,Vị trí,Trạng thái kiểm tra,Ghi chú kỹ thuật\n";
+    const rows = meeting.endpoints.map(ep => {
+      const checkInfo = localChecks[ep.id] || { checked: false, notes: '' };
+      const statusText = checkInfo.checked ? "Đã kiểm tra" : "Chưa kiểm tra";
+      const cleanNotes = (checkInfo.notes || "").replace(/"/g, '""');
+      return `"${ep.name.replace(/"/g, '""')}","${ep.location.replace(/"/g, '""')}","${statusText}","${cleanNotes}"`;
+    }).join("\n");
+    
+    const csvContent = "\uFEFF" + header + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeTitle = meeting.title.replace(/[^a-z0-9àáạảãâầấnậẩêềếệểiìíịỉĩoòóọỏõôồốộổơờớợởuùúụủũưừứựửyỳýỵỷỹ\s]/gi, '_').replace(/\s+/g, '_');
+    
+    link.href = url;
+    link.setAttribute('download', `Ket_qua_KT_Ky_thuat_${safeTitle}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -121,13 +149,22 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
               </button>
             ))}
           </div>
-          <button 
-            onClick={handleSave}
-            className="ml-auto flex items-center gap-2 px-8 py-3 bg-cyan-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
-          >
-            <Save className="w-4 h-4" />
-            Lưu báo cáo
-          </button>
+          <div className="flex gap-2 ml-auto">
+            <button 
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Xuất Excel
+            </button>
+            <button 
+              onClick={handleSave}
+              className="flex items-center gap-2 px-8 py-3 bg-cyan-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
+            >
+              <Save className="w-4 h-4" />
+              Lưu báo cáo
+            </button>
+          </div>
         </div>
 
         {/* Content Section */}

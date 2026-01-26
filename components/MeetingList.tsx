@@ -115,24 +115,24 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full w-full">
       {/* Filters Header */}
-      <div className="p-5 border-b border-gray-100 flex flex-col gap-5 bg-gray-50/30">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/30">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
+            <div className="p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100 shrink-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Danh sách các cuộc họp</h2>
-              <p className="text-xs text-gray-500 font-medium">Tìm thấy {filteredAndSortedMeetings.length} cuộc họp phù hợp</p>
+              <h2 className="text-base md:text-lg font-bold text-gray-900">Danh sách cuộc họp</h2>
+              <p className="text-xs text-gray-500 font-medium">Tìm thấy {filteredAndSortedMeetings.length} cuộc họp</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="relative group">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <div className="relative group w-full md:w-auto">
               <input
                 type="text"
                 placeholder="Tìm cuộc họp..."
@@ -145,10 +145,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
               </svg>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
               <button 
                 onClick={handleExportExcel}
-                className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
+                className="bg-emerald-600 text-white px-4 md:px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 Xuất Excel
@@ -157,10 +157,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
               {isAdmin && onAdd && (
                 <button 
                   onClick={onAdd}
-                  className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                  className="bg-blue-600 text-white px-4 md:px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
-                  Lên lịch mới
+                  Lên lịch
                 </button>
               )}
             </div>
@@ -168,29 +168,31 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         </div>
 
         {/* Date Range Filters */}
-        <div className="flex flex-wrap items-end gap-4 pb-1">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Từ ngày</label>
-            <input 
-              type="date"
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-gray-700 transition-all"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Đến ngày</label>
-            <input 
-              type="date"
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-gray-700 transition-all"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
+        <div className="flex flex-col md:flex-row md:items-end gap-3 pb-1">
+          <div className="flex gap-2">
+             <div className="space-y-1.5 flex-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Từ ngày</label>
+                <input 
+                  type="date"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-gray-700 transition-all"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Đến ngày</label>
+                <input 
+                  type="date"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-semibold text-gray-700 transition-all"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
           </div>
           {(searchTerm || startDate || endDate) && (
             <button 
               onClick={handleResetFilters}
-              className="px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-all flex items-center gap-1.5 mb-0.5"
+              className="px-4 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-all flex items-center justify-center gap-1.5 mb-0.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -202,12 +204,12 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       </div>
 
       {/* Table Content */}
-      <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto flex-1 w-full">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-gray-50/80 text-gray-500 text-[11px] uppercase font-black tracking-widest">
               <th 
-                className="px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
+                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors sticky left-0 bg-gray-50/80 z-10"
                 onClick={() => handleSort('title')}
               >
                 <div className="flex items-center">
@@ -216,7 +218,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 </div>
               </th>
               <th 
-                className="px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
+                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
                 onClick={() => handleSort('hostUnit')}
               >
                 <div className="flex items-center">
@@ -225,7 +227,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 </div>
               </th>
               <th 
-                className="px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
+                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
                 onClick={() => handleSort('chairPerson')}
               >
                 <div className="flex items-center">
@@ -234,7 +236,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 </div>
               </th>
               <th 
-                className="px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
+                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-gray-100 group transition-colors"
                 onClick={() => handleSort('startTime')}
               >
                 <div className="flex items-center">
@@ -242,42 +244,42 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   <SortIcon field="startTime" />
                 </div>
               </th>
-              <th className="px-6 py-4">Số điểm cầu</th>
-              <th className="px-6 py-4 text-center">Hành động</th>
+              <th className="px-4 md:px-6 py-4 whitespace-nowrap">Số điểm cầu</th>
+              <th className="px-4 md:px-6 py-4 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paginatedMeetings.map((meeting) => (
               <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
-                <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm">{meeting.title}</div>
-                  <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter">REF: {meeting.id}</div>
+                <td className="px-4 md:px-6 py-4 sticky left-0 bg-white group-hover:bg-blue-50/30 z-10 border-r border-transparent group-hover:border-gray-100">
+                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px]">{meeting.title}</div>
+                  <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter truncate">REF: {meeting.id}</div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-700 font-medium">{meeting.hostUnit}</div>
+                <td className="px-4 md:px-6 py-4">
+                  <div className="text-sm text-gray-700 font-medium line-clamp-1">{meeting.hostUnit}</div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 md:px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100">
+                    <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100 shrink-0">
                       {meeting.chairPerson.charAt(0)}
                     </div>
-                    <span className="text-sm text-gray-700 font-semibold">{meeting.chairPerson}</span>
+                    <span className="text-sm text-gray-700 font-semibold line-clamp-1">{meeting.chairPerson}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-xs font-bold text-gray-800">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
-                  <div className="text-[11px] text-gray-500 font-medium mt-0.5">
+                <td className="px-4 md:px-6 py-4">
+                  <div className="text-xs font-bold text-gray-800 whitespace-nowrap">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
+                  <div className="text-[11px] text-gray-500 font-medium mt-0.5 whitespace-nowrap">
                     {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 md:px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-black uppercase rounded-lg border border-blue-100 shadow-sm">
+                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
                       {meeting.endpoints.length} ĐIỂM CẦU
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-center">
+                <td className="px-4 md:px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <button 
                       onClick={() => onSelect(meeting)}
@@ -328,11 +330,11 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
       {/* Pagination Footer */}
       {totalPages > 1 && (
-        <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <div className="px-4 md:px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden md:block">
             Trang {currentPage} / {totalPages}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mx-auto md:mx-0">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
@@ -351,13 +353,13 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
                 // Logic to show limited page numbers if too many
                 if (
-                  totalPages > 7 && 
+                  totalPages > 5 && 
                   page !== 1 && 
                   page !== totalPages && 
                   Math.abs(page - currentPage) > 1
                 ) {
-                  if (page === 2 && currentPage > 4) return <span key="ellipsis-1" className="text-gray-400">...</span>;
-                  if (page === totalPages - 1 && currentPage < totalPages - 3) return <span key="ellipsis-2" className="text-gray-400">...</span>;
+                  if (page === 2 && currentPage > 3) return <span key="ellipsis-1" className="text-gray-400">...</span>;
+                  if (page === totalPages - 1 && currentPage < totalPages - 2) return <span key="ellipsis-2" className="text-gray-400">...</span>;
                   if (Math.abs(page - currentPage) > 1) return null;
                 }
 

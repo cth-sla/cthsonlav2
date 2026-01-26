@@ -51,25 +51,26 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-5xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white w-full max-w-5xl rounded-[2rem] md:rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-4 md:p-8 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-100">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-100 shrink-0">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-900 tracking-tight">{meeting.title}</h3>
+              <h3 className="text-lg md:text-xl font-black text-gray-900 tracking-tight line-clamp-2">{meeting.title}</h3>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Chi tiết thông tin cuộc họp • ID: {meeting.id}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
              <button 
                 onClick={() => setShowPreCheck(true)}
-                className="px-5 py-2.5 bg-slate-900 text-cyan-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-slate-900 text-cyan-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                Kiểm tra Kỹ thuật
+                <span className="hidden sm:inline">Kiểm tra Kỹ thuật</span>
+                <span className="sm:hidden">KT Kỹ thuật</span>
              </button>
              <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-all text-gray-400">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -77,11 +78,11 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
           <div className="md:col-span-8 space-y-8">
              <section>
                 <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 border-l-4 border-blue-600 pl-3">Thông tin tổng quan</h4>
-                <div className="grid grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
                    <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Đơn vị chủ trì</p>
                       <p className="text-sm font-black text-gray-800 mt-1">{meeting.hostUnit}</p>
@@ -114,7 +115,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                             className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 hover:underline"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                            {notes ? 'Chỉnh sửa ghi chú' : 'Thêm ghi chú mới'}
+                            {notes ? 'Sửa' : 'Thêm'}
                         </button>
                     ) : (
                         <div className="flex gap-2">
@@ -129,7 +130,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                                 disabled={isSavingNotes}
                                 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1.5"
                             >
-                                {isSavingNotes ? 'Đang lưu...' : 'Lưu ghi chú'}
+                                {isSavingNotes ? '...' : 'Lưu'}
                             </button>
                         </div>
                     )}
@@ -217,10 +218,10 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+        <div className="p-4 md:p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
           <button 
             onClick={onClose}
-            className="px-8 py-3 bg-white border border-gray-200 text-gray-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95"
+            className="w-full md:w-auto px-8 py-3 bg-white border border-gray-200 text-gray-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95"
           >
             Đóng cửa sổ
           </button>

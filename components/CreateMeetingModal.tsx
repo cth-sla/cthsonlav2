@@ -130,10 +130,10 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-3xl">
+      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-200">
+        <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-3xl shrink-0">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl shadow-lg text-white ${editingMeeting ? 'bg-emerald-600 shadow-emerald-100' : 'bg-blue-600 shadow-blue-100'}`}>
+            <div className={`p-3 rounded-2xl shadow-lg text-white shrink-0 ${editingMeeting ? 'bg-emerald-600 shadow-emerald-100' : 'bg-blue-600 shadow-blue-100'}`}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {editingMeeting ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -143,8 +143,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
               </svg>
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">{editingMeeting ? 'Cập nhật thông tin cuộc họp' : 'Thiết lập cuộc họp mới'}</h3>
-              <p className="text-xs text-gray-500 mt-1 font-medium">{editingMeeting ? `Mã cuộc họp: ${editingMeeting.id}` : 'Sử dụng danh mục hệ thống để điền thông tin nhanh chóng'}</p>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900">{editingMeeting ? 'Cập nhật cuộc họp' : 'Cuộc họp mới'}</h3>
+              <p className="text-xs text-gray-500 mt-1 font-medium hidden sm:block">{editingMeeting ? `Mã: ${editingMeeting.id}` : 'Điền thông tin chi tiết bên dưới'}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-white rounded-full transition-all border border-transparent hover:border-gray-100">
@@ -152,8 +152,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             {/* General Info */}
             <div className="lg:col-span-7 space-y-6">
               <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] border-l-4 border-blue-600 pl-3">Nội dung & Thời gian</h4>
@@ -257,7 +257,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col bg-gray-50 rounded-3xl border border-gray-100 p-4 space-y-4 shadow-inner">
+              <div className="flex-1 flex flex-col bg-gray-50 rounded-3xl border border-gray-100 p-4 space-y-4 shadow-inner min-h-[300px]">
                 <div className="relative">
                   <input 
                     type="text"
@@ -286,7 +286,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto max-h-[420px] pr-1 space-y-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto max-h-[350px] lg:max-h-[420px] pr-1 space-y-2 custom-scrollbar">
                   {filteredEndpoints.map(ep => (
                     <label 
                       key={ep.id} 
@@ -296,7 +296,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                           : 'bg-white/50 border-gray-100 hover:border-blue-200'
                       }`}
                     >
-                      <div className={`relative flex items-center justify-center w-5 h-5 rounded-md border-2 transition-colors ${
+                      <div className={`relative flex items-center justify-center w-5 h-5 rounded-md border-2 transition-colors shrink-0 ${
                         selectedEndpointIds.includes(ep.id) ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'
                       }`}>
                         <input 
@@ -309,12 +309,12 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                           <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
                         )}
                       </div>
-                      <div className="ml-4 flex-1">
+                      <div className="ml-4 flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className={`text-sm font-bold ${selectedEndpointIds.includes(ep.id) ? 'text-blue-700' : 'text-gray-800'}`}>{ep.name}</span>
-                          <span className={`w-2 h-2 rounded-full ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          <span className={`text-sm font-bold truncate ${selectedEndpointIds.includes(ep.id) ? 'text-blue-700' : 'text-gray-800'}`}>{ep.name}</span>
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500' : 'bg-red-500'}`}></span>
                         </div>
-                        <p className="text-[10px] text-gray-500 font-medium mt-0.5">{ep.location}</p>
+                        <p className="text-[10px] text-gray-500 font-medium mt-0.5 truncate">{ep.location}</p>
                       </div>
                     </label>
                   ))}
@@ -328,21 +328,21 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-4">
+          <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-4 shrink-0">
             <button 
               type="button"
               onClick={onClose}
-              className="px-8 py-3.5 border border-gray-200 text-gray-600 rounded-2xl text-sm font-black hover:bg-gray-50 transition-all active:scale-95"
+              className="px-8 py-3.5 border border-gray-200 text-gray-600 rounded-2xl text-sm font-black hover:bg-gray-50 transition-all active:scale-95 w-full sm:w-auto"
             >
               HỦY BỎ
             </button>
             <button 
               type="submit"
-              className={`px-12 py-3.5 text-white rounded-2xl text-sm font-black shadow-xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 ${
+              className={`px-12 py-3.5 text-white rounded-2xl text-sm font-black shadow-xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto ${
                 editingMeeting ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
               }`}
             >
-              <span>{editingMeeting ? 'CẬP NHẬT CUỘC HỌP' : 'HOÀN TẤT & PHÁT HÀNH'}</span>
+              <span>{editingMeeting ? 'CẬP NHẬT' : 'PHÁT HÀNH'}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </div>

@@ -158,51 +158,53 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      <div className="flex flex-wrap items-center gap-4 pb-4 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 pb-4 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="relative flex-1 min-w-[200px]">
           <input
             type="text"
             placeholder="Tìm kiếm tên hoặc vị trí..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow bg-white"
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow bg-white"
           />
-          <svg className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <label htmlFor="status-filter" className="text-xs font-bold text-gray-400 uppercase tracking-tight">Trạng thái:</label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
-          >
-            <option value="ALL">Tất cả</option>
-            <option value={EndpointStatus.CONNECTED}>Online</option>
-            <option value={EndpointStatus.DISCONNECTED}>Offline</option>
-            <option value={EndpointStatus.CONNECTING}>Đang nạp</option>
-          </select>
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <div className="flex items-center space-x-2 shrink-0">
+            <label htmlFor="status-filter" className="text-xs font-bold text-gray-400 uppercase tracking-tight whitespace-nowrap">Trạng thái:</label>
+            <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-sm bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+            >
+                <option value="ALL">Tất cả</option>
+                <option value={EndpointStatus.CONNECTED}>Online</option>
+                <option value={EndpointStatus.DISCONNECTED}>Offline</option>
+                <option value={EndpointStatus.CONNECTING}>Đang nạp</option>
+            </select>
+            </div>
+
+            <div className="flex items-center space-x-2 shrink-0">
+            <label htmlFor="location-filter" className="text-xs font-bold text-gray-400 uppercase tracking-tight whitespace-nowrap">Vị trí:</label>
+            <select
+                id="location-filter"
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="text-sm bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+            >
+                <option value="ALL">Khu vực</option>
+                {locations.map(loc => (
+                <option key={loc} value={loc}>{loc}</option>
+                ))}
+            </select>
+            </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <label htmlFor="location-filter" className="text-xs font-bold text-gray-400 uppercase tracking-tight">Vị trí:</label>
-          <select
-            id="location-filter"
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            className="text-sm bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
-          >
-            <option value="ALL">Khu vực</option>
-            {locations.map(loc => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="ml-auto text-[10px] text-gray-400 font-black uppercase tracking-widest">
+        <div className="md:ml-auto text-[10px] text-gray-400 font-black uppercase tracking-widest text-right">
           {filteredEndpoints.length} / {endpoints.length} ĐIỂM CẦU
         </div>
       </div>

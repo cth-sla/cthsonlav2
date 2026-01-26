@@ -119,8 +119,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
+      <div className="flex flex-col md:flex-row justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto no-scrollbar">
           {['units', 'staff', 'groups', 'endpoints', 'settings'].map((tab) => (
             <button 
               key={tab}
@@ -137,7 +137,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         </div>
 
         {activeTab !== 'settings' && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <div className="relative">
               <input 
                 type="text" 
@@ -151,7 +151,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             <button 
               onClick={() => openModal()}
               style={primaryBgStyle}
-              className="text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:brightness-110 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              className="text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:brightness-110 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
             >
               Thêm mới
             </button>
@@ -159,9 +159,9 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
         {activeTab === 'units' && (
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên đơn vị</th>
@@ -185,7 +185,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'staff' && (
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Họ và tên</th>
@@ -211,7 +211,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'groups' && (
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên nhóm</th>
@@ -235,7 +235,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'endpoints' && (
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên điểm cầu</th>

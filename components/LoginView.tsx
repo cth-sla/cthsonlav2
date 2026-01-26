@@ -84,7 +84,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                </div>
             </div>
             <h1 className="flex flex-col items-start text-left">
-              <span className="text-3xl lg:text-5xl font-black text-white uppercase tracking-tight leading-none">{systemSettings.shortName}</span>
+              <span className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tight leading-none">{systemSettings.shortName}</span>
               <span className="text-xs font-black text-blue-500 uppercase tracking-[0.4em] mt-3">{systemSettings.systemName}</span>
             </h1>
           </div>
