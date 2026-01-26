@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3 } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -66,14 +66,14 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Bảo vệ tab Monitoring: Nếu không phải Admin thì không cho phép ở lại tab này
+  // Bảo vệ tab Monitoring
   useEffect(() => {
     if (activeTab === 'monitoring' && !isAdmin && currentUser) {
       setActiveTab('dashboard');
     }
   }, [activeTab, isAdmin, currentUser]);
 
-  // Áp dụng màu chủ đạo từ cài đặt vào CSS Variable
+  // Áp dụng màu chủ đạo
   useEffect(() => {
     if (systemSettings.primaryColor) {
       const root = document.documentElement;
@@ -177,6 +177,7 @@ const App: React.FC = () => {
 
   const handleUpdateSettings = async (settings: SystemSettings) => {
     setSystemSettings(settings);
+    // Fix: Corrected property name from saveSettings to saveSystemSettings
     storageService.saveSystemSettings(settings);
     if (supabaseService.isConfigured()) {
       try {
@@ -190,11 +191,10 @@ const App: React.FC = () => {
   const dashboardStats = useMemo(() => {
     const now = new Date();
     
-    // Logic cho Thống kê theo thời gian
+    // Thống kê theo thời gian
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
     startOfWeek.setHours(0, 0, 0, 0);
-
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
@@ -202,14 +202,19 @@ const App: React.FC = () => {
     const monthlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfMonth);
     const yearlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfYear);
 
-    // Logic cho Đơn vị chủ trì tích cực
+    // Thống kê theo đơn vị chủ trì
     const hostUnitMap: Record<string, number> = {};
     meetings.forEach(m => {
       hostUnitMap[m.hostUnit] = (hostUnitMap[m.hostUnit] || 0) + 1;
     });
-    const topHost = Object.entries(hostUnitMap).sort((a, b) => b[1] - a[1])[0] || ["Chưa có", 0];
+    
+    const unitStats = Object.entries(hostUnitMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
 
-    const total = meetings.length;
+    const topHost = unitStats[0] || { name: "Chưa có", count: 0 };
+
     const connected = endpoints.filter(e => e.status === EndpointStatus.CONNECTED).length;
     const uptime = endpoints.length > 0 ? ((connected / endpoints.length) * 100).toFixed(1) : "0";
     const recentMeetings = [...meetings].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5);
@@ -222,7 +227,7 @@ const App: React.FC = () => {
     });
 
     return { 
-      total, 
+      total: meetings.length,
       connected, 
       uptime, 
       recentMeetings, 
@@ -230,8 +235,9 @@ const App: React.FC = () => {
       weeklyCount: weeklyMeetings.length,
       monthlyCount: monthlyMeetings.length,
       yearlyCount: yearlyMeetings.length,
-      topHostName: topHost[0],
-      topHostCount: topHost[1]
+      topHostName: topHost.name,
+      topHostCount: topHost.count,
+      unitStats
     };
   }, [meetings, endpoints]);
 
@@ -239,7 +245,7 @@ const App: React.FC = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const handleTabChange = (tab: typeof activeTab) => {
     setActiveTab(tab);
-    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+    setIsSidebarOpen(false);
   };
 
   if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
@@ -250,93 +256,37 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-50 overflow-hidden relative">
-      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
-      <aside 
-        className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex justify-between items-center">
           <h1 className="flex items-center gap-3">
              <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold">SL</span>}
+                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold text-sm">SL</span>}
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
                 <span className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">SLA MONITOR v3.1</span>
              </div>
           </h1>
-          <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white">
-            <X size={20} />
-          </button>
+          <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white"><X size={20} /></button>
         </div>
 
         <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto custom-scrollbar">
-          <button 
-            onClick={() => handleTabChange('dashboard')} 
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-            style={activeTab === 'dashboard' ? primaryBgStyle : {}}
-          >
-            <LayoutDashboard size={20} /> <span className="font-bold text-sm">Tổng quan</span>
-          </button>
-          <button 
-            onClick={() => handleTabChange('reports')} 
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-            style={activeTab === 'reports' ? primaryBgStyle : {}}
-          >
-            <FileText size={20} /> <span className="font-bold text-sm">Báo cáo</span>
-          </button>
-          <button 
-            onClick={() => handleTabChange('meetings')} 
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'meetings' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-            style={activeTab === 'meetings' ? primaryBgStyle : {}}
-          >
-            <CalendarDays size={20} /> <span className="font-bold text-sm">Lịch họp</span>
-          </button>
-          
-          {/* Chỉ hiển thị Giám sát cho Admin */}
+          <button onClick={() => handleTabChange('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'dashboard' ? primaryBgStyle : {}}><LayoutDashboard size={20} /> <span className="font-bold text-sm">Tổng quan</span></button>
+          <button onClick={() => handleTabChange('reports')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'reports' ? primaryBgStyle : {}}><FileText size={20} /> <span className="font-bold text-sm">Báo cáo</span></button>
+          <button onClick={() => handleTabChange('meetings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'meetings' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'meetings' ? primaryBgStyle : {}}><CalendarDays size={20} /> <span className="font-bold text-sm">Lịch họp</span></button>
           {isAdmin && (
-            <button 
-              onClick={() => handleTabChange('monitoring')} 
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-              style={activeTab === 'monitoring' ? primaryBgStyle : {}}
-            >
-              <MonitorPlay size={20} /> <span className="font-bold text-sm">Giám sát</span>
-            </button>
+            <button onClick={() => handleTabChange('monitoring')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'monitoring' ? primaryBgStyle : {}}><MonitorPlay size={20} /> <span className="font-bold text-sm">Giám sát</span></button>
           )}
-          
           {isAdmin && (
             <div className="pt-4 border-t border-slate-800 space-y-1">
                <p className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Hệ thống</p>
-               <button 
-                onClick={() => handleTabChange('management')} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'management' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-                style={activeTab === 'management' ? primaryBgStyle : {}}
-               >
-                  <Settings size={20} /> <span className="font-bold text-sm">Danh mục</span>
-               </button>
-               <button 
-                onClick={() => handleTabChange('accounts')} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-                style={activeTab === 'accounts' ? primaryBgStyle : {}}
-               >
-                  <Users size={20} /> <span className="font-bold text-sm">Tài khoản</span>
-               </button>
-               <button 
-                onClick={() => handleTabChange('deployment')} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-                style={activeTab === 'deployment' ? primaryBgStyle : {}}
-               >
-                  <Share2 size={20} /> <span className="font-bold text-sm">Triển khai</span>
-               </button>
+               <button onClick={() => handleTabChange('management')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'management' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'management' ? primaryBgStyle : {}}><Settings size={20} /> <span className="font-bold text-sm">Danh mục</span></button>
+               <button onClick={() => handleTabChange('accounts')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'accounts' ? primaryBgStyle : {}}><Users size={20} /> <span className="font-bold text-sm">Tài khoản</span></button>
+               <button onClick={() => handleTabChange('deployment')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`} style={activeTab === 'deployment' ? primaryBgStyle : {}}><Share2 size={20} /> <span className="font-bold text-sm">Triển khai</span></button>
             </div>
           )}
         </nav>
@@ -346,103 +296,43 @@ const App: React.FC = () => {
               <p className="text-[10px] font-black text-slate-500 uppercase">Người dùng:</p>
               <p style={primaryTextStyle} className="text-xs font-bold truncate">{currentUser.fullName}</p>
            </div>
-           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm">
-              <LogOut size={18} /> Đăng xuất
-           </button>
+           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm"><LogOut size={18} /> Đăng xuất</button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Mobile Header */}
         <header className="lg:hidden h-16 bg-white border-b border-gray-200 flex items-center px-4 justify-between shrink-0">
-          <button onClick={toggleSidebar} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-            <Menu size={24} />
-          </button>
-          <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">
-             {activeTab === 'dashboard' ? 'Tổng quan' : 
-              activeTab === 'meetings' ? 'Lịch họp' : 
-              activeTab === 'monitoring' ? 'Giám sát' : 
-              activeTab === 'reports' ? 'Báo cáo' : 'Cấu hình'}
-          </h2>
-          <div className="w-10"></div> {/* Spacer for center alignment */}
+          <button onClick={toggleSidebar} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Menu size={24} /></button>
+          <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight">Dashboard</h2>
+          <div className="w-10"></div>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
           <header className="mb-8 hidden lg:flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                 {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
-                  activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
-                  activeTab === 'monitoring' ? 'Giám sát hạ tầng' : 
-                  activeTab === 'reports' ? 'Báo cáo thống kê' : 'Cấu hình hệ thống'}
-              </h2>
-              {/* Live Status Indicator */}
-              {(activeTab === 'dashboard' || activeTab === 'monitoring') && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
-                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live: {lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}</span>
-                </div>
-              )}
+              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Thống kê hoạt động</h2>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
+                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live: {lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}</span>
+              </div>
             </div>
             {activeTab === 'dashboard' && canManageMeetings && (
-              <button 
-                onClick={() => setIsCreateModalOpen(true)} 
-                style={primaryBgStyle}
-                className="px-6 py-2.5 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all hover:brightness-110 active:scale-95 flex items-center gap-2"
-              >
-                <CalendarDays size={16} /> Tạo cuộc họp mới
-              </button>
+              <button onClick={() => setIsCreateModalOpen(true)} style={primaryBgStyle} className="px-6 py-2.5 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl flex items-center gap-2"><CalendarDays size={16} /> Tạo cuộc họp mới</button>
             )}
           </header>
 
-          {/* Mobile Create Button for Dashboard */}
-          {activeTab === 'dashboard' && canManageMeetings && (
-            <div className="lg:hidden mb-6">
-               <button 
-                  onClick={() => setIsCreateModalOpen(true)} 
-                  style={primaryBgStyle}
-                  className="w-full px-6 py-3 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <CalendarDays size={16} /> Tạo cuộc họp mới
-                </button>
-            </div>
-          )}
-
           {activeTab === 'dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-               {/* Primary Stats Grid */}
+            <div className="space-y-8">
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                  <StatCard 
-                    title="Họp trong Tuần" 
-                    value={dashboardStats.weeklyCount} 
-                    icon={<CalendarDays color={systemSettings.primaryColor} />} 
-                    description="Tổng số cuộc họp đã diễn ra và được lên lịch trong tuần hiện tại."
-                  />
-                  <StatCard 
-                    title="Họp trong Tháng" 
-                    value={dashboardStats.monthlyCount} 
-                    icon={<FileText color={systemSettings.primaryColor} />} 
-                    description="Tổng số cuộc họp trong tháng này."
-                  />
-                  <StatCard 
-                    title="Điểm cầu Online" 
-                    value={dashboardStats.connected} 
-                    trendUp={true} 
-                    icon={<MonitorPlay color={systemSettings.primaryColor} />} 
-                    description={`Hiện có ${dashboardStats.connected} trên tổng số ${endpoints.length} điểm cầu đang trực tuyến.`}
-                  />
-                  <StatCard 
-                    title="Uptime Khả dụng" 
-                    value={`${dashboardStats.uptime}%`} 
-                    icon={<Activity color={systemSettings.primaryColor} />} 
-                    description="Tỷ lệ khả dụng của hạ tầng cầu truyền hình toàn tỉnh."
-                  />
+                  <StatCard title="Họp trong Tuần" value={dashboardStats.weeklyCount} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp trong tuần hiện tại." />
+                  <StatCard title="Họp trong Tháng" value={dashboardStats.monthlyCount} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp trong tháng hiện tại." />
+                  <StatCard title="Họp trong Năm" value={dashboardStats.yearlyCount} icon={<BarChart3 className="text-amber-500" />} description={`Tổng số cuộc họp trong năm ${new Date().getFullYear()}.`} />
+                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<Activity color={systemSettings.primaryColor} />} description="Tỷ lệ khả dụng của toàn bộ hệ thống điểm cầu." />
                </div>
 
-               {/* Secondary Stats & Chart */}
                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                  <div className="xl:col-span-2 bg-white p-4 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Xu hướng họp 7 ngày qua</h3>
+                  <div className="xl:col-span-2 bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Tần suất họp (7 ngày qua)</h3>
                      <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                            <AreaChart data={dashboardStats.last7Days}>
@@ -455,33 +345,29 @@ const App: React.FC = () => {
                      </div>
                   </div>
                   
-                  <div className="space-y-6">
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center text-center">
-                       <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-6 self-start">Đơn vị chủ trì tích cực</h3>
-                       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-4">
-                          <Share2 size={32} />
-                       </div>
-                       <p className="text-lg font-black text-slate-900 line-clamp-2 uppercase leading-tight">{dashboardStats.topHostName}</p>
-                       <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Thực hiện {dashboardStats.topHostCount} cuộc họp</p>
-                    </div>
-
-                    <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white">
-                        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-4">Thống kê năm {new Date().getFullYear()}</h3>
-                        <div className="flex items-end justify-between">
-                            <div>
-                                <p className="text-4xl font-black">{dashboardStats.yearlyCount}</p>
-                                <p className="text-[10px] font-bold text-blue-400 uppercase mt-1">Tổng cuộc họp năm</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xl font-black text-emerald-400">+{Math.round((dashboardStats.yearlyCount / (dashboardStats.total || 1)) * 100)}%</p>
-                                <p className="text-[9px] text-slate-500 uppercase font-bold">So với dữ liệu gốc</p>
-                            </div>
-                        </div>
-                    </div>
+                  <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col">
+                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Thống kê theo Đơn vị</h3>
+                     <div className="flex-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <BarChart layout="vertical" data={dashboardStats.unitStats} margin={{ left: 40 }}>
+                              <XAxis type="number" hide />
+                              <YAxis dataKey="name" type="category" fontSize={9} fontWeight="bold" width={100} />
+                              <Tooltip cursor={{fill: 'transparent'}} />
+                              <Bar dataKey="count" fill={systemSettings.primaryColor} radius={[0, 4, 4, 0]}>
+                                 {dashboardStats.unitStats.map((_, index) => (
+                                    <Cell key={`cell-${index}`} fillOpacity={1 - (index * 0.1)} />
+                                 ))}
+                              </Bar>
+                           </BarChart>
+                        </ResponsiveContainer>
+                     </div>
+                     <div className="mt-4 pt-4 border-t border-gray-50">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Đơn vị tích cực nhất:</p>
+                        <p className="text-sm font-black text-slate-900 mt-1 uppercase truncate">{dashboardStats.topHostName}</p>
+                     </div>
                   </div>
                </div>
 
-               {/* Recent Meetings Table */}
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
@@ -491,24 +377,30 @@ const App: React.FC = () => {
                      <table className="w-full text-left text-sm min-w-[600px]">
                         <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                            <tr>
-                              <th className="px-6 md:px-8 py-4">Tên cuộc họp</th>
-                              <th className="px-6 md:px-8 py-4">Đơn vị chủ trì</th>
-                              <th className="px-6 md:px-8 py-4">Thời gian</th>
-                              <th className="px-6 md:px-8 py-4 text-center">Hành động</th>
+                              <th className="px-8 py-4">Tên cuộc họp</th>
+                              <th className="px-8 py-4">Đơn vị & Chủ trì</th>
+                              <th className="px-8 py-4">Thời gian</th>
+                              <th className="px-8 py-4 text-center">Hành động</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                            {dashboardStats.recentMeetings.map(m => (
                              <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
-                                <td className="px-6 md:px-8 py-5 font-bold text-gray-900 text-sm whitespace-nowrap md:whitespace-normal max-w-[200px] truncate">{m.title}</td>
-                                <td className="px-6 md:px-8 py-5 text-gray-500 text-[11px] whitespace-nowrap">{m.hostUnit}</td>
-                                <td className="px-6 md:px-8 py-5 font-mono text-[11px] whitespace-nowrap">
+                                <td className="px-8 py-5">
+                                   <div className="font-bold text-gray-900 text-sm truncate max-w-[250px] uppercase tracking-tight">{m.title}</div>
+                                   <div className="text-[10px] text-gray-400 mt-1 font-mono">{m.id}</div>
+                                </td>
+                                <td className="px-8 py-5">
+                                   <div className="text-slate-900 font-bold text-[11px] uppercase">{m.hostUnit}</div>
+                                   <div className="text-slate-500 text-[10px] mt-0.5">{m.chairPerson}</div>
+                                </td>
+                                <td className="px-8 py-5 font-mono text-[11px] whitespace-nowrap">
                                   {new Date(m.startTime).toLocaleString('vi-VN', { 
                                     day: '2-digit', month: '2-digit', year: 'numeric', 
                                     hour: '2-digit', minute: '2-digit', hour12: false 
                                   })}
                                 </td>
-                                <td className="px-6 md:px-8 py-5 text-center">
+                                <td className="px-8 py-5 text-center">
                                    <button className="px-4 py-2 text-[10px] font-black uppercase rounded-lg" style={{...primaryLightBgStyle, ...primaryTextStyle}}>Chi tiết</button>
                                 </td>
                              </tr>
