@@ -2,9 +2,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, AreaChart, Area, Legend
+  AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -37,10 +37,41 @@ const App: React.FC = () => {
   const [groups, setGroups] = useState<ParticipantGroup[]>(() => storageService.getGroups());
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOperator = currentUser?.role === 'OPERATOR';
   const canManageMeetings = isAdmin || isOperator;
+
+  // Tự động làm mới dữ liệu điểm cầu mỗi 30 giây
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const refreshData = async () => {
+      if (supabaseService.isConfigured()) {
+        try {
+          const freshEndpoints = await supabaseService.getEndpoints();
+          if (freshEndpoints && freshEndpoints.length > 0) {
+            setEndpoints(freshEndpoints);
+            storageService.saveEndpoints(freshEndpoints);
+            setLastRefreshed(new Date());
+          }
+        } catch (err) {
+          console.error("Auto-refresh endpoints failed:", err);
+        }
+      }
+    };
+
+    const interval = setInterval(refreshData, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  // Bảo vệ tab Monitoring: Nếu không phải Admin thì không cho phép ở lại tab này
+  useEffect(() => {
+    if (activeTab === 'monitoring' && !isAdmin && currentUser) {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, isAdmin, currentUser]);
 
   // Áp dụng màu chủ đạo từ cài đặt vào CSS Variable
   useEffect(() => {
@@ -157,17 +188,51 @@ const App: React.FC = () => {
   };
 
   const dashboardStats = useMemo(() => {
+    const now = new Date();
+    
+    // Logic cho Thống kê theo thời gian
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const weeklyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfWeek);
+    const monthlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfMonth);
+    const yearlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfYear);
+
+    // Logic cho Đơn vị chủ trì tích cực
+    const hostUnitMap: Record<string, number> = {};
+    meetings.forEach(m => {
+      hostUnitMap[m.hostUnit] = (hostUnitMap[m.hostUnit] || 0) + 1;
+    });
+    const topHost = Object.entries(hostUnitMap).sort((a, b) => b[1] - a[1])[0] || ["Chưa có", 0];
+
     const total = meetings.length;
     const connected = endpoints.filter(e => e.status === EndpointStatus.CONNECTED).length;
     const uptime = endpoints.length > 0 ? ((connected / endpoints.length) * 100).toFixed(1) : "0";
     const recentMeetings = [...meetings].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5);
+    
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
       const count = meetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
       return { name: dateStr, count };
     });
-    return { total, connected, uptime, recentMeetings, last7Days };
+
+    return { 
+      total, 
+      connected, 
+      uptime, 
+      recentMeetings, 
+      last7Days,
+      weeklyCount: weeklyMeetings.length,
+      monthlyCount: monthlyMeetings.length,
+      yearlyCount: yearlyMeetings.length,
+      topHostName: topHost[0],
+      topHostCount: topHost[1]
+    };
   }, [meetings, endpoints]);
 
   const handleLogout = () => { setCurrentUser(null); setActiveTab('dashboard'); };
@@ -236,13 +301,17 @@ const App: React.FC = () => {
           >
             <CalendarDays size={20} /> <span className="font-bold text-sm">Lịch họp</span>
           </button>
-          <button 
-            onClick={() => handleTabChange('monitoring')} 
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
-            style={activeTab === 'monitoring' ? primaryBgStyle : {}}
-          >
-            <MonitorPlay size={20} /> <span className="font-bold text-sm">Giám sát</span>
-          </button>
+          
+          {/* Chỉ hiển thị Giám sát cho Admin */}
+          {isAdmin && (
+            <button 
+              onClick={() => handleTabChange('monitoring')} 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'bg-[var(--primary-color)] text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800'}`}
+              style={activeTab === 'monitoring' ? primaryBgStyle : {}}
+            >
+              <MonitorPlay size={20} /> <span className="font-bold text-sm">Giám sát</span>
+            </button>
+          )}
           
           {isAdmin && (
             <div className="pt-4 border-t border-slate-800 space-y-1">
@@ -300,12 +369,21 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
           <header className="mb-8 hidden lg:flex justify-between items-center">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-               {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
-                activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
-                activeTab === 'monitoring' ? 'Giám sát hạ tầng' : 
-                activeTab === 'reports' ? 'Báo cáo thống kê' : 'Cấu hình hệ thống'}
-            </h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
+                 {activeTab === 'dashboard' ? 'Bảng điều khiển' : 
+                  activeTab === 'meetings' ? 'Quản lý Lịch họp' : 
+                  activeTab === 'monitoring' ? 'Giám sát hạ tầng' : 
+                  activeTab === 'reports' ? 'Báo cáo thống kê' : 'Cấu hình hệ thống'}
+              </h2>
+              {/* Live Status Indicator */}
+              {(activeTab === 'dashboard' || activeTab === 'monitoring') && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
+                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live: {lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}</span>
+                </div>
+              )}
+            </div>
             {activeTab === 'dashboard' && canManageMeetings && (
               <button 
                 onClick={() => setIsCreateModalOpen(true)} 
@@ -332,13 +410,36 @@ const App: React.FC = () => {
 
           {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
+               {/* Primary Stats Grid */}
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                  <StatCard title="Tổng số cuộc họp" value={dashboardStats.total} icon={<CalendarDays color={systemSettings.primaryColor} />} />
-                  <StatCard title="Điểm cầu Online" value={dashboardStats.connected} trendUp={true} icon={<MonitorPlay color={systemSettings.primaryColor} />} />
-                  <StatCard title="Điểm cầu Offline" value={endpoints.length - dashboardStats.connected} trendUp={false} icon={<MonitorPlay className="text-red-500" />} />
-                  <StatCard title="Uptime Khả dụng" value={`${dashboardStats.uptime}%`} icon={<Share2 color={systemSettings.primaryColor} />} />
+                  <StatCard 
+                    title="Họp trong Tuần" 
+                    value={dashboardStats.weeklyCount} 
+                    icon={<CalendarDays color={systemSettings.primaryColor} />} 
+                    description="Tổng số cuộc họp đã diễn ra và được lên lịch trong tuần hiện tại."
+                  />
+                  <StatCard 
+                    title="Họp trong Tháng" 
+                    value={dashboardStats.monthlyCount} 
+                    icon={<FileText color={systemSettings.primaryColor} />} 
+                    description="Tổng số cuộc họp trong tháng này."
+                  />
+                  <StatCard 
+                    title="Điểm cầu Online" 
+                    value={dashboardStats.connected} 
+                    trendUp={true} 
+                    icon={<MonitorPlay color={systemSettings.primaryColor} />} 
+                    description={`Hiện có ${dashboardStats.connected} trên tổng số ${endpoints.length} điểm cầu đang trực tuyến.`}
+                  />
+                  <StatCard 
+                    title="Uptime Khả dụng" 
+                    value={`${dashboardStats.uptime}%`} 
+                    icon={<Activity color={systemSettings.primaryColor} />} 
+                    description="Tỷ lệ khả dụng của hạ tầng cầu truyền hình toàn tỉnh."
+                  />
                </div>
 
+               {/* Secondary Stats & Chart */}
                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                   <div className="xl:col-span-2 bg-white p-4 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Xu hướng họp 7 ngày qua</h3>
@@ -346,18 +447,41 @@ const App: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                            <AreaChart data={dashboardStats.last7Days}>
                               <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill={systemSettings.primaryColor} fillOpacity={0.1} />
+                              <XAxis dataKey="name" fontSize={10} fontWeight="bold" />
+                              <YAxis fontSize={10} fontWeight="bold" />
                               <Tooltip />
                            </AreaChart>
                         </ResponsiveContainer>
                      </div>
                   </div>
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center">
-                     <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8 self-start">Hiệu suất hạ tầng</h3>
-                     <div style={primaryTextStyle} className="text-6xl font-black">{dashboardStats.uptime}%</div>
-                     <p className="text-[10px] font-bold text-gray-400 mt-4 uppercase tracking-widest">Tỉ lệ tín hiệu sạch</p>
+                  
+                  <div className="space-y-6">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center text-center">
+                       <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-6 self-start">Đơn vị chủ trì tích cực</h3>
+                       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-4">
+                          <Share2 size={32} />
+                       </div>
+                       <p className="text-lg font-black text-slate-900 line-clamp-2 uppercase leading-tight">{dashboardStats.topHostName}</p>
+                       <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">Thực hiện {dashboardStats.topHostCount} cuộc họp</p>
+                    </div>
+
+                    <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white">
+                        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-4">Thống kê năm {new Date().getFullYear()}</h3>
+                        <div className="flex items-end justify-between">
+                            <div>
+                                <p className="text-4xl font-black">{dashboardStats.yearlyCount}</p>
+                                <p className="text-[10px] font-bold text-blue-400 uppercase mt-1">Tổng cuộc họp năm</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xl font-black text-emerald-400">+{Math.round((dashboardStats.yearlyCount / (dashboardStats.total || 1)) * 100)}%</p>
+                                <p className="text-[9px] text-slate-500 uppercase font-bold">So với dữ liệu gốc</p>
+                            </div>
+                        </div>
+                    </div>
                   </div>
                </div>
 
+               {/* Recent Meetings Table */}
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
@@ -398,7 +522,7 @@ const App: React.FC = () => {
 
           {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
           {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
-          {activeTab === 'monitoring' && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={isAdmin ? handleUpdateEndpoint : undefined} />}
+          {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={handleUpdateEndpoint} />}
           {activeTab === 'management' && <ManagementPage 
               units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 
               onAddUnit={async u => { 
