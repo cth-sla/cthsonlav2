@@ -2,7 +2,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  AreaChart, Area, Legend
+  AreaChart, Area, Legend, LabelList
 } from 'recharts';
 import { Meeting, Endpoint, User } from '../types';
 // @ts-ignore
@@ -57,7 +57,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
     return meetings.filter(m => {
       const mTime = new Date(m.startTime).getTime();
       return mTime >= startTs && mTime <= endTs;
-    }).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [meetings, startDate, endDate]);
 
   const statsData = useMemo(() => {
@@ -87,7 +87,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
       groupMap[key] = (groupMap[key] || 0) + 1;
     });
 
-    return Object.keys(groupMap).sort().map(key => ({
+    return Object.keys(groupMap).map(key => ({
       name: key,
       value: groupMap[key]
     }));
@@ -170,27 +170,26 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               <div className="w-1.5 h-4 bg-blue-600 rounded-full"></div>
               Biểu đồ trực quan ({groupBy === 'unit' ? 'Theo đơn vị' : 'Theo thời gian'})
             </h3>
-            <div className="h-[350px] bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100">
+            <div className="h-[400px] bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100">
               <ResponsiveContainer width="100%" height="100%">
-                {groupBy === 'unit' ? (
-                  <BarChart data={statsData}>
+                  <BarChart data={statsData} margin={{ top: 30, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="name" fontSize={10} fontWeight="bold" tick={{fill: '#64748B'}} />
+                    <XAxis 
+                      dataKey="name" 
+                      fontSize={10} 
+                      fontWeight="bold" 
+                      tick={{fill: '#64748B'}} 
+                      interval={0}
+                      angle={groupBy === 'unit' || groupBy === 'day' ? -15 : 0}
+                      textAnchor={groupBy === 'unit' || groupBy === 'day' ? 'end' : 'middle'}
+                    />
                     <YAxis fontSize={10} fontWeight="bold" tick={{fill: '#64748B'}} />
                     <Tooltip cursor={{fill: '#F1F5F9'}} />
-                    <Bar dataKey="value" name="Số cuộc họp" fill="#3B82F6" radius={[8, 8, 0, 0]}>
+                    <Bar dataKey="value" name="Số cuộc họp" fill="#3B82F6" radius={[8, 8, 0, 0]} barSize={groupBy === 'unit' ? 40 : 60}>
                       {statsData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                      <LabelList dataKey="value" position="top" style={{ fill: '#1E293B', fontSize: '12px', fontWeight: '900' }} />
                     </Bar>
                   </BarChart>
-                ) : (
-                  <AreaChart data={statsData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="name" fontSize={10} fontWeight="bold" tick={{fill: '#64748B'}} />
-                    <YAxis fontSize={10} fontWeight="bold" tick={{fill: '#64748B'}} />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="value" name="Số cuộc họp" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.1} strokeWidth={4} />
-                  </AreaChart>
-                )}
               </ResponsiveContainer>
             </div>
           </div>
