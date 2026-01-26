@@ -177,7 +177,6 @@ const App: React.FC = () => {
 
   const handleUpdateSettings = async (settings: SystemSettings) => {
     setSystemSettings(settings);
-    // Fix: Corrected property name from saveSettings to saveSystemSettings
     storageService.saveSystemSettings(settings);
     if (supabaseService.isConfigured()) {
       try {
@@ -337,8 +336,8 @@ const App: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                            <AreaChart data={dashboardStats.last7Days}>
                               <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill={systemSettings.primaryColor} fillOpacity={0.1} />
-                              <XAxis dataKey="name" fontSize={10} fontWeight="bold" />
-                              <YAxis fontSize={10} fontWeight="bold" />
+                              <XAxis dataKey="name" fontSize={10} fontWeight="bold" tick={{fill: '#94a3b8'}} />
+                              <YAxis fontSize={10} fontWeight="bold" tick={{fill: '#94a3b8'}} />
                               <Tooltip />
                            </AreaChart>
                         </ResponsiveContainer>
@@ -351,7 +350,7 @@ const App: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                            <BarChart layout="vertical" data={dashboardStats.unitStats} margin={{ left: 40 }}>
                               <XAxis type="number" hide />
-                              <YAxis dataKey="name" type="category" fontSize={9} fontWeight="bold" width={100} />
+                              <YAxis dataKey="name" type="category" fontSize={9} fontWeight="bold" width={100} tick={{fill: '#64748b'}} />
                               <Tooltip cursor={{fill: 'transparent'}} />
                               <Bar dataKey="count" fill={systemSettings.primaryColor} radius={[0, 4, 4, 0]}>
                                  {dashboardStats.unitStats.map((_, index) => (
@@ -363,48 +362,60 @@ const App: React.FC = () => {
                      </div>
                      <div className="mt-4 pt-4 border-t border-gray-50">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Đơn vị tích cực nhất:</p>
-                        <p className="text-sm font-black text-slate-900 mt-1 uppercase truncate">{dashboardStats.topHostName}</p>
+                        <p className="text-sm font-black text-slate-900 mt-1 truncate">{dashboardStats.topHostName}</p>
                      </div>
                   </div>
                </div>
 
+               {/* Recent Meetings Table Optimized */}
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
                      <button onClick={() => setActiveTab('meetings')} style={primaryTextStyle} className="text-xs font-bold hover:underline">Xem tất cả</button>
                   </div>
                   <div className="overflow-x-auto">
-                     <table className="w-full text-left text-sm min-w-[600px]">
+                     <table className="w-full text-left text-sm min-w-[800px]">
                         <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                            <tr>
-                              <th className="px-8 py-4">Tên cuộc họp</th>
+                              <th className="px-8 py-4 min-w-[350px]">Thông tin cuộc họp</th>
                               <th className="px-8 py-4">Đơn vị & Chủ trì</th>
-                              <th className="px-8 py-4">Thời gian</th>
-                              <th className="px-8 py-4 text-center">Hành động</th>
+                              <th className="px-8 py-4">Thời gian diễn ra</th>
+                              <th className="px-8 py-4 text-center">Tùy chọn</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                            {dashboardStats.recentMeetings.map(m => (
                              <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
                                 <td className="px-8 py-5">
-                                   <div className="font-bold text-gray-900 text-sm truncate max-w-[250px] uppercase tracking-tight">{m.title}</div>
-                                   <div className="text-[10px] text-gray-400 mt-1 font-mono">{m.id}</div>
+                                   <div className="font-bold text-gray-900 text-sm whitespace-normal leading-relaxed">{m.title}</div>
+                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id}</div>
                                 </td>
                                 <td className="px-8 py-5">
-                                   <div className="text-slate-900 font-bold text-[11px] uppercase">{m.hostUnit}</div>
-                                   <div className="text-slate-500 text-[10px] mt-0.5">{m.chairPerson}</div>
+                                   <div className="text-slate-900 font-bold text-[11px] leading-tight">{m.hostUnit}</div>
+                                   <div className="text-slate-500 text-[10px] mt-1 font-medium italic">Chủ trì: {m.chairPerson}</div>
                                 </td>
-                                <td className="px-8 py-5 font-mono text-[11px] whitespace-nowrap">
-                                  {new Date(m.startTime).toLocaleString('vi-VN', { 
-                                    day: '2-digit', month: '2-digit', year: 'numeric', 
-                                    hour: '2-digit', minute: '2-digit', hour12: false 
-                                  })}
+                                <td className="px-8 py-5">
+                                   <div className="text-blue-600 font-bold text-[11px] whitespace-nowrap">
+                                      {new Date(m.startTime).toLocaleTimeString('vi-VN', { 
+                                        hour: '2-digit', minute: '2-digit', hour12: false 
+                                      })}
+                                   </div>
+                                   <div className="text-gray-500 text-[10px] mt-1 font-mono whitespace-nowrap">
+                                      {new Date(m.startTime).toLocaleDateString('vi-VN')}
+                                   </div>
                                 </td>
                                 <td className="px-8 py-5 text-center">
-                                   <button className="px-4 py-2 text-[10px] font-black uppercase rounded-lg" style={{...primaryLightBgStyle, ...primaryTextStyle}}>Chi tiết</button>
+                                   <button className="px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200" style={{...primaryLightBgStyle, ...primaryTextStyle}}>
+                                      Chi tiết
+                                   </button>
                                 </td>
                              </tr>
                            ))}
+                           {dashboardStats.recentMeetings.length === 0 && (
+                             <tr>
+                               <td colSpan={4} className="px-8 py-10 text-center text-gray-400 text-xs italic">Chưa có dữ liệu cuộc họp gần đây</td>
+                             </tr>
+                           )}
                         </tbody>
                      </table>
                   </div>
