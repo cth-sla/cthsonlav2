@@ -18,7 +18,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
-    // Lấy các cuộc họp sắp tới hoặc đang diễn ra
+    // Lấy các cuộc họp sắp tới hoặc đang diễn ra, bao gồm cả những cuộc bị hoãn để thông báo
     return meetings
       .filter(m => new Date(m.endTime) >= now)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
@@ -78,7 +78,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                     <svg className="w-12 h-12 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   )}
                </div>
@@ -95,7 +95,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-600/30">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Lịch họp sắp tới</h3>
+                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Lịch họp & Hội nghị</h3>
               </div>
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800/40 px-3 py-1 rounded-full border border-slate-700/50">
                 {upcomingMeetings.length} CUỘC HỌP
@@ -135,8 +135,8 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                           }`}>
                             {meeting.title}
                           </h4>
-                          {isCancelled && <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0">Huỷ</span>}
-                          {isPostponed && <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0">Hoãn</span>}
+                          {isCancelled && <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0 shadow-lg shadow-red-900/50">Đã huỷ</span>}
+                          {isPostponed && <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0 shadow-lg shadow-amber-900/50">Hoãn</span>}
                         </div>
                         <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
                           <div className="flex items-center gap-1.5">
@@ -155,7 +155,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                            isPostponed ? 'bg-amber-600/10 border-amber-500/30 text-amber-400 hover:bg-amber-600 hover:text-white' : 
                            'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white'
                          }`}>
-                           CHI TIẾT
+                           {isSpecial ? 'THÔNG BÁO' : 'CHI TIẾT'}
                          </button>
                       </div>
                     </div>

@@ -43,10 +43,8 @@ const App: React.FC = () => {
   const isOperator = currentUser?.role === 'OPERATOR';
   const canManageMeetings = isAdmin || isOperator;
 
-  // Tự động làm mới dữ liệu điểm cầu mỗi 30 giây
   useEffect(() => {
     if (!currentUser) return;
-
     const refreshData = async () => {
       if (supabaseService.isConfigured()) {
         try {
@@ -61,24 +59,20 @@ const App: React.FC = () => {
         }
       }
     };
-
-    const interval = setInterval(refreshData, 30000); // 30 seconds
+    const interval = setInterval(refreshData, 30000);
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Bảo vệ tab Monitoring
   useEffect(() => {
     if (activeTab === 'monitoring' && !isAdmin && currentUser) {
       setActiveTab('dashboard');
     }
   }, [activeTab, isAdmin, currentUser]);
 
-  // Áp dụng màu chủ đạo
   useEffect(() => {
     if (systemSettings.primaryColor) {
       const root = document.documentElement;
       root.style.setProperty('--primary-color', systemSettings.primaryColor);
-      
       const r = parseInt(systemSettings.primaryColor.slice(1, 3), 16);
       const g = parseInt(systemSettings.primaryColor.slice(3, 5), 16);
       const b = parseInt(systemSettings.primaryColor.slice(5, 7), 16);
@@ -190,22 +184,25 @@ const App: React.FC = () => {
   const dashboardStats = useMemo(() => {
     const now = new Date();
     
-    // Thống kê theo thời gian
+    // Mốc thời gian
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
     startOfWeek.setHours(0, 0, 0, 0);
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const activeMeetings = meetings.filter(m => m.status === 'SCHEDULED');
+    // Tính toán số liệu (Loại bỏ các cuộc họp đã Huỷ khỏi thống kê hoạt động chính)
+    const validMeetings = meetings.filter(m => m.status !== 'CANCELLED');
+    const cancelledCount = meetings.filter(m => m.status === 'CANCELLED').length;
+    const postponedCount = meetings.filter(m => m.status === 'POSTPONED').length;
 
-    const weeklyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfWeek);
-    const monthlyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfMonth);
-    const yearlyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfYear);
+    const weeklyMeetings = validMeetings.filter(m => new Date(m.startTime) >= startOfWeek);
+    const monthlyMeetings = validMeetings.filter(m => new Date(m.startTime) >= startOfMonth);
+    const yearlyMeetings = validMeetings.filter(m => new Date(m.startTime) >= startOfYear);
 
-    // Thống kê theo đơn vị chủ trì
+    // Thống kê theo đơn vị (Chỉ tính cuộc họp hợp lệ)
     const hostUnitMap: Record<string, number> = {};
-    activeMeetings.forEach(m => {
+    validMeetings.forEach(m => {
       hostUnitMap[m.hostUnit] = (hostUnitMap[m.hostUnit] || 0) + 1;
     });
     
@@ -218,17 +215,19 @@ const App: React.FC = () => {
 
     const connected = endpoints.filter(e => e.status === EndpointStatus.CONNECTED).length;
     const uptime = endpoints.length > 0 ? ((connected / endpoints.length) * 100).toFixed(1) : "0";
+    
+    // Cuộc họp gần đây (bao gồm mọi trạng thái để hiển thị)
     const recentMeetings = [...meetings].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5);
     
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-      const count = activeMeetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
+      const count = validMeetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
       return { name: dateStr, count };
     });
 
     return { 
-      total: activeMeetings.length,
+      total: validMeetings.length,
       connected, 
       uptime, 
       recentMeetings, 
@@ -236,6 +235,8 @@ const App: React.FC = () => {
       weeklyCount: weeklyMeetings.length,
       monthlyCount: monthlyMeetings.length,
       yearlyCount: yearlyMeetings.length,
+      postponedCount,
+      cancelledCount,
       topHostName: topHost.name,
       topHostCount: topHost.count,
       unitStats
@@ -325,10 +326,36 @@ const App: React.FC = () => {
           {activeTab === 'dashboard' && (
             <div className="space-y-8">
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                  <StatCard title="Họp trong Tuần" value={dashboardStats.weeklyCount} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp trong tuần hiện tại." />
-                  <StatCard title="Họp trong Tháng" value={dashboardStats.monthlyCount} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp trong tháng hiện tại." />
-                  <StatCard title="Họp trong Năm" value={dashboardStats.yearlyCount} icon={<BarChart3 className="text-amber-500" />} description={`Tổng số cuộc họp trong năm ${new Date().getFullYear()}.`} />
-                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<Activity color={systemSettings.primaryColor} />} description="Tỷ lệ khả dụng của toàn bộ hệ thống điểm cầu." />
+                  <StatCard 
+                    title="Họp trong Tuần" 
+                    value={dashboardStats.weeklyCount} 
+                    icon={<CalendarDays color={systemSettings.primaryColor} />} 
+                    description={
+                      <div className="space-y-1">
+                        <p>Tổng cuộc họp hợp lệ trong tuần này.</p>
+                        <div className="flex justify-between text-[9px] border-t border-slate-600 pt-1 mt-1">
+                          <span>Tạm hoãn:</span>
+                          <span className="text-amber-400">{dashboardStats.postponedCount}</span>
+                        </div>
+                      </div>
+                    } 
+                  />
+                  <StatCard title="Họp trong Tháng" value={dashboardStats.monthlyCount} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp hợp lệ trong tháng hiện tại." />
+                  <StatCard title="Họp trong Năm" value={dashboardStats.yearlyCount} icon={<BarChart3 className="text-amber-500" />} description={`Tổng số cuộc họp hợp lệ trong năm ${new Date().getFullYear()}.`} />
+                  <StatCard 
+                    title="Uptime Hạ tầng" 
+                    value={`${dashboardStats.uptime}%`} 
+                    icon={<Activity color={systemSettings.primaryColor} />} 
+                    description={
+                      <div className="space-y-1">
+                        <p>Tỷ lệ điểm cầu đang trực tuyến.</p>
+                        <div className="flex justify-between text-[9px] border-t border-slate-600 pt-1 mt-1">
+                          <span>Đã huỷ lịch:</span>
+                          <span className="text-red-400">{dashboardStats.cancelledCount}</span>
+                        </div>
+                      </div>
+                    } 
+                  />
                </div>
 
                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -337,10 +364,19 @@ const App: React.FC = () => {
                      <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                            <AreaChart data={dashboardStats.last7Days}>
-                              <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill={systemSettings.primaryColor} fillOpacity={0.1} />
+                              <defs>
+                                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={systemSettings.primaryColor} stopOpacity={0.3}/>
+                                  <stop offset="95%" stopColor={systemSettings.primaryColor} stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                              <Area type="monotone" dataKey="count" stroke={systemSettings.primaryColor} strokeWidth={4} fill="url(#colorCount)" />
                               <XAxis dataKey="name" fontSize={10} fontWeight="bold" tick={{fill: '#94a3b8'}} />
                               <YAxis fontSize={10} fontWeight="bold" tick={{fill: '#94a3b8'}} />
-                              <Tooltip />
+                              <Tooltip 
+                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                labelStyle={{ fontWeight: '900', color: '#1e293b', marginBottom: '4px' }}
+                              />
                            </AreaChart>
                         </ResponsiveContainer>
                      </div>
@@ -371,7 +407,7 @@ const App: React.FC = () => {
 
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-                     <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
+                     <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Hoạt động gần đây</h3>
                      <button onClick={() => setActiveTab('meetings')} style={primaryTextStyle} className="text-xs font-bold hover:underline">Xem tất cả</button>
                   </div>
                   <div className="overflow-x-auto">
@@ -381,7 +417,7 @@ const App: React.FC = () => {
                               <th className="px-8 py-4 min-w-[350px]">Thông tin cuộc họp</th>
                               <th className="px-8 py-4">Đơn vị & Chủ trì</th>
                               <th className="px-8 py-4">Thời gian diễn ra</th>
-                              <th className="px-8 py-4 text-center">Tùy chọn</th>
+                              <th className="px-8 py-4 text-center">Trạng thái</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -419,13 +455,15 @@ const App: React.FC = () => {
                                      </div>
                                   </td>
                                   <td className="px-8 py-5 text-center">
-                                     <button className={`px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200 ${
-                                       isCancelled ? 'bg-red-200 text-red-700 hover:bg-red-300' : 
-                                       isPostponed ? 'bg-amber-200 text-amber-700 hover:bg-amber-300' : 
-                                       ''
-                                     }`} style={isSpecial ? {} : {...primaryLightBgStyle, ...primaryTextStyle}}>
-                                        Chi tiết
-                                     </button>
+                                     {isCancelled ? (
+                                       <span className="px-3 py-1 bg-red-100 text-red-700 text-[9px] font-black uppercase rounded-lg border border-red-200">Đã huỷ</span>
+                                     ) : isPostponed ? (
+                                       <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[9px] font-black uppercase rounded-lg border border-amber-200">Hoãn</span>
+                                     ) : (
+                                       <button className="px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200" style={{...primaryLightBgStyle, ...primaryTextStyle}}>
+                                          Chi tiết
+                                       </button>
+                                     )}
                                   </td>
                                </tr>
                              )
