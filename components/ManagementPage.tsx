@@ -61,8 +61,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   );
 
   const filteredStaff = staff.filter(s => 
-    s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.position.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (s.position || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredGroups = participantGroups.filter(g => 
@@ -82,7 +82,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       setFormData({ ...item });
     } else {
       if (activeTab === 'units') setFormData({ name: '', code: '', description: '' });
-      else if (activeTab === 'staff') setFormData({ fullName: '', position: '', unitId: '', email: '' });
+      else if (activeTab === 'staff') setFormData({ fullName: '', position: '', unitId: '', email: '', phone: '' });
       else if (activeTab === 'endpoints') setFormData({ name: '', location: '', status: EndpointStatus.DISCONNECTED });
       else if (activeTab === 'groups') setFormData({ name: '', description: '' });
     }
@@ -185,24 +185,38 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'staff' && (
-          <table className="w-full text-left text-sm min-w-[700px]">
+          <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
               <tr>
-                <th className="px-6 py-4">Họ và tên</th>
+                <th className="px-6 py-4">Cán bộ chủ trì</th>
                 <th className="px-6 py-4">Chức vụ</th>
-                <th className="px-6 py-4">Đơn vị</th>
+                <th className="px-6 py-4">Đơn vị công tác</th>
+                <th className="px-6 py-4">Liên hệ</th>
                 <th className="px-6 py-4 text-right">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredStaff.map(s => (
                 <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-gray-900">{s.fullName}</td>
-                  <td className="px-6 py-4 text-gray-600">{s.position}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-xs">
+                        {s.fullName?.split(' ').filter(Boolean).pop()?.[0] || 'C'}
+                      </div>
+                      <span className="font-bold text-gray-900">{s.fullName}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600 font-medium">{s.position}</td>
                   <td className="px-6 py-4 text-gray-500">{getUnitName(s.unitId)}</td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openModal(s)} className="text-blue-600 font-bold hover:underline">Sửa</button>
-                    <button onClick={() => onDeleteStaff(s.id)} className="text-red-600 font-bold hover:underline">Xóa</button>
+                  <td className="px-6 py-4">
+                    <div className="text-[10px] space-y-0.5">
+                      <p className="text-gray-400 uppercase">E: {s.email || '---'}</p>
+                      <p className="text-gray-400 uppercase">P: {s.phone || '---'}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-3">
+                    <button onClick={() => openModal(s)} className="text-blue-600 font-black text-xs uppercase tracking-widest hover:underline">Sửa</button>
+                    <button onClick={() => onDeleteStaff(s.id)} className="text-red-600 font-black text-xs uppercase tracking-widest hover:underline">Xóa</button>
                   </td>
                 </tr>
               ))}
@@ -339,6 +353,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     </select>
                     <input required className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 outline-none" placeholder="Chức vụ" value={formData.position || ''} onChange={e => setFormData({...formData, position: e.target.value})} />
                     <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 outline-none" placeholder="Email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
+                    <input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 outline-none" placeholder="Số điện thoại" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} />
                   </>
                 )}
 

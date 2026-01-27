@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2 } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -19,7 +19,8 @@ import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
 
-// Chỉ khởi tạo LocalStorage nếu chưa có gì, nhưng sẽ ưu tiên Cloud Sync bên dưới
+const VIBRANT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+
 storageService.init();
 
 const App: React.FC = () => {
@@ -27,7 +28,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Khởi tạo state từ cache LocalStorage (có thể là mock data ban đầu)
   const [meetings, setMeetings] = useState<Meeting[]>(() => storageService.getMeetings());
   const [endpoints, setEndpoints] = useState<Endpoint[]>(() => storageService.getEndpoints());
   const [units, setUnits] = useState<Unit[]>(() => storageService.getUnits());
@@ -48,17 +48,12 @@ const App: React.FC = () => {
   const isOperator = currentUser?.role === 'OPERATOR';
   const canManageMeetings = isAdmin || isOperator;
 
-  // Sync Initial Data from Cloud (Supabase)
   useEffect(() => {
     const syncData = async () => {
-      if (!supabaseService.isConfigured()) {
-        console.warn("Supabase chưa được cấu hình. Đang sử dụng dữ liệu Offline.");
-        return;
-      }
+      if (!supabaseService.isConfigured()) return;
       
       setIsSyncing(true);
       try {
-        console.log("Đang đồng bộ dữ liệu từ Cloud...");
         const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudSettings] = await Promise.all([
           supabaseService.getMeetings(),
           supabaseService.getEndpoints(),
@@ -69,8 +64,6 @@ const App: React.FC = () => {
           supabaseService.getSettings()
         ]);
 
-        // QUAN TRỌNG: Chỉ cập nhật state nếu dữ liệu lấy về hợp lệ
-        // Nếu database trống, chúng ta vẫn cập nhật để xóa bỏ mock data
         setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings);
         setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints);
         setUnits(cloudUnits); storageService.saveUnits(cloudUnits);
@@ -85,7 +78,6 @@ const App: React.FC = () => {
         
         setLastRefreshed(new Date());
         setHasSyncedOnce(true);
-        console.log("Đồng bộ hoàn tất. Dữ liệu hiện tại là dữ liệu từ Cloud.");
       } catch (err) {
         console.error("Đồng bộ thất bại:", err);
       } finally {
@@ -95,7 +87,6 @@ const App: React.FC = () => {
 
     syncData();
 
-    // Lắng nghe thay đổi Realtime
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings'];
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
@@ -137,7 +128,6 @@ const App: React.FC = () => {
     return () => subscriptions.forEach(sub => sub?.unsubscribe());
   }, []);
 
-  // Dashboard Statistics Logic
   const dashboardStats = useMemo(() => {
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -229,15 +219,15 @@ const App: React.FC = () => {
       {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex justify-between items-center">
-          <h1 className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
              <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold text-sm">SL</span>}
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
-                <span className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">SLA MONITOR v3.1</span>
+                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate">{currentUser.fullName}</span>
              </div>
-          </h1>
+          </div>
           <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white"><X size={20} /></button>
         </div>
 
@@ -265,29 +255,36 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 md:px-8 justify-between shrink-0">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 md:px-8 justify-between shrink-0 shadow-sm">
           <button onClick={toggleSidebar} className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Menu size={24} /></button>
           
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
                 <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-500 animate-spin' : 'bg-emerald-500 animate-pulse'}`}></div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  {isSyncing ? 'Đang đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
+                  {isSyncing ? 'Đồng bộ...' : `Cloud: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
                 </span>
              </div>
              {hasSyncedOnce && !isSyncing && (
-                <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Live Data</span>
+                <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 hidden sm:inline-block">Live Cloud Data</span>
              )}
           </div>
 
           <div className="flex items-center gap-4">
-            <p className="text-xs font-bold text-gray-500 hidden sm:block">Chào, <span style={primaryTextStyle}>{currentUser.fullName}</span></p>
+            <div className="flex items-center gap-3 bg-blue-50/50 px-4 py-1.5 rounded-full border border-blue-100/50">
+              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-black shadow-lg shadow-blue-200">
+                {currentUser?.fullName?.split(' ').filter(Boolean).pop()?.[0] || 'U'}
+              </div>
+              <p className="text-xs font-black text-gray-700 hidden sm:block">
+                <span style={primaryTextStyle}>{currentUser?.fullName}</span>
+              </p>
+            </div>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
           {activeTab === 'dashboard' && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in duration-500">
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                   <StatCard title="Họp trong Tuần" value={dashboardStats.weekly} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tuần này." />
                   <StatCard title="Họp trong Tháng" value={dashboardStats.monthly} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tháng này." />
@@ -296,7 +293,6 @@ const App: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                  {/* Chart Frequency */}
                   <div className="xl:col-span-2 bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Tần suất họp (7 ngày qua)</h3>
                      <div className="h-[300px]">
@@ -317,7 +313,6 @@ const App: React.FC = () => {
                      </div>
                   </div>
                   
-                  {/* Unit Stats */}
                   <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col">
                      <h3 className="text-xs font-black uppercase text-gray-400 tracking-widest mb-8">Top Đơn vị chủ trì</h3>
                      <div className="flex-1">
@@ -326,9 +321,9 @@ const App: React.FC = () => {
                               <XAxis type="number" hide />
                               <YAxis dataKey="name" type="category" fontSize={9} fontWeight="bold" width={80} tick={{fill: '#64748b'}} />
                               <Tooltip cursor={{fill: 'transparent'}} />
-                              <Bar dataKey="count" fill={systemSettings.primaryColor} radius={[0, 4, 4, 0]}>
+                              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                                  {dashboardStats.unitStats.map((_, index) => (
-                                    <Cell key={`cell-${index}`} fillOpacity={1 - (index * 0.15)} />
+                                    <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[index % VIBRANT_COLORS.length]} />
                                  ))}
                               </Bar>
                            </BarChart>
@@ -344,7 +339,6 @@ const App: React.FC = () => {
                   </div>
                </div>
 
-               {/* Recent Meetings */}
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
@@ -364,7 +358,9 @@ const App: React.FC = () => {
                            {dashboardStats.recentMeetings.map(m => (
                              <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
                                 <td className="px-8 py-5">
-                                   <div className="font-bold text-sm text-gray-900 line-clamp-1">{m.title}</div>
+                                   <div className={`font-bold text-sm line-clamp-1 ${m.status === 'CANCELLED' ? 'text-red-600 line-through' : m.status === 'POSTPONED' ? 'text-amber-600 italic' : 'text-gray-900'}`}>
+                                     {m.title}
+                                   </div>
                                    <div className="text-[10px] text-gray-400 mt-1 font-mono uppercase tracking-tighter">ID: {m.id}</div>
                                 </td>
                                 <td className="px-8 py-5">
@@ -377,17 +373,14 @@ const App: React.FC = () => {
                                 <td className="px-8 py-5 text-center">
                                    {m.status === 'CANCELLED' ? (
                                       <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[9px] font-black uppercase rounded">Đã huỷ</span>
+                                   ) : m.status === 'POSTPONED' ? (
+                                      <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[9px] font-black uppercase rounded">Tạm hoãn</span>
                                    ) : (
                                       <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase rounded">Hợp lệ</span>
                                    )}
                                 </td>
                              </tr>
                            ))}
-                           {dashboardStats.recentMeetings.length === 0 && (
-                              <tr>
-                                <td colSpan={4} className="px-8 py-10 text-center text-gray-400 italic">Chưa có dữ liệu cuộc họp</td>
-                              </tr>
-                           )}
                         </tbody>
                      </table>
                   </div>

@@ -16,7 +16,7 @@ interface ReportsPageProps {
 
 type GroupByOption = 'day' | 'week' | 'month' | 'year' | 'unit';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
 const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
   const [startDate, setStartDate] = useState<string>(() => {
@@ -248,7 +248,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               <tbody className="divide-y divide-slate-100">
                 {filteredMeetings.map((m, idx) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900 max-w-[250px] leading-relaxed">{m.title}</td>
+                    <td className={`px-6 py-4 font-bold max-w-[250px] leading-relaxed ${m.status === 'CANCELLED' ? 'text-red-600 line-through' : m.status === 'POSTPONED' ? 'text-amber-600 italic' : 'text-slate-900'}`}>{m.title}</td>
                     <td className="px-6 py-4 font-medium text-slate-600">{m.hostUnit}</td>
                     <td className="px-6 py-4 font-medium text-slate-600">{m.chairPerson}</td>
                     <td className="px-6 py-4 text-slate-500 font-bold">
@@ -289,7 +289,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               </div>
               <div>
                  <p className="font-black text-sm uppercase text-slate-900 italic">
-                   {currentUser?.fullName || 'Hệ thống SLA v3.1'}
+                   {currentUser?.fullName || 'Cán bộ quản trị'}
                  </p>
               </div>
            </div>
