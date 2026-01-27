@@ -37,10 +37,10 @@ const unmapMeeting = (m: Meeting) => ({
   description: m.description,
   participants: m.participants,
   endpoints: m.endpoints,
-  notes: m.notes,
+  notes: m.notes || '',
   endpoint_checks: m.endpointChecks || {},
-  status: m.status,
-  cancel_reason: m.cancelReason // Sử dụng chung cho cả hoãn và huỷ
+  status: m.status || 'SCHEDULED',
+  cancel_reason: m.cancelReason || null // Quan trọng: Đảm bảo gửi null nếu không có lý do để xóa lý do cũ nếu cần
 });
 
 const mapEndpoint = (e: any): Endpoint => ({
@@ -113,14 +113,21 @@ export const supabaseService = {
   async getMeetings(): Promise<Meeting[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-    if (error) return [];
+    if (error) {
+      console.error("Supabase error fetching meetings:", error);
+      return [];
+    }
     return (data || []).map(mapMeeting);
   },
 
   async upsertMeeting(m: Meeting) {
     if (!supabase) return;
-    const { error } = await supabase.from('meetings').upsert(unmapMeeting(m));
-    if (error) throw error;
+    const payload = unmapMeeting(m);
+    const { error } = await supabase.from('meetings').upsert(payload);
+    if (error) {
+      console.error("Supabase error upserting meeting:", error);
+      throw error;
+    }
   },
 
   async deleteMeeting(id: string) {

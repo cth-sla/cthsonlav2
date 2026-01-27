@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.staff (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 4. Bảng meetings (Cuộc họp) - Quan trọng: status hỗ trợ POSTPONED
+-- 4. Bảng meetings (Cuộc họp)
 CREATE TABLE IF NOT EXISTS public.meetings (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -77,12 +77,23 @@ ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 
--- Chính sách truy cập công khai (cho mục đích nội bộ)
+-- Xử lý Policy (Dùng DROP IF EXISTS để tránh lỗi 42710 khi chạy lại file)
+DROP POLICY IF EXISTS "Allow public access" ON public.users;
 CREATE POLICY "Allow public access" ON public.users FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public access" ON public.units;
 CREATE POLICY "Allow public access" ON public.units FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public access" ON public.staff;
 CREATE POLICY "Allow public access" ON public.staff FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public access" ON public.meetings;
 CREATE POLICY "Allow public access" ON public.meetings FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public access" ON public.endpoints;
 CREATE POLICY "Allow public access" ON public.endpoints FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public access" ON public.system_settings;
 CREATE POLICY "Allow public access" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
 
 NOTIFY pgrst, 'reload schema';

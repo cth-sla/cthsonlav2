@@ -186,13 +186,21 @@ const App: React.FC = () => {
   };
 
   const handleUpdateMeeting = async (meeting: Meeting) => {
-    setMeetings(prev => prev.map(m => m.id === meeting.id ? meeting : m));
+    // 1. Cập nhật Local State trước để UI mượt mà
+    setMeetings(prev => {
+      const updated = prev.map(m => m.id === meeting.id ? meeting : m);
+      storageService.saveMeetings(updated);
+      return updated;
+    });
+    
+    // 2. Cập nhật Cloud
     if (supabaseService.isConfigured()) {
       try { 
         await supabaseService.upsertMeeting(meeting); 
+        console.log("Cloud meeting updated successfully.");
       } catch (err) { 
         console.error("Cập nhật Cloud thất bại:", err); 
-        alert("Lỗi khi lưu lên Cloud. Vui lòng kiểm tra kết nối.");
+        alert("Lỗi khi lưu lên Cloud. Dữ liệu tạm thời chỉ được lưu tại trình duyệt.");
       }
     }
   };
@@ -470,8 +478,10 @@ const App: React.FC = () => {
 
       {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
       {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={async (m) => {
-        setMeetings(prev => [m, ...prev]);
-        if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(m);
+        // Fix: Explicitly type newMeeting as Meeting to avoid type mismatch with the status property's union type.
+        const newMeeting: Meeting = { ...m, id: m.id || `MEET-${Date.now()}`, status: 'SCHEDULED' };
+        setMeetings(prev => [newMeeting, ...prev]);
+        if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(newMeeting);
       }} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
     </div>
   );
