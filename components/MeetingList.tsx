@@ -68,7 +68,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         if (sortField === 'startTime') {
           comparison = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
         } else {
-          comparison = a[sortField].localeCompare(b[sortField], 'vi');
+          comparison = (a[sortField] || '').localeCompare(b[sortField] || '', 'vi');
         }
         return sortOrder === 'asc' ? comparison : -comparison;
       });
@@ -267,37 +267,42 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paginatedMeetings.map((meeting) => (
-              <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${meeting.status === 'CANCELLED' ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                <td className="px-4 md:px-6 py-4 sticky left-0 bg-white group-hover:bg-blue-50/30 z-10 border-r border-transparent group-hover:border-gray-100">
-                  <div className={`font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${meeting.status === 'CANCELLED' ? 'line-through decoration-red-500/50' : ''}`}>{meeting.title}</div>
-                  <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter truncate">REF: {meeting.id}</div>
+              <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${meeting.status === 'CANCELLED' ? 'bg-red-50/60 border-l-4 border-l-red-600' : ''}`}>
+                <td className="px-4 md:px-6 py-4 sticky left-0 bg-inherit z-10 border-r border-transparent group-hover:border-gray-100">
+                  <div className={`font-bold transition-all leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${meeting.status === 'CANCELLED' ? 'text-red-700 line-through decoration-red-700 decoration-2' : 'text-gray-900 group-hover:text-blue-700'}`}>{meeting.title}</div>
+                  {meeting.status === 'CANCELLED' && meeting.cancelReason && (
+                    <div className="mt-1 flex items-center gap-1.5 animate-in slide-in-from-left-2 duration-300">
+                      <svg className="w-3 h-3 text-red-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                      <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter line-clamp-1">Lý do: {meeting.cancelReason}</span>
+                    </div>
+                  )}
+                  <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${meeting.status === 'CANCELLED' ? 'text-red-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
                 </td>
                 <td className="px-4 md:px-6 py-4">
-                  <div className="text-sm text-gray-700 font-medium line-clamp-1">{meeting.hostUnit}</div>
+                  <div className={`text-sm font-medium line-clamp-1 ${meeting.status === 'CANCELLED' ? 'text-red-800' : 'text-gray-700'}`}>{meeting.hostUnit}</div>
                 </td>
                 <td className="px-4 md:px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100 shrink-0">
-                      {meeting.chairPerson.charAt(0)}
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 ${meeting.status === 'CANCELLED' ? 'bg-red-200 text-red-700 border-red-300' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                      {meeting.chairPerson?.charAt(0) || '?'}
                     </div>
-                    <span className="text-sm text-gray-700 font-semibold line-clamp-1">{meeting.chairPerson}</span>
+                    <span className={`text-sm font-semibold line-clamp-1 ${meeting.status === 'CANCELLED' ? 'text-red-800' : 'text-gray-700'}`}>{meeting.chairPerson}</span>
                   </div>
                 </td>
                 <td className="px-4 md:px-6 py-4">
-                  <div className="text-xs font-bold text-gray-800 whitespace-nowrap">{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
-                  <div className="text-[11px] text-gray-500 font-medium mt-0.5 whitespace-nowrap">
+                  <div className={`text-xs font-bold whitespace-nowrap ${meeting.status === 'CANCELLED' ? 'text-red-600' : 'text-gray-800'}`}>{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
+                  <div className={`text-[11px] font-medium mt-0.5 whitespace-nowrap ${meeting.status === 'CANCELLED' ? 'text-red-500/70' : 'text-gray-500'}`}>
                     {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                 </td>
                 <td className="px-4 md:px-6 py-4 text-center">
                   {meeting.status === 'CANCELLED' ? (
                     <div className="flex flex-col items-center">
-                      <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase rounded-lg border border-red-100 shadow-sm whitespace-nowrap">ĐÃ HUỶ</span>
-                      {meeting.cancelReason && <p className="text-[9px] text-red-400 mt-1 italic max-w-[120px] truncate" title={meeting.cancelReason}>{meeting.cancelReason}</p>}
+                      <span className="px-2.5 py-1 bg-red-700 text-white text-[10px] font-black uppercase rounded-lg shadow-md whitespace-nowrap ring-2 ring-red-200">ĐÃ HUỶ</span>
                     </div>
                   ) : (
                     <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
-                      {meeting.endpoints.length} ĐIỂM CẦU
+                      {meeting.endpoints?.length || 0} ĐIỂM CẦU
                     </span>
                   )}
                 </td>
@@ -305,7 +310,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   <div className="flex items-center justify-center gap-2">
                     <button 
                       onClick={() => onSelect(meeting)}
-                      className="inline-flex items-center gap-1.5 text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md shadow-blue-200 active:scale-95"
+                      className={`inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 ${meeting.status === 'CANCELLED' ? 'bg-red-700 hover:bg-red-800 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}
                       title="Xem chi tiết"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +322,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       <>
                         <button 
                           onClick={() => onEdit?.(meeting)}
-                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-30 disabled:pointer-events-none"
+                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                           title="Chỉnh sửa"
                           disabled={meeting.status === 'CANCELLED'}
                         >
@@ -325,7 +330,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         </button>
                         <button 
                           onClick={() => setCancellingMeeting(meeting)}
-                          className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-30 disabled:pointer-events-none"
+                          className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                           title="Huỷ lịch họp"
                           disabled={meeting.status === 'CANCELLED'}
                         >
@@ -333,8 +338,9 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         </button>
                         <button 
                           onClick={() => onDelete?.(meeting.id)}
-                          className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100"
+                          className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Xóa vĩnh viễn"
+                          disabled={meeting.status === 'CANCELLED'}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
@@ -363,7 +369,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200">
              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-100">
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 </div>
                 <div>
@@ -381,7 +387,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Lý do huỷ cuộc họp *</label>
                    <textarea 
-                     className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 focus:bg-white outline-none transition-all text-sm font-bold min-h-[100px] resize-none"
+                     className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 focus:bg-white outline-none transition-all text-sm font-bold min-h-[100px] resize-none"
                      placeholder="Nhập lý do huỷ... (vd: Thay đổi kế hoạch, Lãnh đạo bận...)"
                      value={cancelReason}
                      onChange={e => setCancelReason(e.target.value)}

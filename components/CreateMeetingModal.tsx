@@ -29,30 +29,29 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
 
-  // Helper function to format ISO date string to YYYY-MM-DDTHH:mm for local input
-  // Avoids time shifts by manually constructing the string based on local time components
+  // Sửa lỗi lệch thời gian: format ISO sang chuỗi YYYY-MM-DDTHH:mm tương thích input địa phương
   const formatISOToLocalInput = (isoStr: string) => {
     if (!isoStr) return '';
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return '';
+    const date = new Date(isoStr);
+    if (isNaN(date.getTime())) return '';
     
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
+    // Sử dụng các phương thức getLocal thay vì UTC để tránh bị lệch giờ theo timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Helper function to convert local datetime-local input value to ISO string for storage
-  const formatLocalInputToISO = (dateStr: string) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? dateStr : d.toISOString();
+  // Chuyển đổi từ giá trị input local sang ISO chuẩn để lưu trữ
+  const formatLocalInputToISO = (localStr: string) => {
+    if (!localStr) return '';
+    const date = new Date(localStr);
+    return isNaN(date.getTime()) ? localStr : date.toISOString();
   };
 
-  // Effect to load data when editingMeeting changes
   useEffect(() => {
     if (editingMeeting) {
       setFormData({
@@ -79,7 +78,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     }
   }, [editingMeeting, isOpen]);
 
-  // Filter staff based on selected host unit name
   const filteredStaffForUnit = useMemo(() => {
     if (!formData.hostUnit) return staff;
     const selectedUnit = units.find(u => u.name === formData.hostUnit);
@@ -87,7 +85,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     return staff.filter(s => s.unitId === selectedUnit.id);
   }, [formData.hostUnit, units, staff]);
 
-  // Reset chairperson if unit changes and current chairperson is not in the new filtered list
   useEffect(() => {
     if (formData.chairPerson && formData.hostUnit && !editingMeeting) {
       const isStillValid = filteredStaffForUnit.some(s => s.fullName === formData.chairPerson);

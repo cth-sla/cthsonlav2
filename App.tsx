@@ -386,17 +386,17 @@ const App: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                            {dashboardStats.recentMeetings.map(m => (
-                             <tr key={m.id} className={`hover:bg-gray-50 transition-all cursor-pointer ${m.status === 'CANCELLED' ? 'opacity-50 grayscale' : ''}`} onClick={() => setSelectedMeeting(m)}>
+                             <tr key={m.id} className={`hover:bg-gray-50 transition-all cursor-pointer ${m.status === 'CANCELLED' ? 'bg-red-50/50' : ''}`} onClick={() => setSelectedMeeting(m)}>
                                 <td className="px-8 py-5">
-                                   <div className={`font-bold text-gray-900 text-sm whitespace-normal leading-relaxed ${m.status === 'CANCELLED' ? 'line-through' : ''}`}>{m.title}</div>
-                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id} {m.status === 'CANCELLED' && <span className="text-red-500 font-black ml-2 uppercase tracking-widest">[ĐÃ HUỶ]</span>}</div>
+                                   <div className={`font-bold text-sm whitespace-normal leading-relaxed ${m.status === 'CANCELLED' ? 'text-red-700 line-through decoration-red-700 decoration-2' : 'text-gray-900'}`}>{m.title}</div>
+                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id} {m.status === 'CANCELLED' && <span className="text-red-700 font-black ml-2 uppercase tracking-widest bg-red-100 px-1.5 py-0.5 rounded border border-red-200">[ĐÃ HUỶ]</span>}</div>
                                 </td>
                                 <td className="px-8 py-5">
-                                   <div className="text-slate-900 font-bold text-[11px] leading-tight">{m.hostUnit}</div>
+                                   <div className={`font-bold text-[11px] leading-tight ${m.status === 'CANCELLED' ? 'text-red-800' : 'text-slate-900'}`}>{m.hostUnit}</div>
                                    <div className="text-slate-500 text-[10px] mt-1 font-medium italic">Chủ trì: {m.chairPerson}</div>
                                 </td>
                                 <td className="px-8 py-5">
-                                   <div className="text-blue-600 font-bold text-[11px] whitespace-nowrap">
+                                   <div className={`font-bold text-[11px] whitespace-nowrap ${m.status === 'CANCELLED' ? 'text-red-600' : 'text-blue-600'}`}>
                                       {new Date(m.startTime).toLocaleTimeString('vi-VN', { 
                                         hour: '2-digit', minute: '2-digit', hour12: false 
                                       })}
@@ -406,7 +406,7 @@ const App: React.FC = () => {
                                    </div>
                                 </td>
                                 <td className="px-8 py-5 text-center">
-                                   <button className="px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200" style={{...primaryLightBgStyle, ...primaryTextStyle}}>
+                                   <button className={`px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200 ${m.status === 'CANCELLED' ? 'bg-red-200 text-red-700 hover:bg-red-300' : ''}`} style={m.status === 'CANCELLED' ? {} : {...primaryLightBgStyle, ...primaryTextStyle}}>
                                       Chi tiết
                                    </button>
                                 </td>
