@@ -57,7 +57,7 @@ export interface Meeting {
   description: string;
   notes?: string;
   endpointChecks?: Record<string, { checked: boolean; notes: string }>;
-  status?: 'SCHEDULED' | 'CANCELLED';
+  status?: 'SCHEDULED' | 'CANCELLED' | 'POSTPONED';
   cancelReason?: string;
 }
 

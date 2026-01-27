@@ -24,8 +24,8 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
   const [sortField, setSortField] = useState<SortField>('startTime');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [cancellingMeeting, setCancellingMeeting] = useState<Meeting | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
+  const [actionMeeting, setActionMeeting] = useState<{ meeting: Meeting, type: 'CANCEL' | 'POSTPONE' } | null>(null);
+  const [reason, setReason] = useState('');
 
   useEffect(() => {
     setCurrentPage(1);
@@ -80,21 +80,21 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     currentPage * ITEMS_PER_PAGE
   );
 
-  const confirmCancelMeeting = () => {
-    if (!cancellingMeeting || !onUpdate) return;
-    if (!cancelReason.trim()) {
-      alert("Vui lòng nhập lý do huỷ cuộc họp.");
+  const confirmAction = () => {
+    if (!actionMeeting || !onUpdate) return;
+    if (!reason.trim()) {
+      alert(`Vui lòng nhập lý do ${actionMeeting.type === 'CANCEL' ? 'huỷ' : 'hoãn'} cuộc họp.`);
       return;
     }
     
     onUpdate({
-      ...cancellingMeeting,
-      status: 'CANCELLED',
-      cancelReason: cancelReason
+      ...actionMeeting.meeting,
+      status: actionMeeting.type === 'CANCEL' ? 'CANCELLED' : 'POSTPONED',
+      cancelReason: reason
     });
     
-    setCancellingMeeting(null);
-    setCancelReason('');
+    setActionMeeting(null);
+    setReason('');
   };
 
   const handleExportExcel = () => {
@@ -103,9 +103,9 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       return;
     }
 
-    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Lý do huỷ,Mô tả\n";
+    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Lý do huỷ/hoãn,Mô tả\n";
     const rows = filteredAndSortedMeetings.map(m => {
-      const status = m.status === 'CANCELLED' ? 'Đã huỷ' : 'Bình thường';
+      const status = m.status === 'CANCELLED' ? 'Đã huỷ' : m.status === 'POSTPONED' ? 'Tạm hoãn' : 'Bình thường';
       return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${(m.cancelReason || '').replace(/"/g, '""')}","${(m.description || '').replace(/"/g, '""')}"`;
     }).join("\n");
     
@@ -266,90 +266,145 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {paginatedMeetings.map((meeting) => (
-              <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${meeting.status === 'CANCELLED' ? 'bg-red-50/60 border-l-4 border-l-red-600' : ''}`}>
-                <td className="px-4 md:px-6 py-4 sticky left-0 bg-inherit z-10 border-r border-transparent group-hover:border-gray-100">
-                  <div className={`font-bold transition-all leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${meeting.status === 'CANCELLED' ? 'text-red-700 line-through decoration-red-700 decoration-2' : 'text-gray-900 group-hover:text-blue-700'}`}>{meeting.title}</div>
-                  {meeting.status === 'CANCELLED' && meeting.cancelReason && (
-                    <div className="mt-1 flex items-center gap-1.5 animate-in slide-in-from-left-2 duration-300">
-                      <svg className="w-3 h-3 text-red-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                      <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter line-clamp-1">Lý do: {meeting.cancelReason}</span>
+            {paginatedMeetings.map((meeting) => {
+              const isCancelled = meeting.status === 'CANCELLED';
+              const isPostponed = meeting.status === 'POSTPONED';
+              const isSpecial = isCancelled || isPostponed;
+
+              return (
+                <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${
+                  isCancelled ? 'bg-red-50/60 border-l-4 border-l-red-600' : 
+                  isPostponed ? 'bg-amber-50/60 border-l-4 border-l-amber-500' : ''
+                }`}>
+                  <td className="px-4 md:px-6 py-4 sticky left-0 bg-inherit z-10 border-r border-transparent group-hover:border-gray-100">
+                    <div className="relative group/title-tip">
+                      <div className={`font-bold transition-all leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${
+                        isCancelled ? 'text-red-700 line-through decoration-red-700 decoration-2' : 
+                        isPostponed ? 'text-amber-700 italic' : 
+                        'text-gray-900 group-hover:text-blue-700'
+                      }`}>
+                        {meeting.title}
+                      </div>
+                      
+                      {isSpecial && meeting.cancelReason && (
+                        <div className="absolute bottom-full left-0 mb-2 invisible group-hover/title-tip:visible animate-in fade-in slide-in-from-bottom-1 duration-200 z-[60]">
+                          <div className={`px-3 py-2 rounded-xl shadow-xl text-[11px] font-bold border whitespace-nowrap ${
+                            isCancelled ? 'bg-red-600 border-red-700 text-white' : 'bg-amber-500 border-amber-600 text-white'
+                          }`}>
+                            <div className="flex items-center gap-1.5">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              Lý do: {meeting.cancelReason}
+                            </div>
+                            <div className={`absolute top-full left-4 border-8 border-transparent ${
+                              isCancelled ? 'border-t-red-600' : 'border-t-amber-500'
+                            }`}></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${meeting.status === 'CANCELLED' ? 'text-red-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
-                </td>
-                <td className="px-4 md:px-6 py-4">
-                  <div className={`text-sm font-medium line-clamp-1 ${meeting.status === 'CANCELLED' ? 'text-red-800' : 'text-gray-700'}`}>{meeting.hostUnit}</div>
-                </td>
-                <td className="px-4 md:px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 ${meeting.status === 'CANCELLED' ? 'bg-red-200 text-red-700 border-red-300' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                      {meeting.chairPerson?.charAt(0) || '?'}
-                    </div>
-                    <span className={`text-sm font-semibold line-clamp-1 ${meeting.status === 'CANCELLED' ? 'text-red-800' : 'text-gray-700'}`}>{meeting.chairPerson}</span>
-                  </div>
-                </td>
-                <td className="px-4 md:px-6 py-4">
-                  <div className={`text-xs font-bold whitespace-nowrap ${meeting.status === 'CANCELLED' ? 'text-red-600' : 'text-gray-800'}`}>{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
-                  <div className={`text-[11px] font-medium mt-0.5 whitespace-nowrap ${meeting.status === 'CANCELLED' ? 'text-red-500/70' : 'text-gray-500'}`}>
-                    {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </div>
-                </td>
-                <td className="px-4 md:px-6 py-4 text-center">
-                  {meeting.status === 'CANCELLED' ? (
-                    <div className="flex flex-col items-center">
-                      <span className="px-2.5 py-1 bg-red-700 text-white text-[10px] font-black uppercase rounded-lg shadow-md whitespace-nowrap ring-2 ring-red-200">ĐÃ HUỶ</span>
-                    </div>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
-                      {meeting.endpoints?.length || 0} ĐIỂM CẦU
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 md:px-6 py-4 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button 
-                      onClick={() => onSelect(meeting)}
-                      className={`inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 ${meeting.status === 'CANCELLED' ? 'bg-red-700 hover:bg-red-800 shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'}`}
-                      title="Xem chi tiết"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    {isAdmin && (
-                      <>
-                        <button 
-                          onClick={() => onEdit?.(meeting)}
-                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
-                          title="Chỉnh sửa"
-                          disabled={meeting.status === 'CANCELLED'}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button 
-                          onClick={() => setCancellingMeeting(meeting)}
-                          className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
-                          title="Huỷ lịch họp"
-                          disabled={meeting.status === 'CANCELLED'}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                        </button>
-                        <button 
-                          onClick={() => onDelete?.(meeting.id)}
-                          className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Xóa vĩnh viễn"
-                          disabled={meeting.status === 'CANCELLED'}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </>
+                    
+                    {isSpecial && meeting.cancelReason && (
+                      <div className={`mt-1 flex items-center gap-1.5 animate-in slide-in-from-left-2 duration-300 ${isCancelled ? 'text-red-600' : 'text-amber-600'}`}>
+                        <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                        <span className="text-[10px] font-black uppercase tracking-tighter line-clamp-1 italic">Lý do: {meeting.cancelReason}</span>
+                      </div>
                     )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                    <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4">
+                    <div className={`text-sm font-medium line-clamp-1 ${isCancelled ? 'text-red-800' : isPostponed ? 'text-amber-800' : 'text-gray-700'}`}>{meeting.hostUnit}</div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 ${
+                        isCancelled ? 'bg-red-200 text-red-700 border-red-300' : 
+                        isPostponed ? 'bg-amber-200 text-amber-700 border-amber-300' : 
+                        'bg-blue-50 text-blue-600 border-blue-100'
+                      }`}>
+                        {meeting.chairPerson?.charAt(0) || '?'}
+                      </div>
+                      <span className={`text-sm font-semibold line-clamp-1 ${isCancelled ? 'text-red-800' : isPostponed ? 'text-amber-800' : 'text-gray-700'}`}>{meeting.chairPerson}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4">
+                    <div className={`text-xs font-bold whitespace-nowrap ${isCancelled ? 'text-red-600' : isPostponed ? 'text-amber-600' : 'text-gray-800'}`}>{new Date(meeting.startTime).toLocaleDateString('vi-VN')}</div>
+                    <div className={`text-[11px] font-medium mt-0.5 whitespace-nowrap ${isCancelled ? 'text-red-500/70' : isPostponed ? 'text-amber-500/70' : 'text-gray-500'}`}>
+                      {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    </div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4 text-center">
+                    {isCancelled ? (
+                      <span className="px-2.5 py-1 bg-red-700 text-white text-[10px] font-black uppercase rounded-lg shadow-md whitespace-nowrap ring-2 ring-red-200">ĐÃ HUỶ</span>
+                    ) : isPostponed ? (
+                      <span className="px-2.5 py-1 bg-amber-600 text-white text-[10px] font-black uppercase rounded-lg shadow-md whitespace-nowrap ring-2 ring-amber-100">TẠM HOÃN</span>
+                    ) : (
+                      <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
+                        {meeting.endpoints?.length || 0} ĐIỂM CẦU
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => onSelect(meeting)}
+                        className={`inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 ${
+                          isCancelled ? 'bg-red-700 hover:bg-red-800 shadow-red-200' : 
+                          isPostponed ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200' : 
+                          'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                        }`}
+                        title="Xem chi tiết"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button 
+                            onClick={() => onEdit?.(meeting)}
+                            className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            title="Chỉnh sửa"
+                            disabled={isSpecial}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          
+                          {/* Postpone button */}
+                          <button 
+                            onClick={() => setActionMeeting({ meeting, type: 'POSTPONE' })}
+                            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            title="Hoãn lịch họp"
+                            disabled={isSpecial}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </button>
+
+                          {/* Cancel button */}
+                          <button 
+                            onClick={() => setActionMeeting({ meeting, type: 'CANCEL' })}
+                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            title="Huỷ lịch họp"
+                            disabled={isSpecial}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                          </button>
+                          
+                          <button 
+                            onClick={() => onDelete?.(meeting.id)}
+                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Xóa vĩnh viễn"
+                            disabled={isCancelled}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filteredAndSortedMeetings.length === 0 && (
@@ -365,48 +420,54 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         )}
       </div>
 
-      {cancellingMeeting && (
+      {actionMeeting && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200">
              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-100">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                  actionMeeting.type === 'CANCEL' ? 'bg-red-100 text-red-600 shadow-red-100' : 'bg-amber-100 text-amber-600 shadow-amber-100'
+                }`}>
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 </div>
                 <div>
-                   <h3 className="text-lg font-black text-gray-900 uppercase">Xác nhận huỷ lịch</h3>
-                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Thao tác này sẽ đánh dấu cuộc họp đã bị huỷ</p>
+                   <h3 className="text-lg font-black text-gray-900 uppercase">Xác nhận {actionMeeting.type === 'CANCEL' ? 'huỷ lịch' : 'hoãn lịch'}</h3>
+                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Thao tác này sẽ đánh dấu cuộc họp đã bị {actionMeeting.type === 'CANCEL' ? 'huỷ bỏ' : 'tạm hoãn'}</p>
                 </div>
              </div>
              
              <div className="space-y-4">
                 <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
                    <p className="text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Cuộc họp:</p>
-                   <p className="text-sm font-black text-gray-800 line-clamp-2">{cancellingMeeting.title}</p>
+                   <p className="text-sm font-black text-gray-800 line-clamp-2">{actionMeeting.meeting.title}</p>
                 </div>
                 
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Lý do huỷ cuộc họp *</label>
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Lý do {actionMeeting.type === 'CANCEL' ? 'huỷ' : 'hoãn'} cuộc họp *</label>
                    <textarea 
-                     className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-red-500/10 focus:border-red-500 focus:bg-white outline-none transition-all text-sm font-bold min-h-[100px] resize-none"
-                     placeholder="Nhập lý do huỷ... (vd: Thay đổi kế hoạch, Lãnh đạo bận...)"
-                     value={cancelReason}
-                     onChange={e => setCancelReason(e.target.value)}
+                     className={`w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:bg-white outline-none transition-all text-sm font-bold min-h-[100px] resize-none ${
+                       actionMeeting.type === 'CANCEL' ? 'focus:ring-red-500/10 focus:border-red-500' : 'focus:ring-amber-500/10 focus:border-amber-500'
+                     }`}
+                     placeholder={`Nhập lý do ${actionMeeting.type === 'CANCEL' ? 'huỷ' : 'hoãn'}...`}
+                     value={reason}
+                     onChange={e => setReason(e.target.value)}
                    />
                 </div>
              </div>
 
              <div className="flex gap-4 mt-8">
                 <button 
-                  onClick={() => { setCancellingMeeting(null); setCancelReason(''); }}
+                  onClick={() => { setActionMeeting(null); setReason(''); }}
                   className="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
                 >
                   Bỏ qua
                 </button>
                 <button 
-                  onClick={confirmCancelMeeting}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-red-100 hover:bg-red-700 transition-all active:scale-95"
+                  onClick={confirmAction}
+                  className={`flex-1 px-6 py-3 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 ${
+                    actionMeeting.type === 'CANCEL' ? 'bg-red-600 hover:bg-red-700 shadow-red-100' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-100'
+                  }`}
                 >
-                  Xác nhận huỷ
+                  Xác nhận {actionMeeting.type === 'CANCEL' ? 'huỷ' : 'hoãn'}
                 </button>
              </div>
           </div>

@@ -197,7 +197,7 @@ const App: React.FC = () => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const activeMeetings = meetings.filter(m => m.status !== 'CANCELLED');
+    const activeMeetings = meetings.filter(m => m.status === 'SCHEDULED');
 
     const weeklyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfWeek);
     const monthlyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfMonth);
@@ -385,33 +385,51 @@ const App: React.FC = () => {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                           {dashboardStats.recentMeetings.map(m => (
-                             <tr key={m.id} className={`hover:bg-gray-50 transition-all cursor-pointer ${m.status === 'CANCELLED' ? 'bg-red-50/50' : ''}`} onClick={() => setSelectedMeeting(m)}>
-                                <td className="px-8 py-5">
-                                   <div className={`font-bold text-sm whitespace-normal leading-relaxed ${m.status === 'CANCELLED' ? 'text-red-700 line-through decoration-red-700 decoration-2' : 'text-gray-900'}`}>{m.title}</div>
-                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id} {m.status === 'CANCELLED' && <span className="text-red-700 font-black ml-2 uppercase tracking-widest bg-red-100 px-1.5 py-0.5 rounded border border-red-200">[ĐÃ HUỶ]</span>}</div>
-                                </td>
-                                <td className="px-8 py-5">
-                                   <div className={`font-bold text-[11px] leading-tight ${m.status === 'CANCELLED' ? 'text-red-800' : 'text-slate-900'}`}>{m.hostUnit}</div>
-                                   <div className="text-slate-500 text-[10px] mt-1 font-medium italic">Chủ trì: {m.chairPerson}</div>
-                                </td>
-                                <td className="px-8 py-5">
-                                   <div className={`font-bold text-[11px] whitespace-nowrap ${m.status === 'CANCELLED' ? 'text-red-600' : 'text-blue-600'}`}>
-                                      {new Date(m.startTime).toLocaleTimeString('vi-VN', { 
-                                        hour: '2-digit', minute: '2-digit', hour12: false 
-                                      })}
-                                   </div>
-                                   <div className="text-gray-500 text-[10px] mt-1 font-mono whitespace-nowrap">
-                                      {new Date(m.startTime).toLocaleDateString('vi-VN')}
-                                   </div>
-                                </td>
-                                <td className="px-8 py-5 text-center">
-                                   <button className={`px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200 ${m.status === 'CANCELLED' ? 'bg-red-200 text-red-700 hover:bg-red-300' : ''}`} style={m.status === 'CANCELLED' ? {} : {...primaryLightBgStyle, ...primaryTextStyle}}>
-                                      Chi tiết
-                                   </button>
-                                </td>
-                             </tr>
-                           ))}
+                           {dashboardStats.recentMeetings.map(m => {
+                             const isCancelled = m.status === 'CANCELLED';
+                             const isPostponed = m.status === 'POSTPONED';
+                             const isSpecial = isCancelled || isPostponed;
+
+                             return (
+                               <tr key={m.id} className={`hover:bg-gray-50 transition-all cursor-pointer ${isCancelled ? 'bg-red-50/50' : isPostponed ? 'bg-amber-50/50' : ''}`} onClick={() => setSelectedMeeting(m)}>
+                                  <td className="px-8 py-5">
+                                     <div className={`font-bold text-sm whitespace-normal leading-relaxed ${
+                                       isCancelled ? 'text-red-700 line-through decoration-red-700 decoration-2' : 
+                                       isPostponed ? 'text-amber-700 italic' : 
+                                       'text-gray-900'
+                                     }`}>{m.title}</div>
+                                     <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">
+                                        REF: {m.id} 
+                                        {isCancelled && <span className="text-red-700 font-black ml-2 uppercase tracking-widest bg-red-100 px-1.5 py-0.5 rounded border border-red-200">[ĐÃ HUỶ]</span>}
+                                        {isPostponed && <span className="text-amber-700 font-black ml-2 uppercase tracking-widest bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">[HOÃN]</span>}
+                                     </div>
+                                  </td>
+                                  <td className="px-8 py-5">
+                                     <div className={`font-bold text-[11px] leading-tight ${isCancelled ? 'text-red-800' : isPostponed ? 'text-amber-800' : 'text-slate-900'}`}>{m.hostUnit}</div>
+                                     <div className="text-slate-500 text-[10px] mt-1 font-medium italic">Chủ trì: {m.chairPerson}</div>
+                                  </td>
+                                  <td className="px-8 py-5">
+                                     <div className={`font-bold text-[11px] whitespace-nowrap ${isCancelled ? 'text-red-600' : isPostponed ? 'text-amber-600' : 'text-blue-600'}`}>
+                                        {new Date(m.startTime).toLocaleTimeString('vi-VN', { 
+                                          hour: '2-digit', minute: '2-digit', hour12: false 
+                                        })}
+                                     </div>
+                                     <div className="text-gray-500 text-[10px] mt-1 font-mono whitespace-nowrap">
+                                        {new Date(m.startTime).toLocaleDateString('vi-VN')}
+                                     </div>
+                                  </td>
+                                  <td className="px-8 py-5 text-center">
+                                     <button className={`px-5 py-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-sm border border-transparent hover:border-blue-200 ${
+                                       isCancelled ? 'bg-red-200 text-red-700 hover:bg-red-300' : 
+                                       isPostponed ? 'bg-amber-200 text-amber-700 hover:bg-amber-300' : 
+                                       ''
+                                     }`} style={isSpecial ? {} : {...primaryLightBgStyle, ...primaryTextStyle}}>
+                                        Chi tiết
+                                     </button>
+                                  </td>
+                               </tr>
+                             )
+                           })}
                            {dashboardStats.recentMeetings.length === 0 && (
                              <tr>
                                <td colSpan={4} className="px-8 py-10 text-center text-gray-400 text-xs italic">Chưa có dữ liệu cuộc họp gần đây</td>

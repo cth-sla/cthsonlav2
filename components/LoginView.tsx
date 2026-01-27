@@ -105,38 +105,62 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             {/* Scrollable Schedule List */}
             <div className="flex-1 overflow-y-auto pr-4 space-y-3 custom-scrollbar max-h-[400px] lg:max-h-none">
               {upcomingMeetings.length > 0 ? (
-                upcomingMeetings.map((meeting) => (
-                  <div 
-                    key={meeting.id} 
-                    onClick={() => setSelectedPublicMeeting(meeting)}
-                    className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[1.5rem] hover:bg-white/10 transition-all flex items-center gap-5 group border-l-4 border-l-transparent hover:border-l-blue-500 cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-5">
-                      <span className="text-lg font-black text-blue-400">
-                        {formatTime(meeting.startTime)}
-                      </span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight mt-1">{formatDate(meeting.startTime)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-slate-100 line-clamp-2 group-hover:text-white transition-colors leading-relaxed tracking-tight">{meeting.title}</h4>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest">Chủ trì:</span>
-                          <span className="text-[10px] font-black text-slate-300 uppercase truncate max-w-[120px]">{meeting.chairPerson}</span>
+                upcomingMeetings.map((meeting) => {
+                  const isCancelled = meeting.status === 'CANCELLED';
+                  const isPostponed = meeting.status === 'POSTPONED';
+                  const isSpecial = isCancelled || isPostponed;
+
+                  return (
+                    <div 
+                      key={meeting.id} 
+                      onClick={() => setSelectedPublicMeeting(meeting)}
+                      className={`backdrop-blur-md border p-5 rounded-[1.5rem] flex items-center gap-5 group border-l-4 transition-all cursor-pointer ${
+                        isCancelled ? 'bg-red-500/5 border-red-500/20 border-l-red-600 hover:bg-red-500/10' : 
+                        isPostponed ? 'bg-amber-500/5 border-amber-500/20 border-l-amber-600 hover:bg-amber-500/10' : 
+                        'bg-white/5 border-white/10 border-l-transparent hover:border-l-blue-500 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-5">
+                        <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
+                          {formatTime(meeting.startTime)}
+                        </span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight mt-1">{formatDate(meeting.startTime)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className={`text-sm font-bold line-clamp-2 transition-colors leading-relaxed tracking-tight ${
+                            isCancelled ? 'text-red-300 line-through' : 
+                            isPostponed ? 'text-amber-200 italic' : 
+                            'text-slate-100 group-hover:text-white'
+                          }`}>
+                            {meeting.title}
+                          </h4>
+                          {isCancelled && <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0">Huỷ</span>}
+                          {isPostponed && <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0">Hoãn</span>}
                         </div>
-                        <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{meeting.hostUnit}</span>
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest">Chủ trì:</span>
+                            <span className="text-[10px] font-black text-slate-300 uppercase truncate max-w-[120px]">{meeting.chairPerson}</span>
+                          </div>
+                          <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{meeting.hostUnit}</span>
+                          </div>
                         </div>
                       </div>
+                      <div className="shrink-0">
+                         <button className={`px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                           isCancelled ? 'bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white' : 
+                           isPostponed ? 'bg-amber-600/10 border-amber-500/30 text-amber-400 hover:bg-amber-600 hover:text-white' : 
+                           'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white'
+                         }`}>
+                           CHI TIẾT
+                         </button>
+                      </div>
                     </div>
-                    <div className="shrink-0">
-                       <button className="px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-400 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
-                         CHI TIẾT
-                       </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="p-12 border border-white/5 bg-white/2 rounded-[2rem] text-center">
                   <p className="text-slate-500 font-bold text-xs uppercase tracking-widest italic opacity-50">Hiện không có lịch họp nào sắp diễn ra</p>
@@ -233,12 +257,22 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
           <div className="bg-[#161B22] border border-white/10 w-full max-w-2xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600/20 border border-blue-500/30 rounded-2xl flex items-center justify-center text-blue-400">
+                <div className={`w-12 h-12 border rounded-2xl flex items-center justify-center ${
+                  selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-600/20 border-red-500/30 text-red-400' :
+                  selectedPublicMeeting.status === 'POSTPONED' ? 'bg-amber-600/20 border-amber-500/30 text-amber-400' :
+                  'bg-blue-600/20 border-blue-500/30 text-blue-400'
+                }`}>
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Thông tin chi tiết cuộc họp</p>
+                  <h3 className={`text-lg font-black text-white tracking-tight line-clamp-1 ${
+                    selectedPublicMeeting.status === 'CANCELLED' ? 'line-through' : ''
+                  }`}>{selectedPublicMeeting.title}</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">
+                    {selectedPublicMeeting.status === 'CANCELLED' ? 'HỘI NGHỊ ĐÃ HUỶ' : 
+                     selectedPublicMeeting.status === 'POSTPONED' ? 'HỘI NGHỊ TẠM HOÃN' : 
+                     'Thông tin chi tiết cuộc họp'}
+                  </p>
                 </div>
               </div>
               <button onClick={() => setSelectedPublicMeeting(null)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-500 hover:text-white">
@@ -247,11 +281,26 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+              {/* Special Status Reason */}
+              {(selectedPublicMeeting.status === 'CANCELLED' || selectedPublicMeeting.status === 'POSTPONED') && (
+                <div className={`p-5 rounded-2xl border-2 ${
+                  selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'
+                }`}>
+                   <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${
+                     selectedPublicMeeting.status === 'CANCELLED' ? 'text-red-500' : 'text-amber-500'
+                   }`}>Lý do {selectedPublicMeeting.status === 'CANCELLED' ? 'huỷ' : 'hoãn'}:</p>
+                   <p className="text-sm font-bold text-slate-200 italic">{selectedPublicMeeting.cancelReason || 'Không có lý do chi tiết.'}</p>
+                </div>
+              )}
+
               {/* General Quick Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
                   <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Thời gian</p>
-                  <p className="text-sm font-black text-blue-400 uppercase">{formatTime(selectedPublicMeeting.startTime)} - {formatDate(selectedPublicMeeting.startTime)}</p>
+                  <p className={`text-sm font-black uppercase ${
+                    selectedPublicMeeting.status === 'CANCELLED' ? 'text-red-400' : 
+                    selectedPublicMeeting.status === 'POSTPONED' ? 'text-amber-400' : 'text-blue-400'
+                  }`}>{formatTime(selectedPublicMeeting.startTime)} - {formatDate(selectedPublicMeeting.startTime)}</p>
                 </div>
                 <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
                   <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Cán bộ chủ trì</p>
