@@ -40,7 +40,7 @@ const unmapMeeting = (m: Meeting) => ({
   notes: m.notes,
   endpoint_checks: m.endpointChecks || {},
   status: m.status,
-  cancel_reason: m.cancelReason
+  cancel_reason: m.cancelReason // Sử dụng chung cho cả hoãn và huỷ
 });
 
 const mapEndpoint = (e: any): Endpoint => ({
@@ -175,7 +175,6 @@ export const supabaseService = {
 
   async getStaff(): Promise<Staff[]> {
     if (!supabase) return [];
-    // Phải order theo full_name thay vì fullName
     const { data, error } = await supabase.from('staff').select('*').order('full_name');
     if (error) return [];
     return (data || []).map(mapStaff);

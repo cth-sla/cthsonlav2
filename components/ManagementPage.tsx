@@ -233,7 +233,6 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           </table>
         )}
 
-        {/* ... (Các tab khác giữ nguyên) ... */}
         {activeTab === 'groups' && (
           <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">

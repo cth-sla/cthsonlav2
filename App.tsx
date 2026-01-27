@@ -187,7 +187,7 @@ const App: React.FC = () => {
   const handleUpdateMeeting = async (meeting: Meeting) => {
     setMeetings(prev => prev.map(m => m.id === meeting.id ? meeting : m));
     if (supabaseService.isConfigured()) {
-      try { await supabaseService.upsertMeeting(meeting); } catch (err) { console.error("Update failed:", err); }
+      try { await supabaseService.upsertMeeting(meeting); } catch (err) { console.error("Cập nhật thất bại:", err); }
     }
   };
 
@@ -195,7 +195,7 @@ const App: React.FC = () => {
     if (!window.confirm('Xóa cuộc họp này vĩnh viễn?')) return;
     setMeetings(prev => prev.filter(m => m.id !== id));
     if (supabaseService.isConfigured()) {
-      try { await supabaseService.deleteMeeting(id); } catch (err) { console.error("Delete failed:", err); }
+      try { await supabaseService.deleteMeeting(id); } catch (err) { console.error("Xóa thất bại:", err); }
     }
   };
 
@@ -219,7 +219,7 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
-                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate tracking-tighter">User: {currentUser.fullName}</span>
+                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate tracking-tighter">Cán bộ: {currentUser.fullName}</span>
              </div>
           </div>
           <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white"><X size={20} /></button>
@@ -256,7 +256,7 @@ const App: React.FC = () => {
              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
                 <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-500 animate-spin' : 'bg-emerald-500 animate-pulse'}`}></div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  {isSyncing ? 'Đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
+                  {isSyncing ? 'Đang đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
                 </span>
              </div>
              {hasSyncedOnce && !isSyncing && (
@@ -270,7 +270,7 @@ const App: React.FC = () => {
                 {currentUser?.fullName?.split(' ').filter(Boolean).pop()?.[0] || 'U'}
               </div>
               <p className="text-xs font-black text-gray-700 hidden sm:block">
-                Tài khoản: <span style={primaryTextStyle}>{currentUser?.fullName}</span>
+                Đang đăng nhập: <span style={primaryTextStyle}>{currentUser?.fullName}</span>
               </p>
             </div>
           </div>
@@ -293,7 +293,7 @@ const App: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                            <AreaChart data={dashboardStats.last7Days}>
                               <defs>
-                                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="colorCount" x1="0" x2="0" y2="1">
                                   <stop offset="5%" stopColor={systemSettings.primaryColor} stopOpacity={0.3}/>
                                   <stop offset="95%" stopColor={systemSettings.primaryColor} stopOpacity={0}/>
                                 </linearGradient>

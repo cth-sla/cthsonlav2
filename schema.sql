@@ -1,10 +1,5 @@
 
--- 1. Đảm bảo cột role chấp nhận giá trị 'OPERATOR'
--- Nếu bạn đã tạo bảng users trước đó, hãy chạy lệnh này để cập nhật ràng buộc
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_role_check;
-ALTER TABLE public.users ADD CONSTRAINT users_role_check CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER'));
-
--- 2. Đảm bảo bảng users tồn tại với cấu trúc đúng
+-- 1. Cập nhật bảng users
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username TEXT UNIQUE NOT NULL,
@@ -15,19 +10,79 @@ CREATE TABLE IF NOT EXISTS public.users (
     CONSTRAINT users_role_check CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER'))
 );
 
--- 3. Cập nhật RLS (Row Level Security) cho bảng users
+-- 2. Cập nhật bảng units (Đơn vị)
+CREATE TABLE IF NOT EXISTS public.units (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3. Cập nhật bảng staff (Cán bộ)
+CREATE TABLE IF NOT EXISTS public.staff (
+    id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    unit_id TEXT REFERENCES public.units(id) ON DELETE SET NULL,
+    position TEXT,
+    email TEXT,
+    phone TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. Cập nhật bảng meetings (Cuộc họp)
+CREATE TABLE IF NOT EXISTS public.meetings (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    host_unit_name TEXT,
+    chair_person_name TEXT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    participants JSONB DEFAULT '[]',
+    endpoints JSONB DEFAULT '[]',
+    description TEXT,
+    notes TEXT,
+    endpoint_checks JSONB DEFAULT '{}',
+    status TEXT DEFAULT 'SCHEDULED',
+    cancel_reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
+);
+
+-- 5. Cập nhật bảng endpoints (Điểm cầu)
+CREATE TABLE IF NOT EXISTS public.endpoints (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    location TEXT,
+    status TEXT DEFAULT 'DISCONNECTED',
+    last_connected TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 6. Cập nhật bảng system_settings
+CREATE TABLE IF NOT EXISTS public.system_settings (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    system_name TEXT,
+    short_name TEXT,
+    logo_base_64 TEXT,
+    primary_color TEXT DEFAULT '#3B82F6',
+    CONSTRAINT one_row_only CHECK (id = 1)
+);
+
+-- Enable RLS for all tables
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Public users access" ON public.users;
-CREATE POLICY "Public users access" ON public.users FOR ALL USING (true) WITH CHECK (true);
-
--- 4. Đảm bảo cột endpoint_checks trong bảng meetings
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name='meetings' AND column_name='endpoint_checks') THEN
-        ALTER TABLE public.meetings ADD COLUMN endpoint_checks JSONB DEFAULT '{}';
-    END IF;
-END $$;
+-- Simple public policies for demo/internal use
+CREATE POLICY "Allow public access" ON public.users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access" ON public.units FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access" ON public.staff FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access" ON public.meetings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access" ON public.endpoints FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public access" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
 
 NOTIFY pgrst, 'reload schema';
