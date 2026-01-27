@@ -13,17 +13,17 @@ const supabase = supabaseUrl && supabaseAnonKey
 const mapMeeting = (m: any): Meeting => ({
   id: m.id,
   title: m.title,
-  hostUnit: m.host_unit_name || m.hostUnit,
-  chairPerson: m.chair_person_name || m.chairPerson,
+  hostUnit: m.host_unit_name || m.hostUnit || 'N/A',
+  chairPerson: m.chair_person_name || m.chairPerson || 'N/A',
   startTime: m.start_time || m.startTime,
   endTime: m.end_time || m.endTime,
-  description: m.description,
+  description: m.description || '',
   participants: Array.isArray(m.participants) ? m.participants : [],
   endpoints: Array.isArray(m.endpoints) ? m.endpoints : [],
-  notes: m.notes,
+  notes: m.notes || '',
   endpointChecks: m.endpoint_checks || m.endpointChecks || {},
   status: m.status || 'SCHEDULED',
-  cancelReason: m.cancel_reason || m.cancelReason
+  cancelReason: m.cancel_reason || m.cancelReason || ''
 });
 
 const unmapMeeting = (m: Meeting) => ({
@@ -47,7 +47,7 @@ const mapEndpoint = (e: any): Endpoint => ({
   name: e.name,
   location: e.location,
   status: e.status,
-  lastConnected: e.last_connected || e.lastConnected
+  lastConnected: e.last_connected || e.lastConnected || 'N/A'
 });
 
 const unmapEndpoint = (e: Endpoint) => ({
@@ -63,9 +63,14 @@ export const supabaseService = {
 
   async getMeetings(): Promise<Meeting[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapMeeting);
+    try {
+      const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(mapMeeting);
+    } catch (err) {
+      console.error("Supabase getMeetings error:", err);
+      return [];
+    }
   },
 
   async upsertMeeting(m: Meeting) {
@@ -82,9 +87,14 @@ export const supabaseService = {
 
   async getEndpoints(): Promise<Endpoint[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('endpoints').select('*').order('name');
-    if (error) throw error;
-    return (data || []).map(mapEndpoint);
+    try {
+      const { data, error } = await supabase.from('endpoints').select('*').order('name');
+      if (error) throw error;
+      return (data || []).map(mapEndpoint);
+    } catch (err) {
+      console.error("Supabase getEndpoints error:", err);
+      return [];
+    }
   },
 
   async upsertEndpoint(e: Endpoint) {
