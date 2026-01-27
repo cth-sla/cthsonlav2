@@ -1,5 +1,5 @@
 
--- 1. Cập nhật bảng users
+-- 1. Bảng users
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username TEXT UNIQUE NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     CONSTRAINT users_role_check CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER'))
 );
 
--- 2. Cập nhật bảng units (Đơn vị)
+-- 2. Bảng units (Đơn vị)
 CREATE TABLE IF NOT EXISTS public.units (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.units (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Cập nhật bảng staff (Cán bộ)
+-- 3. Bảng staff (Cán bộ)
 CREATE TABLE IF NOT EXISTS public.staff (
     id TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.staff (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 4. Cập nhật bảng meetings (Cuộc họp)
+-- 4. Bảng meetings (Cuộc họp) - Quan trọng: status hỗ trợ POSTPONED
 CREATE TABLE IF NOT EXISTS public.meetings (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
 );
 
--- 5. Cập nhật bảng endpoints (Điểm cầu)
+-- 5. Bảng endpoints (Điểm cầu)
 CREATE TABLE IF NOT EXISTS public.endpoints (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS public.endpoints (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 6. Cập nhật bảng system_settings
+-- 6. Bảng system_settings
 CREATE TABLE IF NOT EXISTS public.system_settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
     system_name TEXT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     CONSTRAINT one_row_only CHECK (id = 1)
 );
 
--- Enable RLS for all tables
+-- Bật RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
@@ -77,7 +77,7 @@ ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 
--- Simple public policies for demo/internal use
+-- Chính sách truy cập công khai (cho mục đích nội bộ)
 CREATE POLICY "Allow public access" ON public.users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access" ON public.units FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public access" ON public.staff FOR ALL USING (true) WITH CHECK (true);

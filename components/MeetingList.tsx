@@ -87,6 +87,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       return;
     }
     
+    // Gửi cập nhật cho App.tsx để đồng bộ lên Supabase
     onUpdate({
       ...actionMeeting.meeting,
       status: actionMeeting.type === 'CANCEL' ? 'CANCELLED' : 'POSTPONED',
@@ -370,7 +371,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
                           
-                          {/* Postpone button */}
+                          {/* Nút Hoãn lịch họp */}
                           <button 
                             onClick={() => setActionMeeting({ meeting, type: 'POSTPONE' })}
                             className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
@@ -380,7 +381,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                           </button>
 
-                          {/* Cancel button */}
+                          {/* Nút Huỷ lịch họp */}
                           <button 
                             onClick={() => setActionMeeting({ meeting, type: 'CANCEL' })}
                             className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
@@ -463,7 +464,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                 </button>
                 <button 
                   onClick={confirmAction}
-                  className={`flex-1 px-6 py-3 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 ${
+                  className={`flex-1 px-6 py-3 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-[0.98] ${
                     actionMeeting.type === 'CANCEL' ? 'bg-red-600 hover:bg-red-700 shadow-red-100' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-100'
                   }`}
                 >

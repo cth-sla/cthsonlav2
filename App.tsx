@@ -64,12 +64,13 @@ const App: React.FC = () => {
           supabaseService.getSettings()
         ]);
 
-        if (cloudMeetings.length > 0) setMeetings(cloudMeetings);
-        if (cloudEndpoints.length > 0) setEndpoints(cloudEndpoints);
-        if (cloudUnits.length > 0) setUnits(cloudUnits);
-        if (cloudStaff.length > 0) setStaff(cloudStaff);
-        if (cloudGroups.length > 0) setGroups(cloudGroups);
-        if (cloudUsers.length > 0) setUsers(cloudUsers);
+        // Luôn cập nhật state ngay cả khi mảng rỗng để đồng bộ chính xác với Cloud
+        setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings);
+        setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints);
+        setUnits(cloudUnits); storageService.saveUnits(cloudUnits);
+        setStaff(cloudStaff); storageService.saveStaff(cloudStaff);
+        setGroups(cloudGroups); storageService.saveGroups(cloudGroups);
+        setUsers(cloudUsers); storageService.saveUsers(cloudUsers);
         
         if (cloudSettings) {
           setSystemSettings(cloudSettings);
@@ -87,11 +88,11 @@ const App: React.FC = () => {
 
     syncData();
 
+    // Đăng ký realtime updates
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings'];
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
-        if (!mappedData && eventType !== 'DELETE') return;
         
         const updateMap: Record<string, any> = {
           'meetings': { state: setMeetings },
@@ -187,7 +188,12 @@ const App: React.FC = () => {
   const handleUpdateMeeting = async (meeting: Meeting) => {
     setMeetings(prev => prev.map(m => m.id === meeting.id ? meeting : m));
     if (supabaseService.isConfigured()) {
-      try { await supabaseService.upsertMeeting(meeting); } catch (err) { console.error("Cập nhật thất bại:", err); }
+      try { 
+        await supabaseService.upsertMeeting(meeting); 
+      } catch (err) { 
+        console.error("Cập nhật Cloud thất bại:", err); 
+        alert("Lỗi khi lưu lên Cloud. Vui lòng kiểm tra kết nối.");
+      }
     }
   };
 
@@ -219,7 +225,7 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
-                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate tracking-tighter">Cán bộ: {currentUser.fullName}</span>
+                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate tracking-tighter">Cán bộ: {currentUser.fullName || 'User'}</span>
              </div>
           </div>
           <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white"><X size={20} /></button>
@@ -267,10 +273,10 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 bg-blue-50/50 px-4 py-1.5 rounded-full border border-blue-100/50">
               <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-black shadow-lg shadow-blue-200">
-                {currentUser?.fullName?.split(' ').filter(Boolean).pop()?.[0] || 'U'}
+                {(currentUser?.fullName || 'U').trim().split(/\s+/).pop()?.charAt(0).toUpperCase() || 'U'}
               </div>
               <p className="text-xs font-black text-gray-700 hidden sm:block">
-                Đang đăng nhập: <span style={primaryTextStyle}>{currentUser?.fullName}</span>
+                Tài khoản: <span style={primaryTextStyle}>{currentUser?.fullName || 'N/A'}</span>
               </p>
             </div>
           </div>
