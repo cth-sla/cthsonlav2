@@ -1,22 +1,23 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup } from '../types';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus } from '../types';
 
 const supabaseUrl = (window as any).process?.env?.SUPABASE_URL || "";
 const supabaseAnonKey = (window as any).process?.env?.SUPABASE_ANON_KEY || "";
 
-const supabase = supabaseUrl && supabaseAnonKey 
+// Khởi tạo client với cấu hình chuẩn
+export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-// Helper mappers
+// Helper mappers: Chuyển đổi linh hoạt giữa snake_case (DB) và camelCase (App)
 const mapMeeting = (m: any): Meeting => ({
-  id: m.id,
-  title: m.title,
-  hostUnit: m.host_unit_name || m.hostUnit || 'N/A',
-  chairPerson: m.chair_person_name || m.chairPerson || 'N/A',
-  startTime: m.start_time || m.startTime,
-  endTime: m.end_time || m.endTime,
+  id: m.id || `MEET-${Math.random().toString(36).substr(2, 9)}`,
+  title: m.title || 'Không có tiêu đề',
+  hostUnit: m.host_unit_name || m.host_unit || m.hostUnit || 'N/A',
+  chairPerson: m.chair_person_name || m.chair_person || m.chairPerson || 'N/A',
+  startTime: m.start_time || m.startTime || new Date().toISOString(),
+  endTime: m.end_time || m.endTime || new Date().toISOString(),
   description: m.description || '',
   participants: Array.isArray(m.participants) ? m.participants : [],
   endpoints: Array.isArray(m.endpoints) ? m.endpoints : [],
@@ -44,18 +45,10 @@ const unmapMeeting = (m: Meeting) => ({
 
 const mapEndpoint = (e: any): Endpoint => ({
   id: e.id,
-  name: e.name,
-  location: e.location,
-  status: e.status,
+  name: e.name || 'Điểm cầu không tên',
+  location: e.location || 'Chưa xác định',
+  status: (e.status as EndpointStatus) || EndpointStatus.DISCONNECTED,
   lastConnected: e.last_connected || e.lastConnected || 'N/A'
-});
-
-const unmapEndpoint = (e: Endpoint) => ({
-  id: e.id,
-  name: e.name,
-  location: e.location,
-  status: e.status,
-  last_connected: e.lastConnected
 });
 
 export const supabaseService = {
@@ -65,10 +58,13 @@ export const supabaseService = {
     if (!supabase) return [];
     try {
       const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [Meetings]:", error.message);
+        return [];
+      }
       return (data || []).map(mapMeeting);
     } catch (err) {
-      console.error("Supabase getMeetings error:", err);
+      console.error("Critical error fetching meetings:", err);
       return [];
     }
   },
@@ -89,17 +85,26 @@ export const supabaseService = {
     if (!supabase) return [];
     try {
       const { data, error } = await supabase.from('endpoints').select('*').order('name');
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error [Endpoints]:", error.message);
+        return [];
+      }
       return (data || []).map(mapEndpoint);
     } catch (err) {
-      console.error("Supabase getEndpoints error:", err);
+      console.error("Critical error fetching endpoints:", err);
       return [];
     }
   },
 
   async upsertEndpoint(e: Endpoint) {
     if (!supabase) return;
-    const { error } = await supabase.from('endpoints').upsert(unmapEndpoint(e));
+    const { error } = await supabase.from('endpoints').upsert({
+      id: e.id,
+      name: e.name,
+      location: e.location,
+      status: e.status,
+      last_connected: e.lastConnected
+    });
     if (error) throw error;
   },
 
@@ -112,7 +117,6 @@ export const supabaseService = {
   async getUnits(): Promise<Unit[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('units').select('*').order('name');
-    if (error) throw error;
     return data || [];
   },
 
@@ -131,7 +135,6 @@ export const supabaseService = {
   async getStaff(): Promise<Staff[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('staff').select('*').order('fullName');
-    if (error) throw error;
     return data || [];
   },
 
@@ -150,7 +153,6 @@ export const supabaseService = {
   async getGroups(): Promise<ParticipantGroup[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('participant_groups').select('*').order('name');
-    if (error) throw error;
     return data || [];
   },
 
@@ -169,7 +171,6 @@ export const supabaseService = {
   async getUsers(): Promise<User[]> {
     if (!supabase) return [];
     const { data, error } = await supabase.from('users').select('*').order('username');
-    if (error) throw error;
     return data || [];
   },
 
@@ -188,7 +189,7 @@ export const supabaseService = {
   async getSettings(): Promise<SystemSettings | null> {
     if (!supabase) return null;
     const { data, error } = await supabase.from('system_settings').select('*').single();
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') return null;
     return data || null;
   },
 
@@ -203,7 +204,11 @@ export const supabaseService = {
     return supabase
       .channel(`public:${table}`)
       .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
-        const mappedData = table === 'meetings' ? mapMeeting(payload.new) : payload.new;
+        // Áp dụng mapper cho dữ liệu realtime nếu là bảng meetings hoặc endpoints
+        let mappedData = payload.new;
+        if (table === 'meetings') mappedData = mapMeeting(payload.new);
+        if (table === 'endpoints') mappedData = mapEndpoint(payload.new);
+        
         callback({ ...payload, mappedData });
       })
       .subscribe();
