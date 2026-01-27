@@ -1,5 +1,5 @@
 
--- 1. Bảng users
+-- 1. Đảm bảo các bảng cơ bản tồn tại
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username TEXT UNIQUE NOT NULL,
@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS public.users (
     CONSTRAINT users_role_check CHECK (role IN ('ADMIN', 'OPERATOR', 'VIEWER'))
 );
 
--- 2. Bảng units (Đơn vị)
 CREATE TABLE IF NOT EXISTS public.units (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -19,7 +18,6 @@ CREATE TABLE IF NOT EXISTS public.units (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Bảng staff (Cán bộ)
 CREATE TABLE IF NOT EXISTS public.staff (
     id TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
@@ -30,7 +28,6 @@ CREATE TABLE IF NOT EXISTS public.staff (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 4. Bảng meetings (Cuộc họp)
 CREATE TABLE IF NOT EXISTS public.meetings (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -41,15 +38,9 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     participants JSONB DEFAULT '[]',
     endpoints JSONB DEFAULT '[]',
     description TEXT,
-    notes TEXT,
-    endpoint_checks JSONB DEFAULT '{}',
-    status TEXT DEFAULT 'SCHEDULED',
-    cancel_reason TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 5. Bảng endpoints (Điểm cầu)
 CREATE TABLE IF NOT EXISTS public.endpoints (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -59,7 +50,6 @@ CREATE TABLE IF NOT EXISTS public.endpoints (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 6. Bảng system_settings
 CREATE TABLE IF NOT EXISTS public.system_settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
     system_name TEXT,
@@ -69,7 +59,28 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     CONSTRAINT one_row_only CHECK (id = 1)
 );
 
--- Bật RLS
+-- 2. CƯỠNG CHẾ BỔ SUNG CỘT (Nếu bảng đã tồn tại từ phiên bản cũ)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='status') THEN
+        ALTER TABLE public.meetings ADD COLUMN status TEXT DEFAULT 'SCHEDULED';
+        ALTER TABLE public.meetings ADD CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='cancel_reason') THEN
+        ALTER TABLE public.meetings ADD COLUMN cancel_reason TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='endpoint_checks') THEN
+        ALTER TABLE public.meetings ADD COLUMN endpoint_checks JSONB DEFAULT '{}';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='notes') THEN
+        ALTER TABLE public.meetings ADD COLUMN notes TEXT;
+    END IF;
+END $$;
+
+-- 3. Cấu hình RLS và Xử lý Policy (Sửa lỗi policy already exists)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
@@ -77,7 +88,7 @@ ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 
--- Xử lý Policy (Dùng DROP IF EXISTS để tránh lỗi 42710 khi chạy lại file)
+-- Xóa và tạo mới chính sách để đảm bảo tính cập nhật
 DROP POLICY IF EXISTS "Allow public access" ON public.users;
 CREATE POLICY "Allow public access" ON public.users FOR ALL USING (true) WITH CHECK (true);
 

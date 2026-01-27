@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus } from '../types';
 
@@ -37,10 +36,10 @@ const unmapMeeting = (m: Meeting) => ({
   description: m.description,
   participants: m.participants,
   endpoints: m.endpoints,
-  notes: m.notes || '',
+  notes: m.notes || null,
   endpoint_checks: m.endpointChecks || {},
   status: m.status || 'SCHEDULED',
-  cancel_reason: m.cancelReason || null // Quan trọng: Đảm bảo gửi null nếu không có lý do để xóa lý do cũ nếu cần
+  cancel_reason: m.cancelReason || null
 });
 
 const mapEndpoint = (e: any): Endpoint => ({
@@ -95,7 +94,7 @@ const unmapUser = (u: User) => ({
 const mapSettings = (s: any): SystemSettings => ({
   systemName: s.system_name || s.systemName || '',
   shortName: s.short_name || s.shortName || '',
-  logoBase64: s.logo_base64 || s.logoBase64 || '',
+  logoBase64: s.logo_base_64 || s.logoBase64 || '',
   primaryColor: s.primary_color || s.primaryColor || '#3B82F6'
 });
 
@@ -150,6 +149,7 @@ export const supabaseService = {
       name: e.name,
       location: e.location,
       status: e.status,
+      // Corrected: e.last_connected changed to e.lastConnected to match Endpoint interface
       last_connected: e.lastConnected
     });
     if (error) throw error;
