@@ -9,6 +9,7 @@ interface MeetingListProps {
   onEdit?: (meeting: Meeting) => void;
   onDelete?: (id: string) => void;
   onAdd?: () => void;
+  onUpdate?: (meeting: Meeting) => void;
 }
 
 type SortField = 'title' | 'hostUnit' | 'chairPerson' | 'startTime';
@@ -16,15 +17,16 @@ type SortOrder = 'asc' | 'desc';
 
 const ITEMS_PER_PAGE = 10;
 
-const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, onEdit, onDelete, onAdd }) => {
+const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, onEdit, onDelete, onAdd, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortField, setSortField] = useState<SortField>('startTime');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [cancellingMeeting, setCancellingMeeting] = useState<Meeting | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, startDate, endDate, sortField, sortOrder]);
@@ -78,18 +80,36 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     currentPage * ITEMS_PER_PAGE
   );
 
+  const confirmCancelMeeting = () => {
+    if (!cancellingMeeting || !onUpdate) return;
+    if (!cancelReason.trim()) {
+      alert("Vui lòng nhập lý do huỷ cuộc họp.");
+      return;
+    }
+    
+    onUpdate({
+      ...cancellingMeeting,
+      status: 'CANCELLED',
+      cancelReason: cancelReason
+    });
+    
+    setCancellingMeeting(null);
+    setCancelReason('');
+  };
+
   const handleExportExcel = () => {
     if (filteredAndSortedMeetings.length === 0) {
       alert("Không có dữ liệu để xuất.");
       return;
     }
 
-    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Mô tả\n";
+    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Lý do huỷ,Mô tả\n";
     const rows = filteredAndSortedMeetings.map(m => {
-      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${(m.description || '').replace(/"/g, '""')}"`;
+      const status = m.status === 'CANCELLED' ? 'Đã huỷ' : 'Bình thường';
+      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${(m.cancelReason || '').replace(/"/g, '""')}","${(m.description || '').replace(/"/g, '""')}"`;
     }).join("\n");
     
-    const csvContent = "\uFEFF" + header + rows; // Add BOM for Excel Vietnamese support
+    const csvContent = "\uFEFF" + header + rows;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -116,7 +136,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full w-full">
-      {/* Filters Header */}
       <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/30">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -167,7 +186,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
           </div>
         </div>
 
-        {/* Date Range Filters */}
         <div className="flex flex-col md:flex-row md:items-end gap-3 pb-1">
           <div className="flex gap-2">
              <div className="space-y-1.5 flex-1">
@@ -203,7 +221,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         </div>
       </div>
 
-      {/* Table Content */}
       <div className="overflow-x-auto flex-1 w-full">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
@@ -244,15 +261,15 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   <SortIcon field="startTime" />
                 </div>
               </th>
-              <th className="px-4 md:px-6 py-4 whitespace-nowrap">Số điểm cầu</th>
+              <th className="px-4 md:px-6 py-4 whitespace-nowrap text-center">Trạng thái</th>
               <th className="px-4 md:px-6 py-4 text-center">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paginatedMeetings.map((meeting) => (
-              <tr key={meeting.id} className="hover:bg-blue-50/30 transition-all group">
+              <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${meeting.status === 'CANCELLED' ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                 <td className="px-4 md:px-6 py-4 sticky left-0 bg-white group-hover:bg-blue-50/30 z-10 border-r border-transparent group-hover:border-gray-100">
-                  <div className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px]">{meeting.title}</div>
+                  <div className={`font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${meeting.status === 'CANCELLED' ? 'line-through decoration-red-500/50' : ''}`}>{meeting.title}</div>
                   <div className="text-[10px] text-gray-400 mt-1 font-mono tracking-tighter truncate">REF: {meeting.id}</div>
                 </td>
                 <td className="px-4 md:px-6 py-4">
@@ -272,12 +289,17 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                     {new Date(meeting.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - {new Date(meeting.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                 </td>
-                <td className="px-4 md:px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
+                <td className="px-4 md:px-6 py-4 text-center">
+                  {meeting.status === 'CANCELLED' ? (
+                    <div className="flex flex-col items-center">
+                      <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase rounded-lg border border-red-100 shadow-sm whitespace-nowrap">ĐÃ HUỶ</span>
+                      {meeting.cancelReason && <p className="text-[9px] text-red-400 mt-1 italic max-w-[120px] truncate" title={meeting.cancelReason}>{meeting.cancelReason}</p>}
+                    </div>
+                  ) : (
+                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
                       {meeting.endpoints.length} ĐIỂM CẦU
                     </span>
-                  </div>
+                  )}
                 </td>
                 <td className="px-4 md:px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
@@ -295,15 +317,24 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       <>
                         <button 
                           onClick={() => onEdit?.(meeting)}
-                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100"
+                          className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-30 disabled:pointer-events-none"
                           title="Chỉnh sửa"
+                          disabled={meeting.status === 'CANCELLED'}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
                         <button 
+                          onClick={() => setCancellingMeeting(meeting)}
+                          className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-30 disabled:pointer-events-none"
+                          title="Huỷ lịch họp"
+                          disabled={meeting.status === 'CANCELLED'}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                        </button>
+                        <button 
                           onClick={() => onDelete?.(meeting.id)}
                           className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100"
-                          title="Xóa"
+                          title="Xóa vĩnh viễn"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
@@ -328,7 +359,54 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         )}
       </div>
 
-      {/* Pagination Footer */}
+      {cancellingMeeting && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200">
+             <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                </div>
+                <div>
+                   <h3 className="text-lg font-black text-gray-900 uppercase">Xác nhận huỷ lịch</h3>
+                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Thao tác này sẽ đánh dấu cuộc họp đã bị huỷ</p>
+                </div>
+             </div>
+             
+             <div className="space-y-4">
+                <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                   <p className="text-xs font-bold text-gray-500 uppercase tracking-tight mb-1">Cuộc họp:</p>
+                   <p className="text-sm font-black text-gray-800 line-clamp-2">{cancellingMeeting.title}</p>
+                </div>
+                
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Lý do huỷ cuộc họp *</label>
+                   <textarea 
+                     className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 focus:bg-white outline-none transition-all text-sm font-bold min-h-[100px] resize-none"
+                     placeholder="Nhập lý do huỷ... (vd: Thay đổi kế hoạch, Lãnh đạo bận...)"
+                     value={cancelReason}
+                     onChange={e => setCancelReason(e.target.value)}
+                   />
+                </div>
+             </div>
+
+             <div className="flex gap-4 mt-8">
+                <button 
+                  onClick={() => { setCancellingMeeting(null); setCancelReason(''); }}
+                  className="flex-1 px-6 py-3 border border-gray-200 text-gray-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                >
+                  Bỏ qua
+                </button>
+                <button 
+                  onClick={confirmCancelMeeting}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-red-100 hover:bg-red-700 transition-all active:scale-95"
+                >
+                  Xác nhận huỷ
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
+
       {totalPages > 1 && (
         <div className="px-4 md:px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden md:block">
@@ -351,7 +429,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             
             <div className="flex items-center gap-1 mx-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                // Logic to show limited page numbers if too many
                 if (
                   totalPages > 5 && 
                   page !== 1 && 

@@ -197,13 +197,15 @@ const App: React.FC = () => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const weeklyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfWeek);
-    const monthlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfMonth);
-    const yearlyMeetings = meetings.filter(m => new Date(m.startTime) >= startOfYear);
+    const activeMeetings = meetings.filter(m => m.status !== 'CANCELLED');
+
+    const weeklyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfWeek);
+    const monthlyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfMonth);
+    const yearlyMeetings = activeMeetings.filter(m => new Date(m.startTime) >= startOfYear);
 
     // Thống kê theo đơn vị chủ trì
     const hostUnitMap: Record<string, number> = {};
-    meetings.forEach(m => {
+    activeMeetings.forEach(m => {
       hostUnitMap[m.hostUnit] = (hostUnitMap[m.hostUnit] || 0) + 1;
     });
     
@@ -221,12 +223,12 @@ const App: React.FC = () => {
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
-      const count = meetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
+      const count = activeMeetings.filter(m => new Date(m.startTime).toDateString() === d.toDateString()).length;
       return { name: dateStr, count };
     });
 
     return { 
-      total: meetings.length,
+      total: activeMeetings.length,
       connected, 
       uptime, 
       recentMeetings, 
@@ -367,7 +369,6 @@ const App: React.FC = () => {
                   </div>
                </div>
 
-               {/* Recent Meetings Table Optimized */}
                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Cuộc họp gần đây</h3>
@@ -385,10 +386,10 @@ const App: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                            {dashboardStats.recentMeetings.map(m => (
-                             <tr key={m.id} className="hover:bg-gray-50 transition-all cursor-pointer" onClick={() => setSelectedMeeting(m)}>
+                             <tr key={m.id} className={`hover:bg-gray-50 transition-all cursor-pointer ${m.status === 'CANCELLED' ? 'opacity-50 grayscale' : ''}`} onClick={() => setSelectedMeeting(m)}>
                                 <td className="px-8 py-5">
-                                   <div className="font-bold text-gray-900 text-sm whitespace-normal leading-relaxed">{m.title}</div>
-                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id}</div>
+                                   <div className={`font-bold text-gray-900 text-sm whitespace-normal leading-relaxed ${m.status === 'CANCELLED' ? 'line-through' : ''}`}>{m.title}</div>
+                                   <div className="text-[10px] text-gray-400 mt-1.5 font-mono tracking-tighter">REF: {m.id} {m.status === 'CANCELLED' && <span className="text-red-500 font-black ml-2 uppercase tracking-widest">[ĐÃ HUỶ]</span>}</div>
                                 </td>
                                 <td className="px-8 py-5">
                                    <div className="text-slate-900 font-bold text-[11px] leading-tight">{m.hostUnit}</div>
@@ -424,7 +425,7 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
-          {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} />}
+          {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} onUpdate={handleUpdateMeeting} />}
           {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={handleUpdateEndpoint} />}
           {activeTab === 'management' && <ManagementPage 
               units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 

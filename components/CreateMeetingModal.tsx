@@ -29,6 +29,29 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
 
+  // Helper function to format ISO date string to YYYY-MM-DDTHH:mm for local input
+  // Avoids time shifts by manually constructing the string based on local time components
+  const formatISOToLocalInput = (isoStr: string) => {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '';
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Helper function to convert local datetime-local input value to ISO string for storage
+  const formatLocalInputToISO = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? dateStr : d.toISOString();
+  };
+
   // Effect to load data when editingMeeting changes
   useEffect(() => {
     if (editingMeeting) {
@@ -36,8 +59,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         title: editingMeeting.title,
         hostUnit: editingMeeting.hostUnit,
         chairPerson: editingMeeting.chairPerson,
-        startTime: editingMeeting.startTime?.slice(0, 16) || '', // datetime-local format: YYYY-MM-DDTHH:mm
-        endTime: editingMeeting.endTime?.slice(0, 16) || '',
+        startTime: formatISOToLocalInput(editingMeeting.startTime),
+        endTime: formatISOToLocalInput(editingMeeting.endTime),
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
       });
@@ -99,24 +122,18 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       return;
     }
 
-    // Chuẩn hóa thời gian sang ISO String (thêm giây và múi giờ nếu thiếu)
-    // datetime-local của trình duyệt thường là YYYY-MM-DDTHH:mm
-    const formatToISO = (dateStr: string) => {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? dateStr : d.toISOString();
-    };
-
     const meetingData: Meeting = {
       id: editingMeeting ? editingMeeting.id : `MEET-${Math.floor(1000 + Math.random() * 9000)}`,
       title: formData.title,
       hostUnit: formData.hostUnit,
       chairPerson: formData.chairPerson,
-      startTime: formatToISO(formData.startTime),
-      endTime: formatToISO(formData.endTime),
+      startTime: formatLocalInputToISO(formData.startTime),
+      endTime: formatLocalInputToISO(formData.endTime),
       description: formData.description,
       participants: formData.participants.split(',').map(p => p.trim()).filter(p => p !== ""),
       endpoints: selectedEndpoints,
+      status: editingMeeting?.status || 'SCHEDULED',
+      cancelReason: editingMeeting?.cancelReason
     };
 
     if (editingMeeting && onUpdate) {
