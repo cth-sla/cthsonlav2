@@ -207,11 +207,15 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 font-medium">{s.position}</td>
-                  <td className="px-6 py-4 text-gray-500">{getUnitName(s.unitId)}</td>
+                  <td className="px-6 py-4 text-gray-500">
+                    <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-tight text-slate-600 border border-slate-200">
+                      {getUnitName(s.unitId)}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="text-[10px] space-y-0.5">
-                      <p className="text-gray-400 uppercase">E: {s.email || '---'}</p>
-                      <p className="text-gray-400 uppercase">P: {s.phone || '---'}</p>
+                      <p className="text-gray-400 uppercase font-black tracking-tighter">E: {s.email || '---'}</p>
+                      <p className="text-gray-400 uppercase font-black tracking-tighter">P: {s.phone || '---'}</p>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right space-x-3">
@@ -220,10 +224,16 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   </td>
                 </tr>
               ))}
+              {filteredStaff.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-gray-400 italic">Không tìm thấy cán bộ nào trong danh mục.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         )}
 
+        {/* ... (Các tab khác giữ nguyên) ... */}
         {activeTab === 'groups' && (
           <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">

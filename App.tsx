@@ -64,12 +64,12 @@ const App: React.FC = () => {
           supabaseService.getSettings()
         ]);
 
-        setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings);
-        setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints);
-        setUnits(cloudUnits); storageService.saveUnits(cloudUnits);
-        setStaff(cloudStaff); storageService.saveStaff(cloudStaff);
-        setGroups(cloudGroups); storageService.saveGroups(cloudGroups);
-        setUsers(cloudUsers); storageService.saveUsers(cloudUsers);
+        if (cloudMeetings.length > 0) setMeetings(cloudMeetings);
+        if (cloudEndpoints.length > 0) setEndpoints(cloudEndpoints);
+        if (cloudUnits.length > 0) setUnits(cloudUnits);
+        if (cloudStaff.length > 0) setStaff(cloudStaff);
+        if (cloudGroups.length > 0) setGroups(cloudGroups);
+        if (cloudUsers.length > 0) setUsers(cloudUsers);
         
         if (cloudSettings) {
           setSystemSettings(cloudSettings);
@@ -91,19 +91,19 @@ const App: React.FC = () => {
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
+        if (!mappedData && eventType !== 'DELETE') return;
         
         const updateMap: Record<string, any> = {
-          'meetings': { state: setMeetings, storage: 'cth_sla_meetings' },
-          'endpoints': { state: setEndpoints, storage: 'cth_sla_endpoints' },
-          'units': { state: setUnits, storage: 'cth_sla_units' },
-          'staff': { state: setStaff, storage: 'cth_sla_staff' },
-          'participant_groups': { state: setGroups, storage: 'cth_sla_groups' },
-          'users': { state: setUsers, storage: 'cth_sla_users' }
+          'meetings': { state: setMeetings },
+          'endpoints': { state: setEndpoints },
+          'units': { state: setUnits },
+          'staff': { state: setStaff },
+          'participant_groups': { state: setGroups },
+          'users': { state: setUsers }
         };
 
         if (table === 'system_settings' && mappedData) {
           setSystemSettings(mappedData);
-          storageService.saveSystemSettings(mappedData);
           return;
         }
 
@@ -118,7 +118,6 @@ const App: React.FC = () => {
             } else if (eventType === 'DELETE') {
               next = prev.filter(item => item.id !== old.id);
             }
-            storageService.saveData(config.storage, next);
             return next;
           });
         }
@@ -186,20 +185,15 @@ const App: React.FC = () => {
   };
 
   const handleUpdateMeeting = async (meeting: Meeting) => {
-    const nextMeetings = meetings.map(m => m.id === meeting.id ? meeting : m);
-    setMeetings(nextMeetings);
-    storageService.saveMeetings(nextMeetings);
+    setMeetings(prev => prev.map(m => m.id === meeting.id ? meeting : m));
     if (supabaseService.isConfigured()) {
       try { await supabaseService.upsertMeeting(meeting); } catch (err) { console.error("Update failed:", err); }
     }
-    if (selectedMeeting?.id === meeting.id) setSelectedMeeting(meeting);
   };
 
   const handleDeleteMeeting = async (id: string) => {
     if (!window.confirm('Xóa cuộc họp này vĩnh viễn?')) return;
-    const nextMeetings = meetings.filter(m => m.id !== id);
-    setMeetings(nextMeetings);
-    storageService.saveMeetings(nextMeetings);
+    setMeetings(prev => prev.filter(m => m.id !== id));
     if (supabaseService.isConfigured()) {
       try { await supabaseService.deleteMeeting(id); } catch (err) { console.error("Delete failed:", err); }
     }
@@ -225,7 +219,7 @@ const App: React.FC = () => {
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>
-                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate">{currentUser.fullName}</span>
+                <span className="text-[9px] font-bold text-blue-400 uppercase mt-0.5 truncate tracking-tighter">User: {currentUser.fullName}</span>
              </div>
           </div>
           <button onClick={toggleSidebar} className="lg:hidden text-slate-400 hover:text-white"><X size={20} /></button>
@@ -262,7 +256,7 @@ const App: React.FC = () => {
              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
                 <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-500 animate-spin' : 'bg-emerald-500 animate-pulse'}`}></div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  {isSyncing ? 'Đồng bộ...' : `Cloud: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
+                  {isSyncing ? 'Đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
                 </span>
              </div>
              {hasSyncedOnce && !isSyncing && (
@@ -276,7 +270,7 @@ const App: React.FC = () => {
                 {currentUser?.fullName?.split(' ').filter(Boolean).pop()?.[0] || 'U'}
               </div>
               <p className="text-xs font-black text-gray-700 hidden sm:block">
-                <span style={primaryTextStyle}>{currentUser?.fullName}</span>
+                Tài khoản: <span style={primaryTextStyle}>{currentUser?.fullName}</span>
               </p>
             </div>
           </div>
