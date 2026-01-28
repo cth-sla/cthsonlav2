@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
+import { FileText, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -87,7 +88,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       return;
     }
     
-    // Gửi cập nhật cho App.tsx để đồng bộ lên Supabase
     onUpdate({
       ...actionMeeting.meeting,
       status: actionMeeting.type === 'CANCEL' ? 'CANCELLED' : 'POSTPONED',
@@ -104,10 +104,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       return;
     }
 
-    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Lý do huỷ/hoãn,Mô tả\n";
+    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Giấy mời,Mô tả\n";
     const rows = filteredAndSortedMeetings.map(m => {
       const status = m.status === 'CANCELLED' ? 'Đã huỷ' : m.status === 'POSTPONED' ? 'Tạm hoãn' : 'Bình thường';
-      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${(m.cancelReason || '').replace(/"/g, '""')}","${(m.description || '').replace(/"/g, '""')}"`;
+      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${m.invitationLink || ''}","${(m.description || '').replace(/"/g, '""')}"`;
     }).join("\n");
     
     const csvContent = "\uFEFF" + header + rows;
@@ -120,6 +120,14 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleOpenInvitation = (link?: string) => {
+    if (link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    } else {
+      alert("Cuộc họp này chưa được gán liên kết giấy mời.");
+    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -286,30 +294,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       }`}>
                         {meeting.title}
                       </div>
-                      
-                      {isSpecial && meeting.cancelReason && (
-                        <div className="absolute bottom-full left-0 mb-2 invisible group-hover/title-tip:visible animate-in fade-in slide-in-from-bottom-1 duration-200 z-[60]">
-                          <div className={`px-3 py-2 rounded-xl shadow-xl text-[11px] font-bold border whitespace-nowrap ${
-                            isCancelled ? 'bg-red-600 border-red-700 text-white' : 'bg-amber-500 border-amber-600 text-white'
-                          }`}>
-                            <div className="flex items-center gap-1.5">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                              Lý do: {meeting.cancelReason}
-                            </div>
-                            <div className={`absolute top-full left-4 border-8 border-transparent ${
-                              isCancelled ? 'border-t-red-600' : 'border-t-amber-500'
-                            }`}></div>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                    
-                    {isSpecial && meeting.cancelReason && (
-                      <div className={`mt-1 flex items-center gap-1.5 animate-in slide-in-from-left-2 duration-300 ${isCancelled ? 'text-red-600' : 'text-amber-600'}`}>
-                        <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                        <span className="text-[10px] font-black uppercase tracking-tighter line-clamp-1 italic">Lý do: {meeting.cancelReason}</span>
-                      </div>
-                    )}
                     <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
                   </td>
                   <td className="px-4 md:px-6 py-4">
@@ -360,6 +345,20 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </button>
+
+                      {/* Nút Giấy mời */}
+                      <button 
+                        onClick={() => handleOpenInvitation(meeting.invitationLink)}
+                        className={`p-1.5 rounded-lg transition-all border shadow-sm flex items-center gap-1.5 ${
+                          meeting.invitationLink 
+                            ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-600 hover:text-white' 
+                            : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-50'
+                        }`}
+                        title={meeting.invitationLink ? "Xem Giấy mời (Liên kết ngoài)" : "Chưa gán giấy mời"}
+                      >
+                        <ExternalLink size={14} strokeWidth={2.5} />
+                      </button>
+
                       {isAdmin && (
                         <>
                           <button 
@@ -371,7 +370,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
                           
-                          {/* Nút Hoãn lịch họp */}
                           <button 
                             onClick={() => setActionMeeting({ meeting, type: 'POSTPONE' })}
                             className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
@@ -381,7 +379,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                           </button>
 
-                          {/* Nút Huỷ lịch họp */}
                           <button 
                             onClick={() => setActionMeeting({ meeting, type: 'CANCEL' })}
                             className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
@@ -389,15 +386,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             disabled={isSpecial}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                          </button>
-                          
-                          <button 
-                            onClick={() => onDelete?.(meeting.id)}
-                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Xóa vĩnh viễn"
-                            disabled={isCancelled}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </>
                       )}
@@ -408,17 +396,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             })}
           </tbody>
         </table>
-        {filteredAndSortedMeetings.length === 0 && (
-          <div className="flex flex-col items-center justify-center p-20 text-gray-400 bg-gray-50/30">
-            <div className="p-4 bg-gray-100 rounded-full mb-4">
-              <svg className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p className="text-sm font-bold tracking-tight uppercase">Không tìm thấy cuộc họp nào</p>
-            <p className="text-xs mt-1">Hãy thử thay đổi từ khóa tìm kiếm hoặc bộ lọc ngày của bạn.</p>
-          </div>
-        )}
       </div>
 
       {actionMeeting && (
@@ -492,49 +469,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <div className="flex items-center gap-1 mx-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                if (
-                  totalPages > 5 && 
-                  page !== 1 && 
-                  page !== totalPages && 
-                  Math.abs(page - currentPage) > 1
-                ) {
-                  if (page === 2 && currentPage > 3) return <span key="ellipsis-1" className="text-gray-400">...</span>;
-                  if (page === totalPages - 1 && currentPage < totalPages - 2) return <span key="ellipsis-2" className="text-gray-400">...</span>;
-                  if (Math.abs(page - currentPage) > 1) return null;
-                }
-
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${
-                      currentPage === page 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
-                        : 'bg-white text-gray-500 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className={`p-2 rounded-xl border transition-all ${
-                currentPage === totalPages 
-                  ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed' 
-                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 active:scale-95'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>

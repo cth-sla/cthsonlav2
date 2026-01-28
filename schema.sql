@@ -78,6 +78,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='notes') THEN
         ALTER TABLE public.meetings ADD COLUMN notes TEXT;
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='meetings' AND column_name='invitation_link') THEN
+        ALTER TABLE public.meetings ADD COLUMN invitation_link TEXT;
+    END IF;
 END $$;
 
 -- 3. Cấu hình RLS và Xử lý Policy (Sửa lỗi policy already exists)

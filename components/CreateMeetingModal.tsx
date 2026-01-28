@@ -24,18 +24,17 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     endTime: '',
     description: '',
     participants: '',
+    invitationLink: '',
   });
   
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
 
-  // Sửa lỗi lệch thời gian: format ISO sang chuỗi YYYY-MM-DDTHH:mm tương thích input địa phương
   const formatISOToLocalInput = (isoStr: string) => {
     if (!isoStr) return '';
     const date = new Date(isoStr);
     if (isNaN(date.getTime())) return '';
     
-    // Sử dụng các phương thức getLocal thay vì UTC để tránh bị lệch giờ theo timezone
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -45,7 +44,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Chuyển đổi từ giá trị input local sang ISO chuẩn để lưu trữ
   const formatLocalInputToISO = (localStr: string) => {
     if (!localStr) return '';
     const date = new Date(localStr);
@@ -62,6 +60,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         endTime: formatISOToLocalInput(editingMeeting.endTime),
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
+        invitationLink: editingMeeting.invitationLink || '',
       });
       setSelectedEndpointIds(editingMeeting.endpoints.map(e => e.id));
     } else {
@@ -73,6 +72,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         endTime: '',
         description: '',
         participants: '',
+        invitationLink: '',
       });
       setSelectedEndpointIds([]);
     }
@@ -84,15 +84,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     if (!selectedUnit) return staff;
     return staff.filter(s => s.unitId === selectedUnit.id);
   }, [formData.hostUnit, units, staff]);
-
-  useEffect(() => {
-    if (formData.chairPerson && formData.hostUnit && !editingMeeting) {
-      const isStillValid = filteredStaffForUnit.some(s => s.fullName === formData.chairPerson);
-      if (!isStillValid) {
-        setFormData(prev => ({ ...prev, chairPerson: '' }));
-      }
-    }
-  }, [formData.hostUnit, filteredStaffForUnit, editingMeeting]);
 
   const filteredEndpoints = useMemo(() => {
     return availableEndpoints.filter(ep => 
@@ -130,7 +121,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       participants: formData.participants.split(',').map(p => p.trim()).filter(p => p !== ""),
       endpoints: selectedEndpoints,
       status: editingMeeting?.status || 'SCHEDULED',
-      cancelReason: editingMeeting?.cancelReason
+      cancelReason: editingMeeting?.cancelReason,
+      invitationLink: formData.invitationLink.trim() || undefined
     };
 
     if (editingMeeting && onUpdate) {
@@ -168,7 +160,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-            {/* General Info */}
             <div className="lg:col-span-7 space-y-6">
               <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] border-l-4 border-blue-600 pl-3">Nội dung & Thời gian</h4>
               
@@ -240,6 +231,18 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
               </div>
 
               <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700">Giấy mời (Liên kết ngoài)</label>
+                <input 
+                  type="url" 
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                  placeholder="https://example.com/invitation.pdf"
+                  value={formData.invitationLink}
+                  onChange={e => setFormData({...formData, invitationLink: e.target.value})}
+                />
+                <p className="text-[10px] text-gray-400 font-medium italic">Dán liên kết đến file giấy mời hoặc thông báo họp nếu có.</p>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">Thành phần khác</label>
                 <input 
                   type="text" 
@@ -262,7 +265,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
               </div>
             </div>
 
-            {/* Endpoint Selection */}
             <div className="lg:col-span-5 flex flex-col space-y-6">
               <div className="flex justify-between items-center border-l-4 border-blue-600 pl-3">
                 <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em]">Cấu hình Điểm cầu</h4>
@@ -332,11 +334,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                       </div>
                     </label>
                   ))}
-                  {filteredEndpoints.length === 0 && (
-                    <div className="py-10 text-center text-gray-400 text-xs italic">
-                      Không tìm thấy điểm cầu nào
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

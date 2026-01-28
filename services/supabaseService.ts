@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus } from '../types';
 
@@ -23,7 +24,8 @@ const mapMeeting = (m: any): Meeting => ({
   notes: m.notes || '',
   endpointChecks: m.endpoint_checks || m.endpointChecks || {},
   status: m.status || 'SCHEDULED',
-  cancelReason: m.cancel_reason || m.cancelReason || ''
+  cancelReason: m.cancel_reason || m.cancelReason || '',
+  invitationLink: m.invitation_link || m.invitationLink || ''
 });
 
 const unmapMeeting = (m: Meeting) => ({
@@ -39,7 +41,8 @@ const unmapMeeting = (m: Meeting) => ({
   notes: m.notes || null,
   endpoint_checks: m.endpointChecks || {},
   status: m.status || 'SCHEDULED',
-  cancel_reason: m.cancelReason || null
+  cancel_reason: m.cancelReason || null,
+  invitation_link: m.invitationLink || null
 });
 
 const mapEndpoint = (e: any): Endpoint => ({
@@ -149,7 +152,6 @@ export const supabaseService = {
       name: e.name,
       location: e.location,
       status: e.status,
-      // Corrected: e.last_connected changed to e.lastConnected to match Endpoint interface
       last_connected: e.lastConnected
     });
     if (error) throw error;

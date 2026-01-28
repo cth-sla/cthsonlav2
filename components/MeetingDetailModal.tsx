@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Meeting } from '../types';
 import { analyzeMeetingEfficiency } from '../services/geminiService';
 import MeetingPreCheck from './MeetingPreCheck';
+import { ExternalLink, FileText } from 'lucide-react';
 
 interface MeetingDetailModalProps {
   meeting: Meeting;
@@ -50,6 +51,12 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
     }
   };
 
+  const openInvitation = () => {
+    if (meeting.invitationLink) {
+      window.open(meeting.invitationLink, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-5xl rounded-[2rem] md:rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -66,6 +73,15 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
+             {meeting.invitationLink && (
+               <button 
+                  onClick={openInvitation}
+                  className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
+               >
+                  <FileText className="w-4 h-4" />
+                  <span>Xem Giấy mời</span>
+               </button>
+             )}
              <button 
                 onClick={() => setShowPreCheck(true)}
                 className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-slate-900 text-cyan-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -120,6 +136,20 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                         {new Date(meeting.endTime).toLocaleString('vi-VN', { hour12: false })}
                       </p>
                    </div>
+                   {meeting.invitationLink && (
+                    <div className="sm:col-span-2">
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Giấy mời (URL)</p>
+                       <a 
+                        href={meeting.invitationLink} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-sm font-black text-indigo-600 mt-1 flex items-center gap-2 hover:underline"
+                       >
+                         {meeting.invitationLink}
+                         <ExternalLink size={14} />
+                       </a>
+                    </div>
+                   )}
                 </div>
              </section>
 
@@ -257,20 +287,6 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
           </button>
         </div>
       </div>
-
-      {showPreCheck && (
-        <MeetingPreCheck 
-          meeting={meeting} 
-          onClose={() => setShowPreCheck(false)} 
-          onUpdate={handleUpdateMeeting}
-        />
-      )}
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-      `}</style>
     </div>
   );
 };
