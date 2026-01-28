@@ -287,6 +287,15 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
           </button>
         </div>
       </div>
+
+      {/* Render component MeetingPreCheck khi showPreCheck là true */}
+      {showPreCheck && (
+        <MeetingPreCheck 
+          meeting={meeting} 
+          onClose={() => setShowPreCheck(false)} 
+          onUpdate={handleUpdateMeeting}
+        />
+      )}
     </div>
   );
 };
