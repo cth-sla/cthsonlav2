@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
-import { FileText, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { FileText, Link as LinkIcon, ExternalLink, MailOpen } from 'lucide-react';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -122,7 +122,8 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     URL.revokeObjectURL(url);
   };
 
-  const handleOpenInvitation = (link?: string) => {
+  const handleOpenInvitation = (e: React.MouseEvent, link?: string) => {
+    e.stopPropagation();
     if (link) {
       window.open(link, '_blank', 'noopener,noreferrer');
     } else {
@@ -286,7 +287,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   isPostponed ? 'bg-amber-50/60 border-l-4 border-l-amber-500' : ''
                 }`}>
                   <td className="px-4 md:px-6 py-4 sticky left-0 bg-inherit z-10 border-r border-transparent group-hover:border-gray-100">
-                    <div className="relative group/title-tip">
+                    <div className="relative group/title-tip flex items-start gap-2">
                       <div className={`font-bold transition-all leading-tight text-sm line-clamp-2 md:line-clamp-none min-w-[150px] ${
                         isCancelled ? 'text-red-700 line-through decoration-red-700 decoration-2' : 
                         isPostponed ? 'text-amber-700 italic' : 
@@ -294,6 +295,12 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       }`}>
                         {meeting.title}
                       </div>
+                      {meeting.invitationLink && (
+                        /* Fix: Removed invalid title prop from MailOpen and wrapped in a span with title attribute */
+                        <span title="Có giấy mời gán kèm">
+                          <MailOpen size={14} className="text-indigo-500 shrink-0 mt-0.5" />
+                        </span>
+                      )}
                     </div>
                     <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
                   </td>
@@ -348,21 +355,23 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
                       {/* Nút Giấy mời */}
                       <button 
-                        onClick={() => handleOpenInvitation(meeting.invitationLink)}
-                        className={`p-1.5 rounded-lg transition-all border shadow-sm flex items-center gap-1.5 ${
+                        onClick={(e) => handleOpenInvitation(e, meeting.invitationLink)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all border shadow-sm text-[10px] font-black uppercase tracking-tight ${
                           meeting.invitationLink 
-                            ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-600 hover:text-white' 
+                            ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700 hover:shadow-indigo-200 active:scale-95' 
                             : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-50'
                         }`}
+                        disabled={!meeting.invitationLink}
                         title={meeting.invitationLink ? "Xem Giấy mời (Liên kết ngoài)" : "Chưa gán giấy mời"}
                       >
-                        <ExternalLink size={14} strokeWidth={2.5} />
+                        <ExternalLink size={12} strokeWidth={3} />
+                        <span>Giấy mời</span>
                       </button>
 
                       {isAdmin && (
-                        <>
+                        <div className="flex items-center gap-1">
                           <button 
-                            onClick={() => onEdit?.(meeting)}
+                            onClick={(e) => { e.stopPropagation(); onEdit?.(meeting); }}
                             className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Chỉnh sửa"
                             disabled={isSpecial}
@@ -371,8 +380,8 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           </button>
                           
                           <button 
-                            onClick={() => setActionMeeting({ meeting, type: 'POSTPONE' })}
-                            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            onClick={(e) => { e.stopPropagation(); setActionMeeting({ meeting, type: 'POSTPONE' }); }}
+                            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Hoãn lịch họp"
                             disabled={isSpecial}
                           >
@@ -380,14 +389,14 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           </button>
 
                           <button 
-                            onClick={() => setActionMeeting({ meeting, type: 'CANCEL' })}
+                            onClick={(e) => { e.stopPropagation(); setActionMeeting({ meeting, type: 'CANCEL' }); }}
                             className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Huỷ lịch họp"
                             disabled={isSpecial}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </td>

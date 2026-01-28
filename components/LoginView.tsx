@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
+import { ExternalLink, FileText } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -56,6 +57,13 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+
+  const handleExternalLink = (e: React.MouseEvent, link?: string) => {
+    e.stopPropagation();
+    if (link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -149,7 +157,17 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                           </div>
                         </div>
                       </div>
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex items-center gap-2">
+                         {meeting.invitationLink && (
+                            <button 
+                              onClick={(e) => handleExternalLink(e, meeting.invitationLink)}
+                              className="px-4 py-2 bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-indigo-600 hover:text-white flex items-center gap-1.5"
+                              title="Xem Giấy mời"
+                            >
+                              <ExternalLink size={12} />
+                              <span className="hidden sm:inline">GIẤY MỜI</span>
+                            </button>
+                         )}
                          <button className={`px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                            isCancelled ? 'bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white' : 
                            isPostponed ? 'bg-amber-600/10 border-amber-500/30 text-amber-400 hover:bg-amber-600 hover:text-white' : 
@@ -310,7 +328,18 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
               {/* Participants Section */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-l-2 border-blue-600 pl-3">Thành phần tham gia</h4>
+                <div className="flex justify-between items-center">
+                  <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-l-2 border-blue-600 pl-3">Thành phần tham gia</h4>
+                  {selectedPublicMeeting.invitationLink && (
+                    <button 
+                      onClick={(e) => handleExternalLink(e, selectedPublicMeeting.invitationLink)}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/40"
+                    >
+                      <FileText size={14} />
+                      XEM GIẤY MỜI
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {selectedPublicMeeting.participants.map((p, i) => (
                     <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold rounded-lg tracking-tight">
