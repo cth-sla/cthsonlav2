@@ -64,7 +64,6 @@ const App: React.FC = () => {
           supabaseService.getSettings()
         ]);
 
-        // Luôn cập nhật state ngay cả khi mảng rỗng để đồng bộ chính xác với Cloud
         setMeetings(cloudMeetings); storageService.saveMeetings(cloudMeetings);
         setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints);
         setUnits(cloudUnits); storageService.saveUnits(cloudUnits);
@@ -88,7 +87,6 @@ const App: React.FC = () => {
 
     syncData();
 
-    // Đăng ký realtime updates
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings'];
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
@@ -116,8 +114,11 @@ const App: React.FC = () => {
               if (!prev.some(item => item.id === mappedData.id)) next = [mappedData, ...prev];
             } else if (eventType === 'UPDATE') {
               next = prev.map(item => item.id === mappedData.id ? mappedData : item);
+              // Cập nhật selectedMeeting nếu dữ liệu Realtime khớp với bản ghi đang xem
+              setSelectedMeeting(current => (current && current.id === mappedData.id) ? mappedData : current);
             } else if (eventType === 'DELETE') {
               next = prev.filter(item => item.id !== old.id);
+              if (selectedMeeting?.id === old.id) setSelectedMeeting(null);
             }
             return next;
           });
@@ -126,7 +127,7 @@ const App: React.FC = () => {
     });
 
     return () => subscriptions.forEach(sub => sub?.unsubscribe());
-  }, []);
+  }, [selectedMeeting?.id]);
 
   const dashboardStats = useMemo(() => {
     const now = new Date();
@@ -192,12 +193,16 @@ const App: React.FC = () => {
       storageService.saveMeetings(updated);
       return updated;
     });
+
+    // 2. Cập nhật đối tượng đang chọn để đồng bộ Modal
+    if (selectedMeeting && selectedMeeting.id === meeting.id) {
+        setSelectedMeeting(meeting);
+    }
     
-    // 2. Cập nhật Cloud
+    // 3. Cập nhật Cloud
     if (supabaseService.isConfigured()) {
       try { 
         await supabaseService.upsertMeeting(meeting); 
-        console.log("Cloud meeting updated successfully.");
       } catch (err) { 
         console.error("Cập nhật Cloud thất bại:", err); 
         alert("Lỗi khi lưu lên Cloud. Dữ liệu tạm thời chỉ được lưu tại trình duyệt.");
@@ -208,6 +213,7 @@ const App: React.FC = () => {
   const handleDeleteMeeting = async (id: string) => {
     if (!window.confirm('Xóa cuộc họp này vĩnh viễn?')) return;
     setMeetings(prev => prev.filter(m => m.id !== id));
+    if (selectedMeeting?.id === id) setSelectedMeeting(null);
     if (supabaseService.isConfigured()) {
       try { await supabaseService.deleteMeeting(id); } catch (err) { console.error("Xóa thất bại:", err); }
     }
@@ -224,7 +230,6 @@ const App: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex justify-between items-center">
           <div className="flex items-center gap-3 min-w-0">
@@ -261,7 +266,6 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 md:px-8 justify-between shrink-0 shadow-sm">
           <button onClick={toggleSidebar} className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><Menu size={24} /></button>
@@ -478,7 +482,6 @@ const App: React.FC = () => {
 
       {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
       {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={async (m) => {
-        // Fix: Explicitly type newMeeting as Meeting to avoid type mismatch with the status property's union type.
         const newMeeting: Meeting = { ...m, id: m.id || `MEET-${Date.now()}`, status: 'SCHEDULED' };
         setMeetings(prev => [newMeeting, ...prev]);
         if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(newMeeting);

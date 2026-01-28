@@ -19,6 +19,11 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showPreCheck, setShowPreCheck] = useState(false);
 
+  // Đồng bộ lại state notes khi props meeting thay đổi
+  useEffect(() => {
+    setNotes(meeting.notes || '');
+  }, [meeting.notes]);
+
   useEffect(() => {
     const getAiAnalysis = async () => {
       setIsLoading(true);
@@ -27,7 +32,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
       setIsLoading(false);
     };
     getAiAnalysis();
-  }, [meeting]);
+  }, [meeting.id]); // Chỉ chạy lại khi ID cuộc họp đổi
 
   const handleSaveNotes = async () => {
     if (!onUpdate) return;
@@ -288,7 +293,6 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
         </div>
       </div>
 
-      {/* Render component MeetingPreCheck khi showPreCheck là true */}
       {showPreCheck && (
         <MeetingPreCheck 
           meeting={meeting} 

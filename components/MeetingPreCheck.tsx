@@ -15,6 +15,7 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
   const [localChecks, setLocalChecks] = useState<Record<string, { checked: boolean; notes: string }>>(
     meeting.endpointChecks || {}
   );
+  const [isSaving, setIsSaving] = useState(false);
 
   const stats = useMemo(() => {
     const total = meeting.endpoints.length;
@@ -52,13 +53,21 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
     }));
   };
 
-  const handleSave = () => {
-    // Gọi hàm onUpdate với toàn bộ dữ liệu cuộc họp và dữ liệu kiểm tra mới nhất
-    onUpdate({
-      ...meeting,
-      endpointChecks: localChecks
-    });
-    alert('Đã lưu trạng thái và ghi chú kiểm tra kỹ thuật thành công!');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+        await onUpdate({
+            ...meeting,
+            endpointChecks: localChecks
+        });
+        alert('Đã lưu trạng thái kiểm tra kỹ thuật lên hệ thống Cloud!');
+        onClose(); // Đóng modal sau khi lưu để làm mới giao diện
+    } catch (err) {
+        console.error("Lỗi khi lưu báo cáo kiểm tra:", err);
+        alert('Có lỗi xảy ra khi lưu lên Cloud. Vui lòng thử lại.');
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleExportExcel = () => {
@@ -92,7 +101,6 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[110] flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200">
-        {/* Header Section */}
         <div className="p-8 border-b border-gray-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 bg-slate-900 text-cyan-400 rounded-2xl flex items-center justify-center shadow-xl">
@@ -117,13 +125,12 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                 ></div>
               </div>
             </div>
-            <button onClick={onClose} className="p-2.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-full transition-all text-slate-400">
+            <button onClick={onClose} className="p-2.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-full transition-all text-gray-400">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
         </div>
 
-        {/* Toolbar Section */}
         <div className="px-8 py-5 border-b border-slate-100 flex flex-wrap items-center gap-4 bg-white">
           <div className="relative flex-1 min-w-[280px]">
             <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
@@ -160,15 +167,15 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
             </button>
             <button 
               onClick={handleSave}
-              className="flex items-center gap-2 px-8 py-3 bg-cyan-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95"
+              disabled={isSaving}
+              className={`flex items-center gap-2 px-8 py-3 bg-cyan-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-cyan-100 hover:bg-cyan-700 transition-all active:scale-95 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <Save className="w-4 h-4" />
-              Lưu báo cáo
+              {isSaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Đang lưu...' : 'Lưu báo cáo'}
             </button>
           </div>
         </div>
 
-        {/* Content Section */}
         <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredEndpoints.map(ep => {
@@ -240,7 +247,6 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
           </div>
         </div>
 
-        {/* Footer Summary */}
         <div className="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
