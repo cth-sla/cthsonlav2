@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
-import { FileText, Link as LinkIcon, ExternalLink, MailOpen } from 'lucide-react';
+import { FileText, Link as LinkIcon, ExternalLink, MailOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -76,10 +76,9 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
   }, [meetings, searchTerm, startDate, endDate, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredAndSortedMeetings.length / ITEMS_PER_PAGE);
-  const paginatedMeetings = filteredAndSortedMeetings.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedMeetings.length);
+  const paginatedMeetings = filteredAndSortedMeetings.slice(startIndex, endIndex);
 
   const confirmAction = () => {
     if (!actionMeeting || !onUpdate) return;
@@ -296,7 +295,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         {meeting.title}
                       </div>
                       {meeting.invitationLink && (
-                        /* Fix: Removed invalid title prop from MailOpen and wrapped in a span with title attribute */
                         <span title="Có giấy mời gán kèm">
                           <MailOpen size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                         </span>
@@ -353,7 +351,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         </svg>
                       </button>
 
-                      {/* Nút Giấy mời */}
                       <button 
                         onClick={(e) => handleOpenInvitation(e, meeting.invitationLink)}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all border shadow-sm text-[10px] font-black uppercase tracking-tight ${
@@ -464,21 +461,40 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       {totalPages > 1 && (
         <div className="px-4 md:px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden md:block">
-            Trang {currentPage} / {totalPages}
+            Hiển thị <span className="text-blue-600 font-black">{startIndex + 1}-{endIndex}</span> trong <span className="text-gray-900 font-black">{filteredAndSortedMeetings.length}</span> cuộc họp
           </div>
           <div className="flex items-center gap-2 mx-auto md:mx-0">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`p-2 rounded-xl border transition-all ${
+              className={`p-2.5 rounded-xl border transition-all ${
                 currentPage === 1 
                   ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed' 
-                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 active:scale-95'
+                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 hover:bg-blue-50 active:scale-95'
               }`}
+              title="Trang trước"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft size={20} strokeWidth={2.5} />
+            </button>
+            
+            <div className="flex items-center px-4 py-2 bg-white border border-gray-200 rounded-xl">
+               <span className="text-xs font-black text-gray-400 uppercase tracking-widest mr-2">Trang</span>
+               <span className="text-sm font-black text-blue-600">{currentPage}</span>
+               <span className="text-xs font-black text-gray-300 mx-1.5">/</span>
+               <span className="text-sm font-black text-gray-900">{totalPages}</span>
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`p-2.5 rounded-xl border transition-all ${
+                currentPage === totalPages 
+                  ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed' 
+                  : 'bg-white text-blue-600 border-gray-200 hover:border-blue-500 hover:bg-blue-50 active:scale-95'
+              }`}
+              title="Trang sau"
+            >
+              <ChevronRight size={20} strokeWidth={2.5} />
             </button>
           </div>
         </div>
