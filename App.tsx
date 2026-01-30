@@ -211,7 +211,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMeeting = async (id: string) => {
-    if (!window.confirm('Xóa cuộc họp này vĩnh viễn?')) return;
+    if (!window.confirm('Xóa cuộc họp này vĩnh viễn khỏi hệ thống?')) return;
     setMeetings(prev => prev.filter(m => m.id !== id));
     if (selectedMeeting?.id === id) setSelectedMeeting(null);
     if (supabaseService.isConfigured()) {
@@ -401,7 +401,17 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'reports' && <ReportsPage meetings={meetings} endpoints={endpoints} currentUser={currentUser} />}
-          {activeTab === 'meetings' && <MeetingList meetings={meetings} onSelect={setSelectedMeeting} isAdmin={canManageMeetings} onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} onDelete={handleDeleteMeeting} onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} onUpdate={handleUpdateMeeting} />}
+          {activeTab === 'meetings' && (
+            <MeetingList 
+              meetings={meetings} 
+              onSelect={setSelectedMeeting} 
+              isAdmin={canManageMeetings} 
+              onEdit={m => { setEditingMeeting(m); setIsCreateModalOpen(true); }} 
+              onDelete={isAdmin ? handleDeleteMeeting : undefined} 
+              onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} 
+              onUpdate={handleUpdateMeeting} 
+            />
+          )}
           {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={async (e) => {
               if (supabaseService.isConfigured()) await supabaseService.upsertEndpoint(e);
               setEndpoints(prev => prev.map(item => item.id === e.id ? e : item));

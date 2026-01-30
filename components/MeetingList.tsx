@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
-import { FileText, Link as LinkIcon, ExternalLink, MailOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Link as LinkIcon, ExternalLink, MailOpen, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -393,6 +393,17 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                           </button>
+
+                          {/* Nút Xóa chỉ dành cho ADMIN */}
+                          {onDelete && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); onDelete(meeting.id); }}
+                              className="p-1.5 bg-slate-100 text-slate-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-slate-200"
+                              title="Xóa vĩnh viễn"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
