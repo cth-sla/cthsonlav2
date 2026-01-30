@@ -318,7 +318,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
                  <p className="font-black text-[10px] uppercase tracking-widest text-slate-900">Người lập báo cáo</p>
                  <p className="text-[9px] text-slate-400 font-bold">(Ký và ghi rõ họ tên)</p>
               </div>
-              <p className="font-black text-xs uppercase text-slate-900 italic underline">
+              <p className="font-black text-xs uppercase text-slate-900 italic">
                  {currentUser?.fullName || 'Quản trị viên hệ thống'}
               </p>
            </div>
