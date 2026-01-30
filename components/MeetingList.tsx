@@ -281,7 +281,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
               const isSpecial = isCancelled || isPostponed;
 
               return (
-                <tr key={meeting.id} className={`hover:bg-blue-50/30 transition-all group ${
+                <tr 
+                  key={meeting.id} 
+                  onClick={() => onSelect(meeting)}
+                  className={`hover:bg-blue-50/30 transition-all group cursor-pointer ${
                   isCancelled ? 'bg-red-50/60 border-l-4 border-l-red-600' : 
                   isPostponed ? 'bg-amber-50/60 border-l-4 border-l-amber-500' : ''
                 }`}>
@@ -334,7 +337,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       </span>
                     )}
                   </td>
-                  <td className="px-4 md:px-6 py-4 text-center">
+                  <td className="px-4 md:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-2">
                       <button 
                         onClick={() => onSelect(meeting)}
@@ -353,7 +356,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
                       <button 
                         onClick={(e) => handleOpenInvitation(e, meeting.invitationLink)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all border shadow-sm text-[10px] font-black uppercase tracking-tight ${
+                        className={`inline-flex items-center justify-center p-2 rounded-lg transition-all border shadow-sm ${
                           meeting.invitationLink 
                             ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700 hover:shadow-indigo-200 active:scale-95' 
                             : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-50'
@@ -361,8 +364,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         disabled={!meeting.invitationLink}
                         title={meeting.invitationLink ? "Xem Giấy mời (Liên kết ngoài)" : "Chưa gán giấy mời"}
                       >
-                        <ExternalLink size={12} strokeWidth={3} />
-                        <span>Giấy mời</span>
+                        <ExternalLink size={14} strokeWidth={3} />
                       </button>
 
                       {isAdmin && (
@@ -394,7 +396,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                           </button>
 
-                          {/* Nút Xóa chỉ dành cho ADMIN */}
                           {onDelete && (
                             <button 
                               onClick={(e) => { e.stopPropagation(); onDelete(meeting.id); }}
@@ -425,7 +426,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 </div>
                 <div>
-                   <h3 className="text-lg font-black text-gray-900 uppercase">Xác nhận {actionMeeting.type === 'CANCEL' ? 'huỷ lịch' : 'hoãn lịch'}</h3>
+                   <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Xác nhận {actionMeeting.type === 'CANCEL' ? 'huỷ lịch' : 'hoãn lịch'}</h3>
                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Thao tác này sẽ đánh dấu cuộc họp đã bị {actionMeeting.type === 'CANCEL' ? 'huỷ bỏ' : 'tạm hoãn'}</p>
                 </div>
              </div>
