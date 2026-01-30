@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Meeting } from '../types';
-import { FileText, Link as LinkIcon, ExternalLink, MailOpen, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { FileText, Link as LinkIcon, ExternalLink, MailOpen, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -297,6 +297,19 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                       }`}>
                         {meeting.title}
                       </div>
+                      
+                      {/* Tooltip hiển thị lý do huỷ/hoãn */}
+                      {isSpecial && meeting.cancelReason && (
+                        <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 text-white text-[11px] rounded-xl opacity-0 group-hover/title-tip:opacity-100 transition-opacity pointer-events-none z-[100] shadow-xl border border-slate-700 animate-in fade-in slide-in-from-bottom-1">
+                           <div className="flex items-center gap-2 mb-1.5 pb-1.5 border-b border-slate-700">
+                              <AlertTriangle size={12} className={isCancelled ? 'text-red-400' : 'text-amber-400'} />
+                              <span className="font-black uppercase tracking-widest">Lý do {isCancelled ? 'huỷ' : 'hoãn'}</span>
+                           </div>
+                           <p className="font-medium leading-relaxed italic">{meeting.cancelReason}</p>
+                           <div className="absolute top-full left-4 border-8 border-transparent border-t-slate-900"></div>
+                        </div>
+                      )}
+
                       {meeting.invitationLink && (
                         <span title="Có giấy mời gán kèm">
                           <MailOpen size={14} className="text-indigo-500 shrink-0 mt-0.5" />
@@ -418,7 +431,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
       {actionMeeting && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200 overflow-hidden">
              <div className="flex items-center gap-4 mb-6">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
                   actionMeeting.type === 'CANCEL' ? 'bg-red-100 text-red-600 shadow-red-100' : 'bg-amber-100 text-amber-600 shadow-amber-100'

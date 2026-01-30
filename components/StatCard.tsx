@@ -39,16 +39,16 @@ const StatCard: React.FC<StatCardProps> = ({
 
       {/* Tooltip */}
       {description && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg min-w-[180px] max-w-xs">
-          <div className="font-semibold mb-1 border-b border-slate-600 pb-1 flex justify-between items-center">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-3 py-2 bg-slate-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[100] shadow-2xl min-w-[200px] max-w-xs border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
+          <div className="font-black mb-1.5 border-b border-slate-700 pb-1.5 flex justify-between items-center uppercase tracking-widest">
             <span>{tooltipTitle}</span>
             {trend && <span className={trendUp ? 'text-green-400' : 'text-red-400'}>{trendUp ? '↑' : '↓'}</span>}
           </div>
-          <div className="leading-relaxed">
+          <div className="leading-relaxed font-medium">
             {description}
           </div>
           {/* Tooltip Arrow */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"></div>
         </div>
       )}
     </div>
