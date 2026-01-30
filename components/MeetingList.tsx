@@ -149,9 +149,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100 shrink-0">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <FileText size={20} />
             </div>
             <div>
               <h2 className="text-base md:text-lg font-bold text-gray-900">Danh sách cuộc họp</h2>
@@ -230,7 +228,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
         </div>
       </div>
 
-      <div className="overflow-x-auto flex-1 w-full">
+      <div className="overflow-x-auto flex-1 w-full relative">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-gray-50/80 text-gray-500 text-[11px] uppercase font-black tracking-widest">
@@ -298,15 +296,15 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         {meeting.title}
                       </div>
                       
-                      {/* Tooltip hiển thị lý do huỷ/hoãn */}
+                      {/* Tooltip lý do huỷ/hoãn với z-index cực cao */}
                       {isSpecial && meeting.cancelReason && (
-                        <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 text-white text-[11px] rounded-xl opacity-0 group-hover/title-tip:opacity-100 transition-opacity pointer-events-none z-[100] shadow-xl border border-slate-700 animate-in fade-in slide-in-from-bottom-1">
-                           <div className="flex items-center gap-2 mb-1.5 pb-1.5 border-b border-slate-700">
-                              <AlertTriangle size={12} className={isCancelled ? 'text-red-400' : 'text-amber-400'} />
-                              <span className="font-black uppercase tracking-widest">Lý do {isCancelled ? 'huỷ' : 'hoãn'}</span>
+                        <div className="fixed sm:absolute bottom-full left-4 sm:left-0 mb-3 w-[260px] p-4 bg-slate-900 text-white text-[11px] rounded-[1.25rem] opacity-0 group-hover/title-tip:opacity-100 transition-all pointer-events-none z-[150] shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
+                           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-700/50">
+                              <AlertTriangle size={14} className={isCancelled ? 'text-red-400' : 'text-amber-400'} />
+                              <span className="font-black uppercase tracking-widest text-[9px]">Chi tiết {isCancelled ? 'HUỶ' : 'HOÃN'}</span>
                            </div>
-                           <p className="font-medium leading-relaxed italic">{meeting.cancelReason}</p>
-                           <div className="absolute top-full left-4 border-8 border-transparent border-t-slate-900"></div>
+                           <p className="font-medium leading-relaxed italic text-slate-300">{meeting.cancelReason}</p>
+                           <div className="absolute top-full left-6 border-8 border-transparent border-t-slate-900 hidden sm:block"></div>
                         </div>
                       )}
 
@@ -351,40 +349,26 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                     )}
                   </td>
                   <td className="px-4 md:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-center gap-2">
-                      <button 
-                        onClick={() => onSelect(meeting)}
-                        className={`inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 ${
-                          isCancelled ? 'bg-red-700 hover:bg-red-800 shadow-red-200' : 
-                          isPostponed ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200' : 
-                          'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
-                        }`}
-                        title="Xem chi tiết"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-
+                    <div className="flex items-center justify-center gap-1.5">
+                      {/* Icon only invitation button */}
                       <button 
                         onClick={(e) => handleOpenInvitation(e, meeting.invitationLink)}
-                        className={`inline-flex items-center justify-center p-2 rounded-lg transition-all border shadow-sm ${
+                        className={`inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm ${
                           meeting.invitationLink 
                             ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700 hover:shadow-indigo-200 active:scale-95' 
-                            : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-50'
+                            : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-40'
                         }`}
                         disabled={!meeting.invitationLink}
-                        title={meeting.invitationLink ? "Xem Giấy mời (Liên kết ngoài)" : "Chưa gán giấy mời"}
+                        title={meeting.invitationLink ? "Xem Giấy mời (URL)" : "Chưa gán giấy mời"}
                       >
                         <ExternalLink size={14} strokeWidth={3} />
                       </button>
 
                       {isAdmin && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 border-l border-gray-100 pl-1.5">
                           <button 
                             onClick={(e) => { e.stopPropagation(); onEdit?.(meeting); }}
-                            className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Chỉnh sửa"
                             disabled={isSpecial}
                           >
@@ -393,7 +377,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           
                           <button 
                             onClick={(e) => { e.stopPropagation(); setActionMeeting({ meeting, type: 'POSTPONE' }); }}
-                            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-lg transition-all border border-emerald-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl transition-all border border-amber-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Hoãn lịch họp"
                             disabled={isSpecial}
                           >
@@ -402,7 +386,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
                           <button 
                             onClick={(e) => { e.stopPropagation(); setActionMeeting({ meeting, type: 'CANCEL' }); }}
-                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+                            className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-100 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Huỷ lịch họp"
                             disabled={isSpecial}
                           >
@@ -412,10 +396,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                           {onDelete && (
                             <button 
                               onClick={(e) => { e.stopPropagation(); onDelete(meeting.id); }}
-                              className="p-1.5 bg-slate-100 text-slate-600 hover:bg-red-600 hover:text-white rounded-lg transition-all border border-slate-200"
+                              className="p-2 bg-slate-100 text-slate-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-slate-200"
                               title="Xóa vĩnh viễn"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 size={14} />
                             </button>
                           )}
                         </div>

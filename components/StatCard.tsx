@@ -21,30 +21,29 @@ const StatCard: React.FC<StatCardProps> = ({
   tooltipTitle = "Chi tiết chỉ số"
 }) => {
   return (
-    <div className="relative group bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between transition-all hover:shadow-md hover:border-blue-100">
+    <div className="relative group bg-white p-6 rounded-[1.75rem] shadow-sm border border-gray-100 flex flex-col justify-between transition-all hover:shadow-xl hover:border-blue-100 hover:-translate-y-1">
       <div className="flex items-center justify-between mb-4">
-        <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-inner">
           {icon}
         </div>
         {trend && (
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-            {trend}
+          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+            {trendUp ? '↑' : '↓'} {trend}
           </span>
         )}
       </div>
       <div>
-        <p className="text-sm text-gray-500 font-medium">{title}</p>
-        <h3 className="text-2xl font-bold text-gray-900 mt-1">{value}</h3>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.15em]">{title}</p>
+        <h3 className="text-3xl font-black text-gray-900 mt-1 tracking-tighter">{value}</h3>
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip với z-index và pointer-events tối ưu */}
       {description && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-3 py-2 bg-slate-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[100] shadow-2xl min-w-[200px] max-w-xs border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
-          <div className="font-black mb-1.5 border-b border-slate-700 pb-1.5 flex justify-between items-center uppercase tracking-widest">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-4 py-3 bg-slate-900 text-white text-[11px] rounded-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[100] shadow-2xl min-w-[220px] max-w-[280px] border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
+          <div className="font-black mb-2 border-b border-slate-700 pb-2 flex justify-between items-center uppercase tracking-widest text-[9px] text-blue-400">
             <span>{tooltipTitle}</span>
-            {trend && <span className={trendUp ? 'text-green-400' : 'text-red-400'}>{trendUp ? '↑' : '↓'}</span>}
           </div>
-          <div className="leading-relaxed font-medium">
+          <div className="leading-relaxed font-medium text-slate-300 italic">
             {description}
           </div>
           {/* Tooltip Arrow */}
