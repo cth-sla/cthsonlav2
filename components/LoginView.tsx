@@ -145,7 +145,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-400/20">
                   <UsersIcon size={16} />
                 </div>
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Lịch họp công khai sắp diễn ra</h3>
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Lịch họp sắp tới</h3>
               </div>
             </div>
             
