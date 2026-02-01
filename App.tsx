@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -16,6 +16,8 @@ import LoginView from './components/LoginView';
 import CreateMeetingModal from './components/CreateMeetingModal';
 import MeetingDetailModal from './components/MeetingDetailModal';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import UpcomingAlert from './components/UpcomingAlert';
+import NotificationToast from './components/NotificationToast';
 import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
@@ -42,6 +44,11 @@ const App: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   
+  // States cho nhắc nhở
+  const [notifiedMeetingIds, setNotifiedMeetingIds] = useState<Set<string>>(new Set());
+  const [currentAlertMeeting, setCurrentAlertMeeting] = useState<Meeting | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
@@ -49,6 +56,54 @@ const App: React.FC = () => {
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOperator = currentUser?.role === 'OPERATOR';
   const canManageMeetings = isAdmin || isOperator;
+
+  // Yêu cầu quyền thông báo khi đăng nhập thành công
+  useEffect(() => {
+    if (currentUser && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [currentUser]);
+
+  // Logic kiểm tra nhắc nhở định kỳ (mỗi 1 phút)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkMeetings = () => {
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const fifteenMinsLater = new Date(now.getTime() + 15 * 60 * 1000);
+
+      const upcoming = meetings.filter(m => {
+        if (m.status === 'CANCELLED') return false;
+        const start = new Date(m.startTime);
+        return start > now && start <= oneHourLater;
+      });
+
+      // Lấy cuộc họp gần nhất để hiển thị Banner trên Dashboard
+      const nextOne = upcoming.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
+      setCurrentAlertMeeting(nextOne || null);
+
+      // Xử lý gửi thông báo đẩy và Toast cho cuộc họp trong vòng 15 phút
+      const immediate = upcoming.find(m => new Date(m.startTime) <= fifteenMinsLater);
+      if (immediate && !notifiedMeetingIds.has(immediate.id)) {
+        // Gửi Browser Notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('🔔 Hội nghị sắp bắt đầu!', {
+            body: `${immediate.title} sẽ diễn ra lúc ${new Date(immediate.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit', hour12: false})}`,
+            icon: systemSettings.logoBase64 || 'https://cdn-icons-png.flaticon.com/512/3661/3661331.png'
+          });
+        }
+        
+        // Show UI Toast
+        setShowToast(true);
+        setNotifiedMeetingIds(prev => new Set(prev).add(immediate.id));
+      }
+    };
+
+    checkMeetings();
+    const interval = setInterval(checkMeetings, 60000);
+    return () => clearInterval(interval);
+  }, [meetings, notifiedMeetingIds, currentUser, systemSettings.logoBase64]);
 
   useEffect(() => {
     const syncData = async () => {
@@ -117,7 +172,6 @@ const App: React.FC = () => {
             } else if (eventType === 'UPDATE') {
               next = prev.map(item => item.id === mappedData.id ? mappedData : item);
               setSelectedMeeting(current => (current && current.id === mappedData.id) ? mappedData : current);
-              // Nếu user hiện tại được cập nhật (ví dụ bởi admin), cập nhật cả currentUser state
               if (currentUser && mappedData.id === currentUser.id) {
                 setCurrentUser(mappedData);
               }
@@ -171,7 +225,6 @@ const App: React.FC = () => {
       return { name: dateStr, count };
     });
 
-    // KPI Efficiency Calculations
     const totalDurationMs = validMeetings.reduce((acc, m) => {
       const start = new Date(m.startTime).getTime();
       const end = new Date(m.endTime).getTime();
@@ -243,12 +296,10 @@ const App: React.FC = () => {
   };
 
   const handleSelfUpdatePassword = async (updatedUser: User) => {
-    // Cập nhật local state
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     setCurrentUser(updatedUser);
     storageService.saveUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
 
-    // Đồng bộ cloud
     if (supabaseService.isConfigured()) {
       try {
         await supabaseService.upsertUser(updatedUser);
@@ -322,7 +373,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2 md:gap-4">
             <button 
               onClick={() => setIsChangePasswordOpen(true)}
-              className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-all border border-transparent hover:border-slate-200 group"
+              className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-all border border-transparent hover:border-slate-200 group relative"
               title="Đổi mật khẩu"
             >
               <ShieldEllipsis size={20} className="group-hover:text-indigo-600 transition-colors" />
@@ -342,6 +393,14 @@ const App: React.FC = () => {
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
+               {/* Upcoming Meeting Banner Alert */}
+               {currentAlertMeeting && (
+                 <UpcomingAlert 
+                   meeting={currentAlertMeeting} 
+                   onViewDetail={setSelectedMeeting} 
+                 />
+               )}
+
                {/* Primary Stats */}
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                   <StatCard title="Họp trong Tuần" value={dashboardStats.weekly} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tuần này." />
@@ -569,6 +628,18 @@ const App: React.FC = () => {
           {activeTab === 'deployment' && <ExportPage />}
         </div>
       </main>
+
+      {/* Global Notifications */}
+      {showToast && currentAlertMeeting && (
+        <NotificationToast 
+          meeting={currentAlertMeeting} 
+          onClose={() => setShowToast(false)} 
+          onAction={() => {
+            setSelectedMeeting(currentAlertMeeting);
+            setShowToast(false);
+          }}
+        />
+      )}
 
       {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
       {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={async (m) => {
