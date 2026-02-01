@@ -194,15 +194,16 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                         {m.invitationLink && (
                           <button 
                             onClick={(e) => handleExternalLink(e, m.invitationLink)}
-                            className="p-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/10 z-10"
+                            className="p-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/10 z-20"
                             title="Xem giấy mời"
                           >
                             <FileText size={16} />
                           </button>
                         )}
                         <button 
-                          className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/30 group-hover:text-white group-hover:bg-blue-600 group-hover:border-blue-500 transition-all focus:outline-none"
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); setSelectedPublicMeeting(m); }}
+                          className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/30 group-hover:text-white group-hover:bg-blue-600 group-hover:border-blue-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 z-20"
                         >
                           <ArrowRight size={16} />
                         </button>
@@ -219,18 +220,18 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
           </div>
         </div>
 
-        {/* Right Section: Smaller Login Card */}
-        <div className="w-full lg:w-[420px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
-          <div className="bg-white/10 backdrop-blur-[30px] rounded-[3rem] p-10 lg:p-12 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 w-full flex flex-col relative overflow-hidden group">
+        {/* Right Section: Smaller & Compact Login Card */}
+        <div className="w-full lg:w-[400px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+          <div className="bg-white/10 backdrop-blur-[30px] rounded-[2.5rem] p-8 lg:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 w-full flex flex-col relative overflow-hidden group">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
             
-            <div className="mb-10 text-center">
+            <div className="mb-8 text-center">
               <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
                 <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
               </div>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-white">
                   <XCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -269,7 +270,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               <button 
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-4.5 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
+                className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
                   isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
                 }`}
               >
@@ -281,14 +282,14 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 ) : (
                   <>
                     ĐĂNG NHẬP
-                   </>
+                  </>
                 )}
               </button>
             </form>
 
-            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <div className="mt-10 pt-6 border-t border-white/5 text-center">
               <p className="text-white/30 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-              <span className="opacity-40">© 2026 • VIETTEL SƠN LA</span>
+                <span className="opacity-40">© 2026 • VIETTEL SƠN LA</span>
               </p>
             </div>
           </div>

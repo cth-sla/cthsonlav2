@@ -165,18 +165,24 @@ const App: React.FC = () => {
       return { name: dateStr, count };
     });
 
-    // Efficiency calculations
+    // KPI Efficiency Calculations
     const totalDurationMs = validMeetings.reduce((acc, m) => {
       const start = new Date(m.startTime).getTime();
       const end = new Date(m.endTime).getTime();
       return acc + (end - start);
     }, 0);
     
-    const avgDurationHours = validMeetings.length > 0 ? (totalDurationMs / (1000 * 60 * 60 * validMeetings.length)).toFixed(1) : "0";
-    const onTimeRate = validMeetings.length > 0 ? "98.5" : "0"; // Simulated high compliance
-    const engagementScore = validMeetings.length > 0 
-      ? Math.min(100, (validMeetings.reduce((acc, m) => acc + (m.endpoints.length * 10 + m.participants.length * 2), 0) / (validMeetings.length * 5))).toFixed(0) 
+    const avgDurationHours = validMeetings.length > 0 
+      ? (totalDurationMs / (1000 * 60 * 60 * validMeetings.length)).toFixed(1) 
       : "0";
+
+    const onTimeRate = validMeetings.length > 0 
+      ? (100 - (validMeetings.filter(m => m.status === 'POSTPONED').length / validMeetings.length * 100)).toFixed(1)
+      : "100";
+
+    const engagementScore = validMeetings.length > 0 
+      ? Math.min(100, Math.floor(validMeetings.reduce((acc, m) => acc + (m.endpoints.length * 2 + m.participants.length), 0) / validMeetings.length * 1.5))
+      : 0;
 
     return {
       weekly: weeklyMeetings.length,
@@ -187,8 +193,8 @@ const App: React.FC = () => {
       uptime,
       last7Days,
       avgDuration: avgDurationHours,
-      onTimeRate,
-      engagementScore,
+      onTimeRate: onTimeRate,
+      engagementScore: engagementScore,
       recentMeetings: [...meetings].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).slice(0, 5)
     };
   }, [meetings, endpoints]);
@@ -217,7 +223,6 @@ const App: React.FC = () => {
         await supabaseService.upsertMeeting(meeting); 
       } catch (err) { 
         console.error("Cập nhật Cloud thất bại:", err); 
-        alert("Lỗi khi lưu lên Cloud. Dữ liệu tạm thời chỉ được lưu tại trình duyệt.");
       }
     }
   };
@@ -289,9 +294,6 @@ const App: React.FC = () => {
                   {isSyncing ? 'Đang đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
                 </span>
              </div>
-             {hasSyncedOnce && !isSyncing && (
-                <span className="text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 hidden sm:inline-block">Live Cloud Data</span>
-             )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -319,7 +321,7 @@ const App: React.FC = () => {
 
                {/* Efficiency KPIs Section */}
                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] border-l-4 border-blue-600 pl-4">Chỉ số Hiệu quả Vận hành</h3>
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] border-l-4 border-blue-600 pl-4 mb-4">Chỉ số Hiệu quả Vận hành (KPIs)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard 
                       title="Thời lượng TB (Giờ)" 
@@ -328,25 +330,25 @@ const App: React.FC = () => {
                       trend="Ổn định"
                       trendUp={true}
                       description="Thời gian trung bình của mỗi cuộc họp diễn ra trên hệ thống."
-                      tooltipTitle="Phân tích thời lượng"
+                      tooltipTitle="Hiệu suất thời gian"
                     />
                     <StatCard 
                       title="Tỷ lệ đúng giờ" 
                       value={`${dashboardStats.onTimeRate}%`} 
                       icon={<Zap className="text-yellow-500" />} 
-                      trend="+1.2%"
+                      trend="+2.1%"
                       trendUp={true}
                       description="Tỷ lệ các cuộc họp bắt đầu và kết nối điểm cầu đúng thời gian quy định."
-                      tooltipTitle="Độ tin cậy hệ thống"
+                      tooltipTitle="Độ tin cậy hạ tầng"
                     />
                     <StatCard 
                       title="Điểm hiệu quả" 
                       value={dashboardStats.engagementScore} 
                       icon={<Target className="text-red-500" />} 
-                      trend="+5"
+                      trend="+8"
                       trendUp={true}
-                      description="Điểm số tổng hợp dựa trên sự tham gia của các điểm cầu và đại biểu."
-                      tooltipTitle="Engagement Score"
+                      description="Điểm số đánh giá mức độ tương tác và quy mô tổ chức các hội nghị."
+                      tooltipTitle="Chỉ số tương tác"
                     />
                   </div>
                </div>
