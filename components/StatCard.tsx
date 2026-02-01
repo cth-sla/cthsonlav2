@@ -24,7 +24,8 @@ const StatCard: React.FC<StatCardProps> = ({
     <div className="relative group bg-white p-6 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between transition-all duration-500 hover:shadow-[0_20px_50px_rgba(59,130,246,0.12)] hover:border-blue-200 hover:-translate-y-2 overflow-visible">
       <div className="flex items-center justify-between mb-6">
         <div className="p-4 bg-blue-50 text-blue-600 rounded-[1.25rem] group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
-          {React.cloneElement(icon as React.ReactElement, { size: 24, strokeWidth: 2.5 })}
+          {/* Fix: Validate that icon is a React element and use React.ReactElement<any> to allow passing 'size' and 'strokeWidth' props */}
+          {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 24, strokeWidth: 2.5 })}
         </div>
         {trend && (
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
