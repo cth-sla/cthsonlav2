@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -19,31 +19,44 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
-    // Lấy các cuộc họp sắp tới hoặc đang diễn ra, bao gồm cả những cuộc bị hoãn để thông báo
     return meetings
       .filter(m => new Date(m.endTime) >= now)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-      .slice(0, 30);
+      .slice(0, 12);
+  }, [meetings]);
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const valid = meetings.filter(m => m.status !== 'CANCELLED');
+
+    return {
+      week: valid.filter(m => new Date(m.startTime) >= startOfWeek).length,
+      month: valid.filter(m => new Date(m.startTime) >= startOfMonth).length,
+      year: valid.filter(m => new Date(m.startTime) >= startOfYear).length,
+    };
   }, [meetings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!username.trim() || !password.trim()) {
       setError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     setTimeout(() => {
       const foundUser = users.find(u => u.username === username && u.password === password);
-      
       if (foundUser) {
         onLoginSuccess(foundUser);
       } else {
-        setError('Tài khoản hoặc mật khẩu không chính xác. Thử "admin/admin".');
+        setError('Tài khoản hoặc mật khẩu không chính xác.');
         setIsLoading(false);
       }
     }, 1200);
@@ -67,326 +80,307 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0B0E14] relative overflow-hidden font-sans">
-      {/* Background Decorative Glows */}
-      <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-cyan-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans bg-slate-950">
+      {/* Background Image - Modern & Smooth */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-[30000ms] scale-110 animate-slow-zoom"
+        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000")' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/80 to-slate-950/90"></div>
+      </div>
 
-      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-start gap-12 py-10 lg:py-16">
+      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-stretch gap-10 py-8 lg:py-12 min-h-[90vh]">
         
-        {/* Left Section: Branding & Public Schedule */}
-        <div className="flex-1 w-full flex flex-col space-y-10 lg:max-h-[85vh]">
-          <div className="group shrink-0">
-            <div className="relative inline-flex mb-6">
-               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-               <div className="relative p-5 bg-slate-900 border border-slate-800 rounded-[1.5rem] shadow-2xl flex items-center justify-center w-20 h-20 overflow-hidden">
+        {/* Left Section: Branding, Stats & Meeting List */}
+        <div className="flex-1 w-full flex flex-col space-y-6 animate-in fade-in slide-in-from-left duration-1000">
+          <div className="shrink-0">
+            <div className="relative inline-flex mb-4">
+               <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-2xl"></div>
+               <div className="relative p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1.5rem] shadow-2xl flex items-center justify-center w-16 h-16 overflow-hidden">
                   {systemSettings.logoBase64 ? (
                     <img src={systemSettings.logoBase64} alt="System Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
-                    <svg className="w-12 h-12 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-10 h-10 text-blue-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   )}
                </div>
             </div>
-            <h1 className="flex flex-col items-start text-left">
-              <span className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tight leading-none">{systemSettings.shortName}</span>
-              <span className="text-xs font-black text-blue-500 uppercase tracking-[0.4em] mt-3">{systemSettings.systemName}</span>
+            <h1 className="flex flex-col items-start text-left space-y-1">
+              <span className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tighter leading-tight">
+                {systemSettings.shortName}
+              </span>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-0.5 bg-blue-500 rounded-full"></div>
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">
+                  {systemSettings.systemName}
+                </span>
+              </div>
             </h1>
           </div>
 
+          {/* Quick Stats Summary */}
+          <div className="grid grid-cols-3 gap-4 shrink-0">
+             {[
+               { label: 'Cuộc họp Tuần', val: stats.week, color: 'text-blue-400', icon: <Calendar size={14} /> },
+               { label: 'Cuộc họp Tháng', val: stats.month, color: 'text-emerald-400', icon: <Clock size={14} /> },
+               { label: 'Cuộc họp Năm', val: stats.year, color: 'text-amber-400', icon: <Activity size={14} /> }
+             ].map((s, idx) => (
+               <div key={idx} className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col">
+                  <div className="flex items-center gap-2 mb-1 opacity-60">
+                    <span className={s.color}>{s.icon}</span>
+                    <span className="text-[8px] font-black text-white uppercase tracking-widest">{s.label}</span>
+                  </div>
+                  <span className={`text-2xl font-black ${s.color}`}>{s.val}</span>
+               </div>
+             ))}
+          </div>
+
+          {/* Meeting List */}
           <div className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div className="flex items-center justify-between shrink-0 px-2">
+            <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-600/30">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-400/20">
+                  <UsersIcon size={16} />
                 </div>
-                <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Lịch họp sắp tới</h3>
-              </div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800/40 px-3 py-1 rounded-full border border-slate-700/50">
-                {upcomingMeetings.length} CUỘC HỌP
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Lịch họp công khai sắp diễn ra</h3>
               </div>
             </div>
-
-            {/* Scrollable Schedule List */}
-            <div className="flex-1 overflow-y-auto pr-4 space-y-3 custom-scrollbar max-h-[400px] lg:max-h-none">
+            
+            <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
               {upcomingMeetings.length > 0 ? (
-                upcomingMeetings.map((meeting) => {
-                  const isCancelled = meeting.status === 'CANCELLED';
-                  const isPostponed = meeting.status === 'POSTPONED';
-                  const isSpecial = isCancelled || isPostponed;
+                upcomingMeetings.map((m) => {
+                  const isCancelled = m.status === 'CANCELLED';
+                  const isPostponed = m.status === 'POSTPONED';
 
                   return (
                     <div 
-                      key={meeting.id} 
-                      onClick={() => setSelectedPublicMeeting(meeting)}
-                      className={`backdrop-blur-md border p-5 rounded-[1.5rem] flex items-center gap-5 group border-l-4 transition-all cursor-pointer ${
-                        isCancelled ? 'bg-red-500/5 border-red-500/20 border-l-red-600 hover:bg-red-500/10' : 
-                        isPostponed ? 'bg-amber-500/5 border-amber-500/20 border-l-amber-600 hover:bg-amber-500/10' : 
-                        'bg-white/5 border-white/10 border-l-transparent hover:border-l-blue-500 hover:bg-white/10'
+                      key={m.id}
+                      onClick={() => setSelectedPublicMeeting(m)}
+                      className={`group bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 hover:border-blue-500/30 p-4 rounded-[1.5rem] transition-all cursor-pointer flex items-center gap-4 ${
+                        isCancelled ? 'opacity-60 grayscale-[0.5]' : ''
                       }`}
                     >
-                      <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-5">
+                      <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-white/10 pr-4">
                         <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
-                          {formatTime(meeting.startTime)}
+                          {formatTime(m.startTime)}
                         </span>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tight mt-1">{formatDate(meeting.startTime)}</span>
+                        <span className="text-[9px] font-black text-white/30 uppercase mt-1">
+                          {formatDate(m.startTime).split('/')[0] + '/' + formatDate(m.startTime).split('/')[1]}
+                        </span>
                       </div>
+                      
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className={`text-sm font-bold line-clamp-2 transition-colors leading-relaxed tracking-tight ${
-                            isCancelled ? 'text-red-300 line-through' : 
-                            isPostponed ? 'text-amber-200 italic' : 
-                            'text-slate-100 group-hover:text-white'
-                          }`}>
-                            {meeting.title}
+                          <h4 className={`text-sm font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-1 ${isCancelled ? 'line-through' : ''}`}>
+                            {m.title}
                           </h4>
-                          {isCancelled && <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0 shadow-lg shadow-red-900/50">Đã huỷ</span>}
-                          {isPostponed && <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[8px] font-black rounded uppercase tracking-tighter shrink-0 shadow-lg shadow-amber-900/50">Hoãn</span>}
+                          {isCancelled ? (
+                            <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black rounded uppercase border border-red-500/20">Huỷ</span>
+                          ) : isPostponed ? (
+                            <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20">Hoãn</span>
+                          ) : null}
                         </div>
-                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest">Chủ trì:</span>
-                            <span className="text-[10px] font-black text-slate-300 uppercase truncate max-w-[120px]">{meeting.chairPerson}</span>
-                          </div>
-                          <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{meeting.hostUnit}</span>
-                          </div>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className="text-[10px] text-white/40 font-bold uppercase truncate max-w-[120px]">Chủ trì: {m.chairPerson}</span>
+                          <div className="w-1 h-1 rounded-full bg-white/10 shrink-0"></div>
+                          <span className="text-[10px] text-blue-400/60 font-black uppercase truncate">{m.hostUnit}</span>
                         </div>
                       </div>
+
                       <div className="shrink-0 flex items-center gap-2">
-                         {meeting.invitationLink && (
-                            <button 
-                              onClick={(e) => handleExternalLink(e, meeting.invitationLink)}
-                              className="px-4 py-2 bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-indigo-600 hover:text-white flex items-center gap-1.5"
-                              title="Xem Giấy mời"
-                            >
-                              <ExternalLink size={12} />
-                              <span className="hidden sm:inline">GIẤY MỜI</span>
-                            </button>
-                         )}
-                         <button className={`px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                           isCancelled ? 'bg-red-600/10 border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white' : 
-                           isPostponed ? 'bg-amber-600/10 border-amber-500/30 text-amber-400 hover:bg-amber-600 hover:text-white' : 
-                           'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white'
-                         }`}>
-                           {isSpecial ? 'THÔNG BÁO' : 'CHI TIẾT'}
-                         </button>
+                        {m.invitationLink && (
+                          <button 
+                            onClick={(e) => handleExternalLink(e, m.invitationLink)}
+                            className="p-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/10 z-10"
+                            title="Xem giấy mời"
+                          >
+                            <FileText size={16} />
+                          </button>
+                        )}
+                        <button 
+                          className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/30 group-hover:text-white group-hover:bg-blue-600 group-hover:border-blue-500 transition-all focus:outline-none"
+                          onClick={(e) => { e.stopPropagation(); setSelectedPublicMeeting(m); }}
+                        >
+                          <ArrowRight size={16} />
+                        </button>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="p-12 border border-white/5 bg-white/2 rounded-[2rem] text-center">
-                  <p className="text-slate-500 font-bold text-xs uppercase tracking-widest italic opacity-50">Hiện không có lịch họp nào sắp diễn ra</p>
+                <div className="py-20 text-center bg-white/5 border border-dashed border-white/10 rounded-[2rem]">
+                  <p className="text-xs font-bold text-white/20 uppercase tracking-widest">Hiện chưa có lịch họp nào được lên lịch</p>
                 </div>
               )}
             </div>
-            
-            <p className="text-[10px] text-slate-600 font-medium italic pl-1 shrink-0">Ghi chú: Nhấn vào cuộc họp để xem thành phần tham gia và danh sách các điểm cầu.</p>
           </div>
         </div>
 
-        {/* Right Section: Login Card */}
-        <div className="w-full lg:w-[440px] flex-shrink-0 lg:sticky lg:top-12 self-start">
-          <div className="bg-[#161B22]/98 backdrop-blur-3xl rounded-[3rem] p-10 lg:p-12 shadow-2xl border border-white/5 w-full ring-1 ring-white/10 flex flex-col">
+        {/* Right Section: Smaller Login Card */}
+        <div className="w-full lg:w-[420px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+          <div className="bg-white/10 backdrop-blur-[30px] rounded-[3rem] p-10 lg:p-12 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 w-full flex flex-col relative overflow-hidden group">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+            
             <div className="mb-10 text-center">
-              <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter mb-2">Đăng nhập</h2>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Cổng xác thực hệ thống v3.1</p>
+              <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
+                <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
+              </div>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake">
-                  <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <p className="text-[10px] font-black text-red-400 uppercase tracking-widest leading-tight">{error}</p>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-white">
+                  <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+                  <p className="text-[10px] font-black uppercase tracking-widest leading-tight">{error}</p>
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tài khoản</label>
+                <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Tên tài khoản</label>
                 <div className="relative group">
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-bold placeholder:text-slate-700"
-                    placeholder="Tên đăng nhập"
+                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white/10 outline-none transition-all text-white font-bold placeholder:text-white/20 text-sm"
+                    placeholder="Tên đăng nhập..."
                   />
-                  <svg className="w-5 h-5 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  <UserIcon className="w-5 h-5 absolute left-4 top-4 text-white/20 group-focus-within:text-blue-400 transition-colors" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mật khẩu</label>
+                <label className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Mật khẩu</label>
                 <div className="relative group">
                   <input 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-slate-900 outline-none transition-all text-slate-200 font-bold placeholder:text-slate-700"
+                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white/10 outline-none transition-all text-white font-bold placeholder:text-white/20 text-sm"
                     placeholder="••••••••"
                   />
-                  <svg className="w-5 h-5 absolute left-4 top-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+                  <Lock className="w-5 h-5 absolute left-4 top-4 text-white/20 group-focus-within:text-blue-400 transition-colors" />
                 </div>
               </div>
 
               <button 
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-4.5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-white shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 hover:shadow-blue-500/30 active:bg-blue-700'
+                className={`w-full py-4.5 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
+                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
                 }`}
               >
                 {isLoading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    ĐANG XÁC THỰC...
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    Đang xác thực...
                   </>
                 ) : (
                   <>
                     ĐĂNG NHẬP
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  </>
+                   </>
                 )}
               </button>
             </form>
 
-            <div className="mt-12 pt-8 border-t border-white/5 text-center">
-              <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em] leading-relaxed">
-                ỦY BAN NHÂN DÂN TỈNH SƠN LA<br/>
-                &copy; 2026 • VIETTEL SƠN LA
+            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+              <p className="text-white/30 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
+              <span className="opacity-40">© 2026 • VIETTEL SƠN LA</span>
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Public Meeting Detail Modal */}
+      {/* Public Detail Modal */}
       {selectedPublicMeeting && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6 overflow-y-auto">
-          <div className="bg-[#161B22] border border-white/10 w-full max-w-2xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/2">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 border rounded-2xl flex items-center justify-center ${
-                  selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-600/20 border-red-500/30 text-red-400' :
-                  selectedPublicMeeting.status === 'POSTPONED' ? 'bg-amber-600/20 border-amber-500/30 text-amber-400' :
-                  'bg-blue-600/20 border-blue-500/30 text-blue-400'
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
+              <div className="flex items-center gap-5">
+                <div className={`w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg ${
+                  selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' :
+                  selectedPublicMeeting.status === 'POSTPONED' ? 'bg-amber-500/20 text-amber-400' :
+                  'bg-blue-500/20 text-blue-400'
                 }`}>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <FileText size={24} />
                 </div>
                 <div>
-                  <h3 className={`text-lg font-black text-white tracking-tight line-clamp-1 ${
-                    selectedPublicMeeting.status === 'CANCELLED' ? 'line-through' : ''
-                  }`}>{selectedPublicMeeting.title}</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">
-                    {selectedPublicMeeting.status === 'CANCELLED' ? 'HỘI NGHỊ ĐÃ HUỶ' : 
-                     selectedPublicMeeting.status === 'POSTPONED' ? 'HỘI NGHỊ TẠM HOÃN' : 
-                     'Thông tin chi tiết cuộc họp'}
-                  </p>
+                  <h3 className="text-lg font-black text-white tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
+                  <p className="text-[9px] text-blue-400 font-black uppercase tracking-widest mt-1">Thông tin cuộc họp công khai</p>
                 </div>
               </div>
               <button onClick={() => setSelectedPublicMeeting(null)} className="p-2 hover:bg-white/5 rounded-full transition-all text-slate-500 hover:text-white">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-              {/* Special Status Reason */}
-              {(selectedPublicMeeting.status === 'CANCELLED' || selectedPublicMeeting.status === 'POSTPONED') && (
-                <div className={`p-5 rounded-2xl border-2 ${
-                  selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'
-                }`}>
-                   <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${
-                     selectedPublicMeeting.status === 'CANCELLED' ? 'text-red-500' : 'text-amber-500'
-                   }`}>Lý do {selectedPublicMeeting.status === 'CANCELLED' ? 'huỷ' : 'hoãn'}:</p>
-                   <p className="text-sm font-bold text-slate-200 italic">{selectedPublicMeeting.cancelReason || 'Không có lý do chi tiết.'}</p>
+              {selectedPublicMeeting.status === 'CANCELLED' && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+                  <AlertTriangle className="text-red-400 shrink-0 mt-0.5" size={16} />
+                  <div>
+                    <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Thông báo huỷ họp:</p>
+                    <p className="text-xs text-white font-medium mt-1 leading-relaxed italic">{selectedPublicMeeting.cancelReason || 'Không có lý do chi tiết.'}</p>
+                  </div>
                 </div>
               )}
 
-              {/* General Quick Info */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Thời gian</p>
-                  <p className={`text-sm font-black uppercase ${
-                    selectedPublicMeeting.status === 'CANCELLED' ? 'text-red-400' : 
-                    selectedPublicMeeting.status === 'POSTPONED' ? 'text-amber-400' : 'text-blue-400'
-                  }`}>{formatTime(selectedPublicMeeting.startTime)} - {formatDate(selectedPublicMeeting.startTime)}</p>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Thời gian</p>
+                  <p className="text-sm font-black text-white">{formatTime(selectedPublicMeeting.startTime)} • {formatDate(selectedPublicMeeting.startTime)}</p>
                 </div>
-                <div className="bg-white/2 border border-white/5 p-4 rounded-2xl">
-                  <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Cán bộ chủ trì</p>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Cán bộ chủ trì</p>
                   <p className="text-sm font-black text-white">{selectedPublicMeeting.chairPerson}</p>
                 </div>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 col-span-2">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Đơn vị tổ chức</p>
+                  <p className="text-sm font-black text-blue-400 uppercase tracking-tight">{selectedPublicMeeting.hostUnit}</p>
+                </div>
               </div>
 
-              {/* Participants Section */}
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] border-l-2 border-blue-600 pl-3">Thành phần tham gia</h4>
-                  {selectedPublicMeeting.invitationLink && (
-                    <button 
-                      onClick={(e) => handleExternalLink(e, selectedPublicMeeting.invitationLink)}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/40"
-                    >
-                      <FileText size={14} />
-                      XEM GIẤY MỜI
-                    </button>
-                  )}
-                </div>
+                <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] border-l-2 border-blue-500 pl-3">Thành phần tham gia</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedPublicMeeting.participants.map((p, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold rounded-lg tracking-tight">
-                      {p}
-                    </span>
+                    <span key={i} className="px-3 py-1 bg-white/5 text-white/70 text-[10px] font-bold rounded-lg border border-white/5 uppercase tracking-tight">{p}</span>
                   ))}
-                  {selectedPublicMeeting.participants.length === 0 && (
-                    <p className="text-xs text-slate-500 italic">Chưa xác định thành phần cụ thể</p>
-                  )}
                 </div>
               </div>
 
-              {/* Endpoints Section */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] border-l-2 border-cyan-600 pl-3">Danh sách điểm cầu ({selectedPublicMeeting.endpoints.length})</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] border-l-2 border-cyan-500 pl-3">Điểm cầu kết nối ({selectedPublicMeeting.endpoints.length})</h4>
+                <div className="grid grid-cols-2 gap-3">
                   {selectedPublicMeeting.endpoints.map(ep => (
-                    <div key={ep.id} className="p-4 bg-white/2 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-white/5 transition-all">
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${ep.status === 'CONNECTED' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-black text-slate-200 truncate">{ep.name}</p>
-                        <p className="text-[9px] text-slate-500 font-bold uppercase truncate tracking-widest">{ep.location}</p>
-                      </div>
+                    <div key={ep.id} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      <span className="text-[11px] font-bold text-white/80 truncate uppercase tracking-tight">{ep.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Public Description */}
-              {selectedPublicMeeting.description && (
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] border-l-2 border-amber-600 pl-3">Nội dung tóm tắt</h4>
-                  <div className="bg-white/2 border border-white/5 p-5 rounded-2xl">
-                    <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-                      {selectedPublicMeeting.description}
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="p-8 border-t border-white/5 bg-white/2 flex justify-end">
+            <div className="p-6 border-t border-white/5 bg-white/5 flex justify-end gap-3">
+              {selectedPublicMeeting.invitationLink && (
+                 <button 
+                  onClick={(e) => handleExternalLink(e, selectedPublicMeeting.invitationLink)}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20 flex items-center gap-2"
+                >
+                  <FileText size={14} />
+                  Giấy mời
+                </button>
+              )}
               <button 
                 onClick={() => setSelectedPublicMeeting(null)}
-                className="px-8 py-3 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all active:scale-95"
+                className="px-8 py-3 bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10"
               >
-                Đóng cửa sổ
+                Đóng
               </button>
             </div>
           </div>
@@ -394,24 +388,28 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       )}
       
       <style>{`
+        @keyframes slow-zoom {
+          0% { transform: scale(1.1); }
+          50% { transform: scale(1.15); }
+          100% { transform: scale(1.1); }
+        }
+        .animate-slow-zoom {
+          animation: slow-zoom 30s ease-in-out infinite;
+        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: rgba(255, 255, 255, 0.02);
-          border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.2);
+          background: rgba(255, 255, 255, 0.1);
           border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.4);
         }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
         }
         .animate-shake {
           animation: shake 0.3s ease-in-out infinite;
