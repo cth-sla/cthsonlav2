@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity } from 'lucide-react';
 
@@ -16,23 +16,32 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedPublicMeeting, setSelectedPublicMeeting] = useState<Meeting | null>(null);
+  const [now, setNow] = useState(new Date());
+
+  // Đồng hồ thời gian thực
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const upcomingMeetings = useMemo(() => {
-    const now = new Date();
+    const today = new Date();
     return meetings
-      .filter(m => new Date(m.endTime) >= now)
+      .filter(m => new Date(m.endTime) >= today)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, 12);
   }, [meetings]);
 
   const stats = useMemo(() => {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
 
     const valid = meetings.filter(m => m.status !== 'CANCELLED');
 
@@ -62,12 +71,20 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
     }, 1200);
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  };
+
+  const formatMeetingDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const formatTime = (dateStr: string) => {
+  const formatMeetingTime = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
@@ -145,7 +162,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-400/20">
                   <UsersIcon size={16} />
                 </div>
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Lịch họp sắp tới</h3>
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Lịch họp công khai sắp diễn ra</h3>
               </div>
             </div>
             
@@ -165,10 +182,10 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                     >
                       <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-white/10 pr-4">
                         <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
-                          {formatTime(m.startTime)}
+                          {formatMeetingTime(m.startTime)}
                         </span>
                         <span className="text-[9px] font-black text-white/30 uppercase mt-1">
-                          {formatDate(m.startTime).split('/')[0] + '/' + formatDate(m.startTime).split('/')[1]}
+                          {formatMeetingDate(m.startTime).split('/')[0] + '/' + formatMeetingDate(m.startTime).split('/')[1]}
                         </span>
                       </div>
                       
@@ -222,11 +239,36 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
         {/* Right Section: Smaller & Compact Login Card */}
         <div className="w-full lg:w-[400px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+          {/* Digital Clock Header - Single Line Layout */}
+          <div className="mb-6 flex justify-center">
+            <div className="px-6 py-2.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-full shadow-xl flex items-center gap-4 group">
+               <div className="flex items-baseline gap-1">
+                 <span className="text-2xl font-black text-white font-mono tracking-tighter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                   {formatTime(now).split(':')[0]}
+                   <span className="animate-pulse mx-0.5 text-blue-400">:</span>
+                   {formatTime(now).split(':')[1]}
+                 </span>
+                 <span className="text-[10px] font-black text-blue-400 font-mono w-4">
+                   {formatTime(now).split(':')[2]}
+                 </span>
+               </div>
+               
+               <div className="w-px h-4 bg-white/10"></div>
+               
+               <div className="flex items-center gap-2">
+                 <Calendar size={12} className="text-blue-400/60" />
+                 <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.15em]">
+                   {formatDate(now)}
+                 </span>
+               </div>
+            </div>
+          </div>
+
           <div className="bg-white/10 backdrop-blur-[30px] rounded-[2.5rem] p-8 lg:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 w-full flex flex-col relative overflow-hidden group">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
             
             <div className="mb-8 text-center">
-              <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
+               <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
                 <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
               </div>
             </div>
@@ -333,7 +375,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Thời gian</p>
-                  <p className="text-sm font-black text-white">{formatTime(selectedPublicMeeting.startTime)} • {formatDate(selectedPublicMeeting.startTime)}</p>
+                  <p className="text-sm font-black text-white">{formatMeetingTime(selectedPublicMeeting.startTime)} • {formatMeetingDate(selectedPublicMeeting.startTime)}</p>
                 </div>
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Cán bộ chủ trì</p>
