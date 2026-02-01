@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -15,6 +15,7 @@ import ReportsPage from './components/ReportsPage';
 import LoginView from './components/LoginView';
 import CreateMeetingModal from './components/CreateMeetingModal';
 import MeetingDetailModal from './components/MeetingDetailModal';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
@@ -39,6 +40,7 @@ const App: React.FC = () => {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
@@ -115,6 +117,10 @@ const App: React.FC = () => {
             } else if (eventType === 'UPDATE') {
               next = prev.map(item => item.id === mappedData.id ? mappedData : item);
               setSelectedMeeting(current => (current && current.id === mappedData.id) ? mappedData : current);
+              // Nếu user hiện tại được cập nhật (ví dụ bởi admin), cập nhật cả currentUser state
+              if (currentUser && mappedData.id === currentUser.id) {
+                setCurrentUser(mappedData);
+              }
             } else if (eventType === 'DELETE') {
               next = prev.filter(item => item.id !== old.id);
               if (selectedMeeting?.id === old.id) setSelectedMeeting(null);
@@ -126,7 +132,7 @@ const App: React.FC = () => {
     });
 
     return () => subscriptions.forEach(sub => sub?.unsubscribe());
-  }, [selectedMeeting?.id]);
+  }, [selectedMeeting?.id, currentUser?.id]);
 
   const dashboardStats = useMemo(() => {
     const now = new Date();
@@ -236,6 +242,23 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSelfUpdatePassword = async (updatedUser: User) => {
+    // Cập nhật local state
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setCurrentUser(updatedUser);
+    storageService.saveUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+
+    // Đồng bộ cloud
+    if (supabaseService.isConfigured()) {
+      try {
+        await supabaseService.upsertUser(updatedUser);
+      } catch (err) {
+        console.error("Lỗi cập nhật mật khẩu Cloud:", err);
+        throw err;
+      }
+    }
+  };
+
   if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
 
   const primaryBgStyle = { backgroundColor: systemSettings.primaryColor };
@@ -296,7 +319,15 @@ const App: React.FC = () => {
              </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-all border border-transparent hover:border-slate-200 group"
+              title="Đổi mật khẩu"
+            >
+              <ShieldEllipsis size={20} className="group-hover:text-indigo-600 transition-colors" />
+            </button>
+            
             <div className="flex items-center gap-3 bg-blue-50/50 px-4 py-1.5 rounded-full border border-blue-100/50">
               <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-black shadow-lg shadow-blue-200">
                 {(currentUser?.fullName || 'U').trim().split(/\s+/).pop()?.charAt(0).toUpperCase() || 'U'}
@@ -545,6 +576,15 @@ const App: React.FC = () => {
         setMeetings(prev => [newMeeting, ...prev]);
         if (supabaseService.isConfigured()) await supabaseService.upsertMeeting(newMeeting);
       }} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
+      
+      {isChangePasswordOpen && currentUser && (
+        <ChangePasswordModal 
+          isOpen={isChangePasswordOpen} 
+          onClose={() => setIsChangePasswordOpen(false)} 
+          currentUser={currentUser} 
+          onUpdate={handleSelfUpdatePassword}
+        />
+      )}
     </div>
   );
 };
