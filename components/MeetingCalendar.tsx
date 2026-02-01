@@ -144,26 +144,47 @@ const MeetingCalendar: React.FC<MeetingCalendarProps> = ({ meetings, onSelect })
                   )}
                 </div>
                 <div className="flex-1 space-y-1 overflow-y-auto max-h-[140px] custom-scrollbar">
-                  {getMeetingsForDay(day).map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => onSelect(m)}
-                      className="w-full text-left p-1.5 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 hover:border-blue-200 transition-all group/chip"
-                    >
-                      <div className="flex justify-between items-start gap-1">
-                        <div className="text-[10px] font-black text-blue-700 leading-tight line-clamp-2 uppercase">
-                          {m.title}
+                  {getMeetingsForDay(day).map(m => {
+                    const isCancelled = m.status === 'CANCELLED';
+                    const isPostponed = m.status === 'POSTPONED';
+                    
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => onSelect(m)}
+                        className={`w-full text-left p-1.5 rounded-lg border transition-all group/chip mb-1 ${
+                          isCancelled ? 'bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200' :
+                          isPostponed ? 'bg-amber-50 border-amber-100 hover:bg-amber-100 hover:border-amber-200' :
+                          'bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-1">
+                          <div className={`text-[10px] font-black leading-tight line-clamp-2 uppercase ${
+                            isCancelled ? 'text-red-700 line-through decoration-red-700/50' :
+                            isPostponed ? 'text-amber-700 italic' :
+                            'text-blue-700'
+                          }`}>
+                            {m.title}
+                          </div>
+                          <span className={`shrink-0 text-[8px] font-black px-1 rounded ${
+                            isCancelled ? 'bg-red-200 text-red-800' :
+                            isPostponed ? 'bg-amber-200 text-amber-800' :
+                            'bg-blue-200 text-blue-800'
+                          }`}>
+                            {m.endpoints.length}EP
+                          </span>
                         </div>
-                        <span className="shrink-0 bg-blue-200 text-blue-800 text-[8px] font-black px-1 rounded">
-                          {m.endpoints.length}EP
-                        </span>
-                      </div>
-                      <div className="text-[9px] text-blue-400 font-bold mt-0.5 flex items-center gap-1">
-                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3" /></svg>
-                        {new Date(m.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </button>
-                  ))}
+                        <div className={`text-[9px] font-bold mt-0.5 flex items-center gap-1 ${
+                          isCancelled ? 'text-red-400' :
+                          isPostponed ? 'text-amber-400' :
+                          'text-blue-400'
+                        }`}>
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3" /></svg>
+                          {new Date(m.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
