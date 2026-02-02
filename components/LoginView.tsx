@@ -180,12 +180,12 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                         isCancelled ? 'opacity-60 grayscale-[0.5]' : ''
                       }`}
                     >
-                      <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-white/10 pr-4">
+                      <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-4">
                         <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
                           {formatMeetingTime(m.startTime)}
                         </span>
-                        <span className="text-[9px] font-black text-white/30 uppercase mt-1">
-                          {formatMeetingDate(m.startTime).split('/')[0] + '/' + formatMeetingDate(m.startTime).split('/')[1]}
+                        <span className="text-[9px] font-black text-white/30 uppercase mt-1 text-center leading-tight">
+                          {formatMeetingDate(m.startTime)}
                         </span>
                       </div>
                       
@@ -200,9 +200,9 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                             <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20">Hoãn</span>
                           ) : null}
                         </div>
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <span className="text-[10px] text-white/40 font-bold uppercase truncate max-w-[120px]">Chủ trì: {m.chairPerson}</span>
-                          <div className="w-1 h-1 rounded-full bg-white/10 shrink-0"></div>
+                        <div className="flex items-center gap-3 overflow-hidden flex-wrap">
+                          <span className="text-[10px] text-white/40 font-bold uppercase whitespace-nowrap">Chủ trì: {m.chairPerson}</span>
+                          <div className="w-1 h-1 rounded-full bg-white/10 shrink-0 hidden sm:block"></div>
                           <span className="text-[10px] text-blue-400/60 font-black uppercase truncate">{m.hostUnit}</span>
                         </div>
                       </div>
