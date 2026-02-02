@@ -57,17 +57,15 @@ const App: React.FC = () => {
   const isOperator = currentUser?.role === 'OPERATOR';
   const canManageMeetings = isAdmin || isOperator;
 
-  // Yêu cầu quyền thông báo khi đăng nhập thành công
+  // Yêu cầu quyền thông báo ngay khi tải trang (nếu browser hỗ trợ)
   useEffect(() => {
-    if (currentUser && 'Notification' in window && Notification.permission === 'default') {
+    if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-  }, [currentUser]);
+  }, []);
 
-  // Logic kiểm tra nhắc nhở định kỳ (mỗi 1 phút)
+  // Logic kiểm tra nhắc nhở định kỳ (mỗi 1 phút) - Chạy cả khi chưa login
   useEffect(() => {
-    if (!currentUser) return;
-
     const checkMeetings = () => {
       const now = new Date();
       const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -103,7 +101,7 @@ const App: React.FC = () => {
     checkMeetings();
     const interval = setInterval(checkMeetings, 60000);
     return () => clearInterval(interval);
-  }, [meetings, notifiedMeetingIds, currentUser, systemSettings.logoBase64]);
+  }, [meetings, notifiedMeetingIds, systemSettings.logoBase64]);
 
   useEffect(() => {
     const syncData = async () => {
@@ -310,7 +308,21 @@ const App: React.FC = () => {
     }
   };
 
-  if (!currentUser) return <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />;
+  if (!currentUser) return (
+    <>
+      <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />
+      {showToast && currentAlertMeeting && (
+        <NotificationToast 
+          meeting={currentAlertMeeting} 
+          onClose={() => setShowToast(false)} 
+          onAction={() => {
+            // Khi nhấn vào toast ở LoginView, ta chỉ có thể xem chi tiết hoặc đóng nó
+            setShowToast(false);
+          }}
+        />
+      )}
+    </>
+  );
 
   const primaryBgStyle = { backgroundColor: systemSettings.primaryColor };
   const primaryTextStyle = { color: systemSettings.primaryColor };

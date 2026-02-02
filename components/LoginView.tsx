@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity } from 'lucide-react';
+import UpcomingAlert from './UpcomingAlert';
 
 interface LoginViewProps {
   users: User[];
@@ -32,6 +33,15 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       .filter(m => new Date(m.endTime) >= today)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, 12);
+  }, [meetings]);
+
+  // Cuộc họp tiêu điểm (sắp bắt đầu trong 60 phút)
+  const spotlightMeeting = useMemo(() => {
+    const today = new Date();
+    const oneHourLater = new Date(today.getTime() + 60 * 60 * 1000);
+    return meetings
+      .filter(m => m.status !== 'CANCELLED' && new Date(m.startTime) > today && new Date(m.startTime) <= oneHourLater)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
   }, [meetings]);
 
   const stats = useMemo(() => {
@@ -137,6 +147,13 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </div>
             </h1>
           </div>
+
+          {/* SPOTLIGHT ALERT INTEGRATION */}
+          {spotlightMeeting && (
+            <div className="shrink-0">
+               <UpcomingAlert meeting={spotlightMeeting} onViewDetail={setSelectedPublicMeeting} />
+            </div>
+          )}
 
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-3 gap-4 shrink-0">
@@ -265,15 +282,17 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
           </div>
 
           <div className="bg-white/10 backdrop-blur-[30px] rounded-[2.5rem] p-8 lg:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 w-full flex flex-col relative overflow-hidden group">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-            
             <div className="mb-8 text-center">
                <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
                 <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
+            </div>
+            <div>
+            <p className="text-white/40 text-[9px] font-black tracking-[0.4em] leading-relaxed">
+                <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+              </p>
               </div>
             </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-5">
+                        <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-white">
                   <XCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -313,7 +332,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 type="submit"
                 disabled={isLoading}
                 className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
+                  isLoading ? 'bg-red-600/50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-blue-500/30 active:bg-red-800'
                 }`}
               >
                 {isLoading ? (
@@ -330,8 +349,8 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             </form>
 
             <div className="mt-10 pt-6 border-t border-white/5 text-center">
-              <p className="text-white/30 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-                <span className="opacity-40">© 2026 • VIETTEL SƠN LA</span>
+              <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
+                <span className="opacity-50">© 2026 • VIETTEL SƠN LA</span>
               </p>
             </div>
           </div>
