@@ -316,7 +316,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 type="submit"
                 disabled={isLoading}
                 className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
+                  isLoading ? 'bg-red-600/50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-red-500/30 active:bg-red-800'
                 }`}
               >
                 {isLoading ? (
