@@ -41,7 +41,7 @@ const UpcomingAlert: React.FC<UpcomingAlertProps> = ({ meeting, onViewDetail }) 
     <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-[2.5rem] p-6 md:p-8 text-white shadow-2xl shadow-blue-200 group animate-in slide-in-from-top-4 duration-700">
       {/* Background Decorative Circles */}
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-      <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-blue-400/20 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-red-400/20 rounded-full blur-3xl"></div>
       
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
@@ -54,7 +54,7 @@ const UpcomingAlert: React.FC<UpcomingAlertProps> = ({ meeting, onViewDetail }) 
           
           <div className="space-y-2">
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-3">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/10">Hội nghị tiêu điểm</span>
+              <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/10">Hội nghị chuẩn bị diễn ra</span>
               <div className="flex items-center gap-2 text-yellow-300">
                 <Clock size={14} className="animate-spin-slow" />
                 <span className="text-xs font-black uppercase tracking-widest">{timeLeft}</span>
@@ -75,14 +75,7 @@ const UpcomingAlert: React.FC<UpcomingAlertProps> = ({ meeting, onViewDetail }) 
             </div>
           </div>
         </div>
-        
-        <button 
-          onClick={() => onViewDetail(meeting)}
-          className="px-8 py-4 bg-white text-blue-700 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-blue-50 transition-all active:scale-95 flex items-center gap-3 shrink-0"
-        >
-          Truy cập ngay
-          <ArrowRight size={16} strokeWidth={3} />
-        </button>
+
       </div>
       
       <style>{`

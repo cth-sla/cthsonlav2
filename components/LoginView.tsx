@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity } from 'lucide-react';
-import UpcomingAlert from './UpcomingAlert';
 
 interface LoginViewProps {
   users: User[];
@@ -33,15 +32,6 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       .filter(m => new Date(m.endTime) >= today)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, 12);
-  }, [meetings]);
-
-  // Cuộc họp tiêu điểm (sắp bắt đầu trong 60 phút)
-  const spotlightMeeting = useMemo(() => {
-    const today = new Date();
-    const oneHourLater = new Date(today.getTime() + 60 * 60 * 1000);
-    return meetings
-      .filter(m => m.status !== 'CANCELLED' && new Date(m.startTime) > today && new Date(m.startTime) <= oneHourLater)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
   }, [meetings]);
 
   const stats = useMemo(() => {
@@ -147,13 +137,6 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </div>
             </h1>
           </div>
-
-          {/* SPOTLIGHT ALERT INTEGRATION */}
-          {spotlightMeeting && (
-            <div className="shrink-0">
-               <UpcomingAlert meeting={spotlightMeeting} onViewDetail={setSelectedPublicMeeting} />
-            </div>
-          )}
 
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-3 gap-4 shrink-0">
@@ -292,7 +275,8 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </p>
               </div>
             </div>
-                        <form onSubmit={handleSubmit} className="space-y-5">
+            
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-white">
                   <XCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -332,7 +316,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 type="submit"
                 disabled={isLoading}
                 className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-red-600/50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-blue-500/30 active:bg-red-800'
+                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
                 }`}
               >
                 {isLoading ? (
