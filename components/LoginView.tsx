@@ -271,7 +271,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             </div>
             <div>
             <p className="text-white/40 text-[9px] font-black tracking-[0.4em] leading-relaxed">
-                <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+                <span className="opacity-100">Chỉ dành cho quản trị hệ thống</span>
               </p>
               </div>
             </div>
