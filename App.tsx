@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, Legend
 } from 'recharts';
-import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell, Video } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
@@ -337,7 +337,7 @@ const App: React.FC = () => {
         <div className="p-6 flex justify-between items-center">
           <div className="flex items-center gap-3 min-w-0">
              <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <span style={primaryTextStyle} className="font-bold text-sm">SL</span>}
+                {systemSettings.logoBase64 ? <img src={systemSettings.logoBase64} alt="Logo" className="max-w-full max-h-full" /> : <Video size={20} style={primaryTextStyle} />}
              </div>
              <div className="flex flex-col min-w-0">
                 <span className="text-xs font-black uppercase tracking-tight truncate">{systemSettings.shortName}</span>

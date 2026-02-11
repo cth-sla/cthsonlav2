@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -117,11 +117,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   {systemSettings.logoBase64 ? (
                     <img src={systemSettings.logoBase64} alt="System Logo" className="max-w-full max-h-full object-contain" />
                   ) : (
-                    <svg className="w-10 h-10 text-blue-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2L4 7V17L12 22L20 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <Video className="w-10 h-10 text-blue-400" strokeWidth={1.5} />
                   )}
                </div>
             </div>
@@ -271,7 +267,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
             </div>
             <div>
             <p className="text-white/40 text-[9px] font-black tracking-[0.4em] leading-relaxed">
-                <span className="opacity-100">Chỉ dành cho quản trị hệ thống</span>
+                <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
               </p>
               </div>
             </div>
@@ -316,7 +312,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 type="submit"
                 disabled={isLoading}
                 className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-red-600/50 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-red-500/30 active:bg-red-800'
+                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
                 }`}
               >
                 {isLoading ? (

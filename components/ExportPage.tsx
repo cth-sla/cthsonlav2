@@ -86,7 +86,9 @@ const ExportPage: React.FC = () => {
       {/* Main Hero Section */}
       <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-10 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-12 opacity-5">
-          <svg className="w-80 h-80" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4 7V17L12 22L20 17V7L12 2Z"/></svg>
+          <svg className="w-80 h-80" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM4 6a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2H4z" />
+          </svg>
         </div>
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-8">
