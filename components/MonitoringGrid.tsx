@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Endpoint, EndpointStatus } from '../types';
-import { Activity, Radio, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, Radio, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, MonitorPlay } from 'lucide-react';
 
 interface MonitoringGridProps {
   endpoints: Endpoint[];
@@ -224,9 +224,9 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center py-16 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
             <div className="p-5 bg-white rounded-full shadow-sm mb-4">
-              <Activity className="w-10 h-10 text-gray-200" />
+              <MonitorPlay className="w-10 h-10 text-gray-200" />
             </div>
-            <p className="text-gray-500 font-black text-sm uppercase tracking-widest">Không tìm thấy dữ liệu</p>
+            <p className="text-gray-500 font-black text-sm uppercase tracking-widest">Không tìm thấy dữ liệu điểm cầu</p>
             <button 
               onClick={() => { setStatusFilter('ALL'); setLocationFilter('ALL'); setSearchTerm(''); }}
               className="mt-4 text-[10px] text-blue-600 font-black uppercase tracking-widest hover:underline"

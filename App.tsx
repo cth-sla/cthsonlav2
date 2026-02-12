@@ -418,7 +418,7 @@ const App: React.FC = () => {
                   <StatCard title="Họp trong Tuần" value={dashboardStats.weekly} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tuần này." />
                   <StatCard title="Họp trong Tháng" value={dashboardStats.monthly} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tháng này." />
                   <StatCard title="Họp trong Năm" value={dashboardStats.yearly} icon={<BarChart3 className="text-amber-500" />} description={`Tổng số cuộc họp trong năm ${new Date().getFullYear()}.`} />
-                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<Activity color={systemSettings.primaryColor} />} description="Tỷ lệ điểm cầu đang trực tuyến." />
+                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<MonitorPlay color={systemSettings.primaryColor} />} description="Tỷ lệ điểm cầu đang trực tuyến." />
                </div>
 
                {/* Efficiency KPIs Section */}
