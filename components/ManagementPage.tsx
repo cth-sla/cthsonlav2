@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings } from '../types';
+import { Upload, X, Trash2, Image as ImageIcon } from 'lucide-react';
 
 interface ManagementPageProps {
   units: Unit[];
@@ -50,6 +51,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(systemSettings);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSettingsForm(systemSettings);
@@ -112,6 +114,25 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const handleSaveSettings = () => {
     onUpdateSettings(settingsForm);
     alert('Đã cập nhật cấu hình hệ thống!');
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // Giới hạn 1MB
+        alert("Kích thước ảnh quá lớn. Vui lòng chọn ảnh dưới 1MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettingsForm({ ...settingsForm, logoBase64: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setSettingsForm({ ...settingsForm, logoBase64: '' });
   };
 
   const primaryTextStyle = { color: systemSettings.primaryColor };
@@ -292,20 +313,85 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         {activeTab === 'settings' && (
           <div className="p-8 max-w-2xl space-y-8">
             <h4 className="text-lg font-black text-gray-900 uppercase tracking-tight">Cấu hình hệ thống</h4>
-            <div className="space-y-4">
+            
+            <div className="space-y-6">
+              {/* Logo Section */}
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <ImageIcon size={18} className="text-blue-600" />
+                  Logo hệ thống (Base64)
+                </label>
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-gray-50 border border-dashed border-gray-300 rounded-[2rem]">
+                  <div className="w-32 h-32 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    {settingsForm.logoBase64 ? (
+                      <img src={settingsForm.logoBase64} alt="Preview" className="max-w-full max-h-full object-contain" />
+                    ) : (
+                      <div className="text-gray-300 flex flex-col items-center">
+                        <ImageIcon size={32} />
+                        <span className="text-[9px] font-bold mt-2 uppercase">No Logo</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      Logo sẽ hiển thị ở Sidebar và trang Đăng nhập. <br/>
+                      Định dạng khuyên dùng: <b>PNG hoặc SVG (Nền trong suốt)</b>. <br/>
+                      Dung lượng tối đa: <b>1MB</b>.
+                    </p>
+                    <div className="flex gap-2">
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleLogoUpload} 
+                        accept="image/*" 
+                        className="hidden" 
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 bg-white border border-gray-200 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all flex items-center gap-2 shadow-sm"
+                      >
+                        <Upload size={14} />
+                        Tải ảnh lên
+                      </button>
+                      {settingsForm.logoBase64 && (
+                        <button 
+                          onClick={removeLogo}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
+                        >
+                          <Trash2 size={14} />
+                          Xóa logo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">Tên hệ thống</label>
                 <input 
-                  type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 outline-none"
+                  type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 outline-none font-bold"
                   value={settingsForm.systemName}
                   onChange={e => setSettingsForm({...settingsForm, systemName: e.target.value})}
                 />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700">Tên viết tắt (Sidebar)</label>
+                <input 
+                  type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 outline-none font-bold"
+                  value={settingsForm.shortName}
+                  onChange={e => setSettingsForm({...settingsForm, shortName: e.target.value})}
+                />
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700">Màu chủ đạo</label>
                 <div className="flex gap-3">
                   <input 
-                    type="color" className="w-12 h-12 p-1 bg-white border border-gray-200 rounded-xl"
+                    type="color" className="w-12 h-12 p-1 bg-white border border-gray-200 rounded-xl cursor-pointer"
                     value={settingsForm.primaryColor}
                     onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
                   />
@@ -317,12 +403,13 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 </div>
               </div>
             </div>
+            
             <button 
               onClick={handleSaveSettings}
               style={primaryBgStyle}
-              className="px-8 py-3 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl hover:brightness-110 transition-all active:scale-95"
+              className="px-8 py-3.5 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto"
             >
-              Lưu cấu hình
+              Lưu cấu hình hệ thống
             </button>
           </div>
         )}

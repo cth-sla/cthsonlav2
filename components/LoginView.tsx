@@ -330,7 +330,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
             <div className="mt-10 pt-6 border-t border-white/5 text-center">
               <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-                <span className="opacity-50">© 2026 • VIETTEL SƠN LA</span>
+                <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
               </p>
             </div>
           </div>
