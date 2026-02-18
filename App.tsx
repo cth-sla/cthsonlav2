@@ -158,6 +158,7 @@ const App: React.FC = () => {
 
         if (table === 'system_settings' && mappedData) {
           setSystemSettings(mappedData);
+          storageService.saveSystemSettings(mappedData); // Cập nhật local khi có thay đổi từ cloud
           return;
         }
 
@@ -316,7 +317,6 @@ const App: React.FC = () => {
           meeting={currentAlertMeeting} 
           onClose={() => setShowToast(false)} 
           onAction={() => {
-            // Khi nhấn vào toast ở LoginView, ta chỉ có thể xem chi tiết hoặc đóng nó
             setShowToast(false);
           }}
         />
@@ -622,8 +622,15 @@ const App: React.FC = () => {
                 setEndpoints(prev => prev.filter(e => e.id !== id));
               }}
               onUpdateSettings={async s => {
-                if (supabaseService.isConfigured()) await supabaseService.updateSettings(s);
+                if (supabaseService.isConfigured()) {
+                  try {
+                    await supabaseService.updateSettings(s);
+                  } catch (err) {
+                    console.error("Lỗi cập nhật cấu hình lên Cloud:", err);
+                  }
+                }
                 setSystemSettings(s);
+                storageService.saveSystemSettings(s);
               }} 
           />}
           {activeTab === 'accounts' && <UserManagement users={users} currentUser={currentUser!} onAddUser={async u => {
