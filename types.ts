@@ -49,7 +49,9 @@ export interface Meeting {
   id: string;
   title: string;
   hostUnit: string;
+  hostUnitId?: string; // Thêm trường ID đơn vị
   chairPerson: string;
+  chairPersonId?: string; // Thêm trường ID cán bộ
   startTime: string;
   endTime: string;
   participants: string[];

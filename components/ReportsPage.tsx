@@ -7,7 +7,7 @@ import {
 import { Meeting, Endpoint, User } from '../types';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
-import { Calendar, Building2, CheckCircle, AlertTriangle, FileText, Download } from 'lucide-react';
+import { Calendar, Building2, CheckCircle, AlertTriangle, FileText, Download, TrendingUp, Users, Clock, Hash } from 'lucide-react';
 
 interface ReportsPageProps {
   meetings: Meeting[];
@@ -68,8 +68,21 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
     
     const uniqueUnits = new Set(filteredMeetings.map(m => m.hostUnit)).size;
     
-    return { total, scheduled, cancelled, postponed, uniqueUnits };
-  }, [filteredMeetings]);
+    // Thống kê theo tuần, tháng, năm của thời điểm hiện tại
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+    startOfWeek.setHours(0,0,0,0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const currentWeekCount = meetings.filter(m => m.status !== 'CANCELLED' && new Date(m.startTime) >= startOfWeek).length;
+    const currentMonthCount = meetings.filter(m => m.status !== 'CANCELLED' && new Date(m.startTime) >= startOfMonth).length;
+    const currentYearCount = meetings.filter(m => m.status !== 'CANCELLED' && new Date(m.startTime) >= startOfYear).length;
+    
+    return { total, scheduled, cancelled, postponed, uniqueUnits, currentWeekCount, currentMonthCount, currentYearCount };
+  }, [filteredMeetings, meetings]);
 
   const statsData = useMemo(() => {
     const groupMap: Record<string, number> = {};
@@ -200,6 +213,37 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
           </div>
         </div>
 
+        {/* Thống kê Tổng hợp (Tuần, Tháng, Năm) */}
+        <div className="bg-slate-900 p-8 rounded-[2rem] text-white">
+          <div className="flex items-center gap-3 mb-6">
+            <TrendingUp className="text-blue-400" />
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Thống kê theo chu kỳ (Toàn hệ thống)</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-8">
+            <div className="space-y-2">
+               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Cuộc họp Tuần này</p>
+               <div className="flex items-baseline gap-2">
+                 <span className="text-4xl font-black text-blue-400">{reportStats.currentWeekCount}</span>
+                 <span className="text-[10px] font-bold text-white/20 uppercase">Hội nghị</span>
+               </div>
+            </div>
+            <div className="space-y-2 border-l border-white/10 pl-8">
+               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Cuộc họp Tháng này</p>
+               <div className="flex items-baseline gap-2">
+                 <span className="text-4xl font-black text-emerald-400">{reportStats.currentMonthCount}</span>
+                 <span className="text-[10px] font-bold text-white/20 uppercase">Hội nghị</span>
+               </div>
+            </div>
+            <div className="space-y-2 border-l border-white/10 pl-8">
+               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Cuộc họp Năm nay</p>
+               <div className="flex items-baseline gap-2">
+                 <span className="text-4xl font-black text-amber-400">{reportStats.currentYearCount}</span>
+                 <span className="text-[10px] font-bold text-white/20 uppercase">Hội nghị</span>
+               </div>
+            </div>
+          </div>
+        </div>
+
         {/* Charts Section */}
         <div className="grid grid-cols-1 gap-10">
           <div className="space-y-4">
@@ -236,13 +280,13 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
         <div className="space-y-4">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
             <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-            Bảng tổng hợp dữ liệu
+            Bảng tổng hợp dữ liệu (Theo {groupBy})
           </h3>
           <div className="border border-slate-100 rounded-2xl overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
                 <tr>
-                  <th className="px-6 py-4">Tiêu chí phân nhóm ({groupBy})</th>
+                  <th className="px-6 py-4">Tiêu chí phân nhóm</th>
                   <th className="px-6 py-4 text-center">Số lượng hội nghị</th>
                   <th className="px-6 py-4 text-right">Tỷ lệ đóng góp</th>
                 </tr>
@@ -270,10 +314,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
             <table className="w-full text-left text-[11px]">
               <thead className="bg-slate-50 text-slate-500 text-[9px] uppercase font-black tracking-widest">
                 <tr>
-                  <th className="px-4 py-3">Tên hội nghị</th>
-                  <th className="px-4 py-3">Đơn vị chủ trì</th>
-                  <th className="px-4 py-3">Thời gian</th>
-                  <th className="px-4 py-3 text-center">Điểm cầu</th>
+                  <th className="px-4 py-3"><div className="flex items-center gap-1"><FileText size={10} /> Tên hội nghị</div></th>
+                  <th className="px-4 py-3"><div className="flex items-center gap-1"><Building2 size={10} /> Đơn vị chủ trì</div></th>
+                  <th className="px-4 py-3"><div className="flex items-center gap-1"><Clock size={10} /> Thời gian</div></th>
+                  <th className="px-4 py-3 text-center"><div className="flex justify-center items-center gap-1"><Hash size={10} /> Điểm cầu</div></th>
+                  <th className="px-4 py-3 text-center"><div className="flex justify-center items-center gap-1"><Users size={10} /> Thành phần</div></th>
                   <th className="px-4 py-3 text-right">Trạng thái</th>
                 </tr>
               </thead>
@@ -291,13 +336,16 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
                     <td className="px-4 py-3 text-center">
                       <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-black">{m.endpoints.length}</span>
                     </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md font-black">{m.participants.length}</span>
+                    </td>
                     <td className="px-4 py-3 text-right">
                       {m.status === 'CANCELLED' ? (
-                        <span className="text-red-600 font-black uppercase text-[8px]">Đã huỷ</span>
+                        <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[8px] font-black uppercase rounded">Đã huỷ</span>
                       ) : m.status === 'POSTPONED' ? (
-                        <span className="text-amber-600 font-black uppercase text-[8px]">Hoãn</span>
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[8px] font-black uppercase rounded">Hoãn</span>
                       ) : (
-                        <span className="text-emerald-600 font-black uppercase text-[8px]">Thành công</span>
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase rounded">Hợp lệ</span>
                       )}
                     </td>
                   </tr>

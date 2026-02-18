@@ -15,7 +15,9 @@ const mapMeeting = (m: any): Meeting => ({
   id: m.id,
   title: m.title || 'Không có tiêu đề',
   hostUnit: m.host_unit_name || m.host_unit || m.hostUnit || 'N/A',
+  hostUnitId: m.host_unit_id || m.hostUnitId || null,
   chairPerson: m.chair_person_name || m.chair_person || m.chairPerson || 'N/A',
+  chairPersonId: m.chair_person_id || m.chairPersonId || null,
   startTime: m.start_time || m.startTime || new Date().toISOString(),
   endTime: m.end_time || m.endTime || new Date().toISOString(),
   description: m.description || '',
@@ -32,7 +34,9 @@ const unmapMeeting = (m: Meeting) => ({
   id: m.id,
   title: m.title,
   host_unit_name: m.hostUnit,
+  host_unit_id: m.hostUnitId || null,
   chair_person_name: m.chairPerson,
+  chair_person_id: m.chairPersonId || null,
   start_time: m.startTime,
   end_time: m.endTime,
   description: m.description,
@@ -152,6 +156,7 @@ export const supabaseService = {
       name: e.name,
       location: e.location,
       status: e.status,
+      // Fix: Use e.lastConnected instead of e.last_connected to match Endpoint type
       last_connected: e.lastConnected
     });
     if (error) throw error;

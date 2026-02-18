@@ -19,7 +19,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [formData, setFormData] = useState({
     title: '',
     hostUnit: '',
+    hostUnitId: '',
     chairPerson: '',
+    chairPersonId: '',
     startTime: '',
     endTime: '',
     description: '',
@@ -55,7 +57,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       setFormData({
         title: editingMeeting.title,
         hostUnit: editingMeeting.hostUnit,
+        hostUnitId: editingMeeting.hostUnitId || '',
         chairPerson: editingMeeting.chairPerson,
+        chairPersonId: editingMeeting.chairPersonId || '',
         startTime: formatISOToLocalInput(editingMeeting.startTime),
         endTime: formatISOToLocalInput(editingMeeting.endTime),
         description: editingMeeting.description,
@@ -67,7 +71,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       setFormData({
         title: '',
         hostUnit: '',
+        hostUnitId: '',
         chairPerson: '',
+        chairPersonId: '',
         startTime: '',
         endTime: '',
         description: '',
@@ -79,11 +85,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   }, [editingMeeting, isOpen]);
 
   const filteredStaffForUnit = useMemo(() => {
-    if (!formData.hostUnit) return staff;
-    const selectedUnit = units.find(u => u.name === formData.hostUnit);
-    if (!selectedUnit) return staff;
-    return staff.filter(s => s.unitId === selectedUnit.id);
-  }, [formData.hostUnit, units, staff]);
+    if (!formData.hostUnitId) return [];
+    return staff.filter(s => s.unitId === formData.hostUnitId);
+  }, [formData.hostUnitId, staff]);
 
   const filteredEndpoints = useMemo(() => {
     return availableEndpoints.filter(ep => 
@@ -100,6 +104,18 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     );
   };
 
+  const handleUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const unitId = e.target.value;
+    const unitName = units.find(u => u.id === unitId)?.name || '';
+    setFormData({ ...formData, hostUnitId: unitId, hostUnit: unitName, chairPerson: '', chairPersonId: '' });
+  };
+
+  const handleStaffChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const staffId = e.target.value;
+    const staffName = staff.find(s => s.id === staffId)?.fullName || '';
+    setFormData({ ...formData, chairPersonId: staffId, chairPerson: staffName });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -114,7 +130,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       id: editingMeeting ? editingMeeting.id : `MEET-${Math.floor(1000 + Math.random() * 9000)}`,
       title: formData.title,
       hostUnit: formData.hostUnit,
+      hostUnitId: formData.hostUnitId,
       chairPerson: formData.chairPerson,
+      chairPersonId: formData.chairPersonId,
       startTime: formatLocalInputToISO(formData.startTime),
       endTime: formatLocalInputToISO(formData.endTime),
       description: formData.description,
@@ -181,12 +199,12 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   <select 
                     required
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all appearance-none cursor-pointer"
-                    value={formData.hostUnit}
-                    onChange={e => setFormData({...formData, hostUnit: e.target.value})}
+                    value={formData.hostUnitId}
+                    onChange={handleUnitChange}
                   >
                     <option value="">-- Chọn đơn vị --</option>
                     {units.map(u => (
-                      <option key={u.id} value={u.name}>{u.name} ({u.code})</option>
+                      <option key={u.id} value={u.id}>{u.name} ({u.code})</option>
                     ))}
                   </select>
                 </div>
@@ -195,13 +213,13 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   <select 
                     required
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all appearance-none cursor-pointer"
-                    value={formData.chairPerson}
-                    onChange={e => setFormData({...formData, chairPerson: e.target.value})}
-                    disabled={!formData.hostUnit}
+                    value={formData.chairPersonId}
+                    onChange={handleStaffChange}
+                    disabled={!formData.hostUnitId}
                   >
-                    <option value="">{formData.hostUnit ? '-- Chọn cán bộ --' : '-- Chọn đơn vị trước --'}</option>
+                    <option value="">{formData.hostUnitId ? '-- Chọn cán bộ --' : '-- Chọn đơn vị trước --'}</option>
                     {filteredStaffForUnit.map(s => (
-                      <option key={s.id} value={s.fullName}>{s.fullName} - {s.position}</option>
+                      <option key={s.id} value={s.id}>{s.fullName} - {s.position}</option>
                     ))}
                   </select>
                 </div>

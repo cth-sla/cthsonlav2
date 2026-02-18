@@ -53,7 +53,9 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     host_unit_name TEXT,
+    host_unit_id TEXT, -- Thêm cột ID đơn vị
     chair_person_name TEXT,
+    chair_person_id TEXT, -- Thêm cột ID cán bộ
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
     participants JSONB DEFAULT '[]',
