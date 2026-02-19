@@ -32,6 +32,7 @@ const ExportPage: React.FC = () => {
     setIsZipping(true);
     const zip = new JSZip();
     const folder = zip.folder("cth-sla-platform");
+    if (!folder) return;
     
     // Trong thực tế, chúng ta sẽ fetch nội dung file hoặc lấy từ state.
     // Ở đây ta tạo các file giả lập nội dung dựa trên cấu trúc hiện tại.
