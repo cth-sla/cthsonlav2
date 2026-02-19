@@ -204,10 +204,10 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
 
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-black text-gray-900 truncate group-hover:text-blue-600 transition-colors leading-tight uppercase tracking-tight">{ep.name}</h4>
-                    <p className="text-[10px] text-gray-500 truncate uppercase font-bold tracking-widest mt-1.5 flex items-center gap-1.5">
+                    <div className="text-[10px] text-gray-500 truncate uppercase font-bold tracking-widest mt-1.5 flex items-center gap-1.5">
                       <div className="w-1 h-1 rounded-full bg-gray-300"></div>
                       {ep.location}
-                    </p>
+                    </div>
                   </div>
 
                   <div className="pt-3 border-t border-black/5 flex items-center justify-between">

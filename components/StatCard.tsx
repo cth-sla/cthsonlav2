@@ -42,7 +42,7 @@ const StatCard: React.FC<StatCardProps> = ({
       <div>
         <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-4xl font-black text-gray-900 tracking-tighter group-hover:text-blue-700 transition-colors duration-300">
+          <h3 className="text-4xl font-black text-gray-900 tracking-tighter group-hover:text-blue-700 transition-colors duration-300 font-mono">
             {value}
           </h3>
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-1.5"></div>

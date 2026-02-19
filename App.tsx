@@ -310,7 +310,7 @@ const App: React.FC = () => {
   };
 
   if (!currentUser) return (
-    <>
+    <div className="font-sans">
       <LoginView users={users} meetings={meetings} onLoginSuccess={setCurrentUser} systemSettings={systemSettings} />
       {showToast && currentAlertMeeting && (
         <NotificationToast 
@@ -321,14 +321,14 @@ const App: React.FC = () => {
           }}
         />
       )}
-    </>
+    </div>
   );
 
   const primaryBgStyle = { backgroundColor: systemSettings.primaryColor };
   const primaryTextStyle = { color: systemSettings.primaryColor };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 overflow-hidden relative">
+    <div className="min-h-screen flex bg-gray-50 overflow-hidden relative font-sans">
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
       )}

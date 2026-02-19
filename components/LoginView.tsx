@@ -107,7 +107,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/80 to-slate-950/90"></div>
       </div>
 
-      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-stretch gap-10 py-8 lg:py-12 min-h-[90vh]">
+      <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-stretch gap-10 py-8 lg:py-12 min-h-[90vh] font-sans">
         
         {/* Left Section: Branding, Stats & Meeting List */}
         <div className="flex-1 w-full flex flex-col space-y-6 animate-in fade-in slide-in-from-left duration-1000">
@@ -122,7 +122,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   )}
                </div>
             </div>
-            <h1 className="flex flex-col items-start text-left space-y-1">
+            <h1 className="flex flex-col items-start text-left space-y-1 font-display">
               <span className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tighter leading-tight">
                 {systemSettings.shortName}
               </span>
@@ -147,7 +147,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                     <span className={s.color}>{s.icon}</span>
                     <span className="text-[8px] font-black text-white uppercase tracking-widest">{s.label}</span>
                   </div>
-                  <span className={`text-2xl font-black ${s.color}`}>{s.val}</span>
+                  <span className={`text-2xl font-black font-mono ${s.color}`}>{s.val}</span>
                </div>
              ))}
           </div>
@@ -178,7 +178,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                       }`}
                     >
                       <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-white/10 pr-4">
-                        <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
+                        <span className={`text-lg font-black font-mono ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-400'}`}>
                           {formatMeetingTime(m.startTime)}
                         </span>
                         <span className="text-[9px] font-black text-white/30 uppercase mt-1 text-center leading-tight">
@@ -275,7 +275,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </div>
             ) : (
               <>
-                <div className="mb-8 text-center">
+                <div className="mb-8 text-center font-display">
                   <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full">
                     <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
                   </div>
@@ -374,7 +374,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   <FileText size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white tracking-tight line-clamp-1">{selectedPublicMeeting.title}</h3>
+                  <h3 className="text-lg font-black text-white tracking-tight line-clamp-1 font-display">{selectedPublicMeeting.title}</h3>
                   <p className="text-[9px] text-blue-400 font-black uppercase tracking-widest mt-1">Thông tin cuộc họp công khai</p>
                 </div>
               </div>
