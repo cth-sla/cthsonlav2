@@ -150,6 +150,23 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
     XLSX.writeFile(wb, "Template_Danh_Ba_Can_Bo.xlsx");
   };
 
+  const exportToExcel = () => {
+    const exportData = filteredOperators.map(o => {
+      const endpoint = endpoints.find(e => e.id === o.endpointId);
+      return {
+        'Họ và Tên': o.fullName,
+        'Chức vụ': o.position,
+        'Đơn vị': endpoint?.name || 'N/A',
+        'Số điện thoại': o.phone
+      };
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh_Ba");
+    XLSX.writeFile(wb, "Danh_Ba_Can_Bo.xlsx");
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -162,6 +179,14 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
+          <button 
+            onClick={exportToExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-bold text-sm shadow-sm"
+          >
+            <Download size={18} />
+            Xuất Excel
+          </button>
+
           <button 
             onClick={downloadTemplate}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-bold text-sm shadow-sm"
