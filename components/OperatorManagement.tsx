@@ -20,6 +20,8 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEndpointId, setSelectedEndpointId] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOperator, setEditingOperator] = useState<SystemOperator | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -47,6 +49,18 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
       return matchesSearch && matchesEndpoint;
     });
   }, [operators, searchTerm, selectedEndpointId, endpoints]);
+
+  const totalPages = Math.ceil(filteredOperators.length / itemsPerPage);
+  
+  const paginatedOperators = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredOperators.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredOperators, currentPage]);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedEndpointId]);
 
   const handleOpenModal = (operator?: SystemOperator) => {
     if (operator) {
@@ -211,8 +225,8 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
-              {filteredOperators.length > 0 ? (
-                filteredOperators.map(o => {
+              {paginatedOperators.length > 0 ? (
+                paginatedOperators.map(o => {
                   const endpoint = endpoints.find(e => e.id === o.endpointId);
                   return (
                     <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all">
@@ -267,6 +281,28 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-gray-50 dark:border-slate-700 flex items-center justify-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-bold disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
+              Trang {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-bold disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal Thêm/Sửa */}
