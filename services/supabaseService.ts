@@ -27,7 +27,7 @@ const mapMeeting = (m: any): Meeting => ({
   endpointChecks: m.endpoint_checks || {},
   status: m.status || 'SCHEDULED',
   cancelReason: m.cancel_reason || '',
-  invitationLink: m.invitation_link || ''
+  meetingRoomId: m.meeting_room_id || ''
 });
 
 const unmapMeeting = (m: Meeting) => {
@@ -45,7 +45,7 @@ const unmapMeeting = (m: Meeting) => {
     endpoint_checks: m.endpointChecks || {},
     status: m.status || 'SCHEDULED',
     cancel_reason: m.cancelReason || null,
-    invitation_link: m.invitationLink || null
+    meeting_room_id: m.meetingRoomId || null
   };
 
   // Chỉ thêm các trường ID nếu chúng có giá trị để tránh lỗi nếu cột chưa tồn tại trong DB
