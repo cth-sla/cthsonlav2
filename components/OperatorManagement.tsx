@@ -19,6 +19,7 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
   operators, endpoints, onAdd, onUpdate, onDelete, onImport 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOperator, setEditingOperator] = useState<SystemOperator | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -31,12 +32,21 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
   });
 
   const filteredOperators = useMemo(() => {
-    return operators.filter(o => 
-      o.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.phone.includes(searchTerm) ||
-      o.position.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [operators, searchTerm]);
+    return operators.filter(o => {
+      const endpoint = endpoints.find(e => e.id === o.endpointId);
+      const endpointName = endpoint?.name || '';
+      
+      const matchesSearch = 
+        o.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.phone.includes(searchTerm) ||
+        o.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        endpointName.toLowerCase().includes(searchTerm.toLowerCase());
+        
+      const matchesEndpoint = selectedEndpointId === 'all' || o.endpointId === selectedEndpointId;
+      
+      return matchesSearch && matchesEndpoint;
+    });
+  }, [operators, searchTerm, selectedEndpointId, endpoints]);
 
   const handleOpenModal = (operator?: SystemOperator) => {
     if (operator) {
@@ -163,16 +173,29 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-50 dark:border-slate-700">
-          <div className="relative max-w-md">
+        <div className="p-6 border-b border-gray-50 dark:border-slate-700 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Tìm kiếm theo tên, số điện thoại, chức vụ..." 
+              placeholder="Tìm kiếm theo tên, số điện thoại, chức vụ, đơn vị..." 
               className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+          
+          <div className="w-full md:w-64">
+            <select 
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+              value={selectedEndpointId}
+              onChange={(e) => setSelectedEndpointId(e.target.value)}
+            >
+              <option value="all">Tất cả Đơn vị (Điểm cầu)</option>
+              {endpoints.map(ep => (
+                <option key={ep.id} value={ep.id}>{ep.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
