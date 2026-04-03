@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     endpoint_checks JSONB DEFAULT '{}',
     status TEXT DEFAULT 'SCHEDULED',
     cancel_reason TEXT,
-    meeting_room_id TEXT, -- Thêm cột ID phòng họp
+    invitation_link TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
 );
