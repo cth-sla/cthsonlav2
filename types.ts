@@ -84,3 +84,12 @@ export interface SystemSettings {
   logoBase64?: string;
   primaryColor: string;
 }
+
+export interface SystemOperator {
+  id: string;
+  fullName: string;
+  position: string;
+  endpointId: string;
+  phone: string;
+  createdAt?: string;
+}

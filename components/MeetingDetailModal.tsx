@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Meeting } from '../types';
 import { analyzeMeetingEfficiency } from '../services/geminiService';
 import MeetingPreCheck from './MeetingPreCheck';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ExternalLink, FileText, Link as LinkIcon } from 'lucide-react';
 
 interface MeetingDetailModalProps {
   meeting: Meeting;
@@ -56,9 +56,16 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
     }
   };
 
-  const openInvitation = () => {
-    if (meeting.invitationLink) {
-      window.open(meeting.invitationLink, '_blank', 'noopener,noreferrer');
+  const openMeetingRoom = (e: React.MouseEvent, roomId?: string) => {
+    e.stopPropagation();
+    if (roomId) {
+      // If it looks like a URL, open it. Otherwise, it's just an ID.
+      if (roomId.startsWith('http')) {
+        window.open(roomId, '_blank', 'noopener,noreferrer');
+      } else {
+        // Just an ID, maybe copy to clipboard? 
+        // For now, let's just show it.
+      }
     }
   };
 
@@ -87,13 +94,13 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-             {meeting.invitationLink && (
+             {meeting.meetingRoomId && (
                <button 
-                  onClick={openInvitation}
-                  className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none"
+                  onClick={(e) => openMeetingRoom(e, meeting.meetingRoomId)}
+                  className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all"
                >
-                  <FileText className="w-4 h-4" />
-                  <span>Xem Giấy mời</span>
+                  <ExternalLink className="w-4 h-4" />
+                  <span>ID: {meeting.meetingRoomId}</span>
                </button>
              )}
              <button 
@@ -158,18 +165,13 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                         {new Date(meeting.endTime).toLocaleString('vi-VN', { hour12: false })}
                       </p>
                    </div>
-                   {meeting.invitationLink && (
+                   {meeting.meetingRoomId && (
                     <div className="sm:col-span-2">
-                       <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Giấy mời (URL)</p>
-                       <a 
-                        href={meeting.invitationLink} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1 flex items-center gap-2 hover:underline"
-                       >
-                          {meeting.invitationLink}
-                          <ExternalLink size={14} />
-                       </a>
+                       <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">ID phòng họp</p>
+                       <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1 flex items-center gap-2">
+                          {meeting.meetingRoomId}
+                          <LinkIcon size={14} className="text-indigo-400" />
+                       </div>
                     </div>
                    )}
                 </div>

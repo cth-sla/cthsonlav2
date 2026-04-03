@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus } from '../types';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus, SystemOperator } from '../types';
 
 const supabaseUrl = (window as any).process?.env?.SUPABASE_URL || "";
 const supabaseAnonKey = (window as any).process?.env?.SUPABASE_ANON_KEY || "";
@@ -117,6 +117,23 @@ const unmapSettings = (s: SystemSettings) => ({
   short_name: s.shortName,
   logo_base_64: s.logoBase64,
   primary_color: s.primaryColor
+});
+
+const mapOperator = (o: any): SystemOperator => ({
+  id: o.id,
+  fullName: o.full_name || o.fullName || 'N/A',
+  position: o.position || 'Cán bộ vận hành',
+  endpointId: o.endpoint_id || o.endpointId || '',
+  phone: o.phone || '',
+  createdAt: o.created_at || o.createdAt
+});
+
+const unmapOperator = (o: SystemOperator) => ({
+  id: o.id,
+  full_name: o.fullName,
+  position: o.position,
+  endpoint_id: o.endpointId,
+  phone: o.phone
 });
 
 export const supabaseService = {
@@ -262,6 +279,25 @@ export const supabaseService = {
     if (error) throw error;
   },
 
+  async getOperators(): Promise<SystemOperator[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('system_operators').select('*').order('full_name');
+    if (error) return [];
+    return (data || []).map(mapOperator);
+  },
+
+  async upsertOperator(o: SystemOperator) {
+    if (!supabase) return;
+    const { error } = await supabase.from('system_operators').upsert(unmapOperator(o));
+    if (error) throw error;
+  },
+
+  async deleteOperator(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from('system_operators').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   subscribeTable(table: string, callback: (payload: any) => void) {
     if (!supabase) return null;
     return supabase
@@ -275,6 +311,7 @@ export const supabaseService = {
           else if (table === 'units') mappedData = mapUnit(payload.new);
           else if (table === 'users') mappedData = mapUser(payload.new);
           else if (table === 'system_settings') mappedData = mapSettings(payload.new);
+          else if (table === 'system_operators') mappedData = mapOperator(payload.new);
         }
         callback({ ...payload, mappedData });
       })

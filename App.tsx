@@ -9,13 +9,14 @@ import {
   ChevronLeft, ChevronRight,
   Sun, Moon
 } from 'lucide-react';
-import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings } from './types';
+import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings, SystemOperator } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
 import MonitoringGrid from './components/MonitoringGrid';
 import ManagementPage from './components/ManagementPage';
 import UserManagement from './components/UserManagement';
 import ReportsPage from './components/ReportsPage';
+import OperatorManagement from './components/OperatorManagement';
 import LoginView from './components/LoginView';
 import CreateMeetingModal from './components/CreateMeetingModal';
 import MeetingDetailModal from './components/MeetingDetailModal';
@@ -32,7 +33,7 @@ storageService.init();
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment' | 'operators'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -47,6 +48,7 @@ const App: React.FC = () => {
   const [endpoints, setEndpoints] = useState<Endpoint[]>(() => storageService.getEndpoints());
   const [units, setUnits] = useState<Unit[]>(() => storageService.getUnits());
   const [staff, setStaff] = useState<Staff[]>(() => storageService.getStaff());
+  const [operators, setOperators] = useState<SystemOperator[]>(() => []);
   const [groups, setGroups] = useState<ParticipantGroup[]>(() => storageService.getGroups());
   const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
@@ -132,14 +134,15 @@ const App: React.FC = () => {
       
       setIsSyncing(true);
       try {
-        const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudSettings] = await Promise.all([
+        const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudSettings, cloudOperators] = await Promise.all([
           supabaseService.getMeetings(),
           supabaseService.getEndpoints(),
           supabaseService.getUnits(),
           supabaseService.getStaff(),
           supabaseService.getGroups(),
           supabaseService.getUsers(),
-          supabaseService.getSettings()
+          supabaseService.getSettings(),
+          supabaseService.getOperators()
         ]);
 
         // Cập nhật dữ liệu từ Cloud vào State và Local Storage
@@ -151,6 +154,7 @@ const App: React.FC = () => {
         setStaff(cloudStaff); storageService.saveStaff(cloudStaff);
         setGroups(cloudGroups); storageService.saveGroups(cloudGroups);
         setUsers(cloudUsers); storageService.saveUsers(cloudUsers);
+        setOperators(cloudOperators);
         
         if (cloudSettings) {
           setSystemSettings(cloudSettings);
@@ -168,7 +172,7 @@ const App: React.FC = () => {
 
     syncData();
 
-    const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings'];
+    const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings', 'system_operators'];
     const subscriptions = tables.map(table => {
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
@@ -179,7 +183,8 @@ const App: React.FC = () => {
           'units': { state: setUnits, storage: storageService.saveUnits.bind(storageService) },
           'staff': { state: setStaff, storage: storageService.saveStaff.bind(storageService) },
           'participant_groups': { state: setGroups, storage: storageService.saveGroups.bind(storageService) },
-          'users': { state: setUsers, storage: storageService.saveUsers.bind(storageService) }
+          'users': { state: setUsers, storage: storageService.saveUsers.bind(storageService) },
+          'system_operators': { state: setOperators, storage: null }
         };
 
         if (table === 'system_settings' && mappedData) {
@@ -440,6 +445,10 @@ const App: React.FC = () => {
             <CalendarDays size={20} /> 
             {!isSidebarCollapsed && <span className="font-bold text-sm">Lịch họp</span>}
           </button>
+          <button onClick={() => handleTabChange('operators')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'operators' ? 'text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`} style={activeTab === 'operators' ? primaryBgStyle : {}} title="Danh bạ">
+            <Users size={20} /> 
+            {!isSidebarCollapsed && <span className="font-bold text-sm">Danh bạ</span>}
+          </button>
           {isAdmin && (
             <button onClick={() => handleTabChange('monitoring')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'monitoring' ? 'text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`} style={activeTab === 'monitoring' ? primaryBgStyle : {}} title="Giám sát">
               <MonitorPlay size={20} /> 
@@ -673,6 +682,39 @@ const App: React.FC = () => {
               onDelete={isAdmin ? handleDeleteMeeting : undefined} 
               onAdd={() => { setEditingMeeting(null); setIsCreateModalOpen(true); }} 
               onUpdate={handleUpdateMeeting} 
+            />
+          )}
+          {activeTab === 'operators' && (
+            <OperatorManagement 
+              operators={operators} 
+              endpoints={endpoints}
+              onAdd={async o => {
+                const newOp = { ...o, id: `OP-${Date.now()}` };
+                if (supabaseService.isConfigured()) {
+                  await supabaseService.upsertOperator(newOp);
+                }
+                setOperators(prev => [newOp, ...prev]);
+              }}
+              onUpdate={async o => {
+                if (supabaseService.isConfigured()) {
+                  await supabaseService.upsertOperator(o);
+                }
+                setOperators(prev => prev.map(item => item.id === o.id ? o : item));
+              }}
+              onDelete={async id => {
+                if (supabaseService.isConfigured()) {
+                  await supabaseService.deleteOperator(id);
+                }
+                setOperators(prev => prev.filter(o => o.id !== id));
+              }}
+              onImport={async ops => {
+                if (supabaseService.isConfigured()) {
+                  for (const o of ops) {
+                    const newOp = { ...o, id: `OP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` };
+                    await supabaseService.upsertOperator(newOp);
+                  }
+                }
+              }}
             />
           )}
           {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={async (e) => {

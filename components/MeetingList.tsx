@@ -103,10 +103,10 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       return;
     }
 
-    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,Giấy mời,Mô tả\n";
+    const header = "Tiêu đề,Đơn vị chủ trì,Cán bộ chủ trì,Thời gian bắt đầu,Thời gian kết thúc,Số điểm cầu,Trạng thái,ID phòng họp,Mô tả\n";
     const rows = filteredAndSortedMeetings.map(m => {
       const status = m.status === 'CANCELLED' ? 'Đã huỷ' : m.status === 'POSTPONED' ? 'Tạm hoãn' : 'Bình thường';
-      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${m.invitationLink || ''}","${(m.description || '').replace(/"/g, '""')}"`;
+      return `"${m.title.replace(/"/g, '""')}","${m.hostUnit.replace(/"/g, '""')}","${m.chairPerson.replace(/"/g, '""')}","${new Date(m.startTime).toLocaleString('vi-VN', { hour12: false })}","${new Date(m.endTime).toLocaleString('vi-VN', { hour12: false })}","${m.endpoints.length}","${status}","${m.meetingRoomId || ''}","${(m.description || '').replace(/"/g, '""')}"`;
     }).join("\n");
     
     const csvContent = "\uFEFF" + header + rows;
@@ -119,15 +119,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  };
-
-  const handleOpenInvitation = (e: React.MouseEvent, link?: string) => {
-    e.stopPropagation();
-    if (link) {
-      window.open(link, '_blank', 'noopener,noreferrer');
-    } else {
-      alert("Cuộc họp này chưa được gán liên kết giấy mời.");
-    }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -308,10 +299,11 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         </div>
                       )}
 
-                      {meeting.invitationLink && (
-                        <span title="Có giấy mời gán kèm">
-                          <MailOpen size={14} className="text-indigo-500 shrink-0 mt-0.5" />
-                        </span>
+                      {meeting.meetingRoomId && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-[10px] font-bold border border-blue-100 dark:border-blue-800 shrink-0">
+                          <LinkIcon size={10} />
+                          <span>ID: {meeting.meetingRoomId}</span>
+                        </div>
                       )}
                     </div>
                     <div className={`text-[10px] mt-1 font-mono tracking-tighter truncate ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-gray-400'}`}>REF: {meeting.id}</div>
@@ -350,19 +342,13 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   </td>
                   <td className="px-4 md:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1.5">
-                      {/* Icon only invitation button */}
-                      <button 
-                        onClick={(e) => handleOpenInvitation(e, meeting.invitationLink)}
-                        className={`inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm ${
-                          meeting.invitationLink 
-                            ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700 hover:shadow-indigo-200 active:scale-95' 
-                            : 'bg-gray-50 dark:bg-slate-700 text-gray-300 dark:text-slate-500 border-gray-100 dark:border-slate-600 cursor-not-allowed opacity-40'
-                        }`}
-                        disabled={!meeting.invitationLink}
-                        title={meeting.invitationLink ? "Xem Giấy mời (URL)" : "Chưa gán giấy mời"}
+                      {/* Meeting ID display */}
+                      <div 
+                        className={`inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800`}
+                        title={`ID phòng họp: ${meeting.meetingRoomId || 'Chưa gán'}`}
                       >
-                        <ExternalLink size={14} strokeWidth={3} />
-                      </button>
+                        <LinkIcon size={14} strokeWidth={3} />
+                      </div>
 
                       {isAdmin && (
                         <div className="flex items-center gap-1.5 border-l border-gray-100 dark:border-slate-700 pl-1.5">

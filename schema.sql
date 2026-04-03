@@ -48,7 +48,17 @@ CREATE TABLE IF NOT EXISTS public.participant_groups (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 6. Bảng Quản lý Cuộc họp (Đầy đủ các thông số trạng thái và KPI)
+-- 6. Bảng Danh mục Cán bộ vận hành hệ thống (Danh bạ)
+CREATE TABLE IF NOT EXISTS public.system_operators (
+    id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    position TEXT,
+    endpoint_id TEXT REFERENCES public.endpoints(id) ON DELETE SET NULL,
+    phone TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 7. Bảng Quản lý Cuộc họp (Đầy đủ các thông số trạng thái và KPI)
 CREATE TABLE IF NOT EXISTS public.meetings (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -95,6 +105,7 @@ ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.participant_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_operators ENABLE ROW LEVEL SECURITY;
 
 -- Tạo chính sách cho phép truy cập công khai (Dành cho demo/triển khai nhanh)
 DO $$ 
@@ -119,6 +130,9 @@ BEGIN
     
     DROP POLICY IF EXISTS "Public Access All" ON public.system_settings;
     CREATE POLICY "Public Access All" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
+
+    DROP POLICY IF EXISTS "Public Access All" ON public.system_operators;
+    CREATE POLICY "Public Access All" ON public.system_operators FOR ALL USING (true) WITH CHECK (true);
 END $$;
 
 -- 10. Dữ liệu cấu hình mặc định ban đầu
