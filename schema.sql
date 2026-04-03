@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     status TEXT DEFAULT 'SCHEDULED',
     cancel_reason TEXT,
     invitation_link TEXT,
+    meeting_room_id TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
 );

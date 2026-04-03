@@ -62,6 +62,7 @@ export interface Meeting {
   status?: 'SCHEDULED' | 'CANCELLED' | 'POSTPONED';
   cancelReason?: string;
   invitationLink?: string;
+  meetingRoomId?: string;
 }
 
 export interface StatData {
