@@ -269,7 +269,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                 <input 
                   type="text" 
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
-                  placeholder="Nhập ID phòng họp (không bắt buộc)..."
+                  placeholder="Nhập ID phòng họp"
                   value={formData.meetingRoomId}
                   onChange={e => setFormData({...formData, meetingRoomId: e.target.value})}
                 />
