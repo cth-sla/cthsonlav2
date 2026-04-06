@@ -400,6 +400,16 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 </div>
               </div>
 
+              {selectedPublicMeeting.meetingRoomId && (
+                <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></div>
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">ID phòng họp:</p>
+                  </div>
+                  <p className="text-sm font-black text-white font-mono tracking-wider">{selectedPublicMeeting.meetingRoomId}</p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <h4 className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] border-l-2 border-blue-500 pl-3">Thành phần tham gia</h4>
                 <div className="flex flex-wrap gap-2">
@@ -430,15 +440,6 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                 >
                   <MailOpen size={14} />
                   XEM GIẤY MỜI
-                </button>
-              )}
-              {selectedPublicMeeting.meetingRoomId && (
-                 <button 
-                  onClick={(e) => handleExternalLink(e, selectedPublicMeeting.meetingRoomId)}
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20 flex items-center gap-2"
-                >
-                  <ExternalLink size={14} />
-                  VÀO PHÒNG HỌP
                 </button>
               )}
               <button 

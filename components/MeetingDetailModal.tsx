@@ -103,15 +103,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                   <span>XEM GIẤY MỜI</span>
                </button>
              )}
-             {meeting.meetingRoomId && (
-               <button 
-                  onClick={(e) => openMeetingRoom(e, meeting.meetingRoomId)}
-                  className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all"
-               >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>VÀO PHÒNG HỌP</span>
-               </button>
-             )}
+
              <button 
                 onClick={() => setShowPreCheck(true)}
                 className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-slate-900 dark:bg-slate-700 text-cyan-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-600 transition-all shadow-xl shadow-slate-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
@@ -251,6 +243,15 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
 
           <div className="md:col-span-4 space-y-8">
              <section>
+                {meeting.meetingRoomId && (
+                   <div className="mb-4 p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-800/30 rounded-2xl flex items-center justify-between shadow-sm">
+                      <div className="flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                         <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">ID phòng họp:</span>
+                      </div>
+                      <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 font-mono tracking-wider">{meeting.meetingRoomId}</span>
+                   </div>
+                )}
                 <h4 className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-4">Thành phần ({meeting.participants.length})</h4>
                 <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
                    {meeting.participants.map((p, i) => (
