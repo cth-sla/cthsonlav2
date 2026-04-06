@@ -222,7 +222,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                           <button 
                             onClick={(e) => handleExternalLink(e, m.invitationLink)}
                             className="p-2.5 bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/5 z-20"
-                            title="Vào phòng họp"
+                            title="Giấy mời"
                           >
                             <ExternalLink size={16} />
                           </button>
