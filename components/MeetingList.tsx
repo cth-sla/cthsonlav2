@@ -299,6 +299,12 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                         </div>
                       )}
 
+                      {meeting.invitationLink && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md text-[10px] font-bold border border-emerald-100 dark:border-emerald-800 shrink-0">
+                          <LinkIcon size={10} />
+                          <span>GIẤY MỜI</span>
+                        </div>
+                      )}
                       {meeting.meetingRoomId && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-[10px] font-bold border border-blue-100 dark:border-blue-800 shrink-0">
                           <LinkIcon size={10} />
@@ -342,10 +348,21 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                   </td>
                   <td className="px-4 md:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1.5">
+                      {/* Invitation Link display */}
+                      {meeting.invitationLink && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); window.open(meeting.invitationLink, '_blank', 'noopener,noreferrer'); }}
+                          className="inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white"
+                          title="Xem giấy mời"
+                        >
+                          <MailOpen size={14} strokeWidth={3} />
+                        </button>
+                      )}
+
                       {/* Meeting ID display */}
                       <div 
-                        className={`inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800`}
-                        title={`ID phòng họp: ${meeting.meetingRoomId || 'Chưa gán'}`}
+                        className={`inline-flex items-center justify-center p-2 rounded-xl transition-all border shadow-sm ${meeting.meetingRoomId ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800' : 'bg-gray-50 dark:bg-slate-900 text-gray-400 border-gray-100 dark:border-slate-700'}`}
+                        title={meeting.meetingRoomId ? `ID phòng họp: ${meeting.meetingRoomId}` : 'Chưa gán ID phòng họp'}
                       >
                         <LinkIcon size={14} strokeWidth={3} />
                       </div>

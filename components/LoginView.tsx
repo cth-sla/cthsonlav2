@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -218,9 +218,9 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                       </div>
  
                       <div className="shrink-0 flex items-center gap-2">
-                        {m.meetingRoomId && (
+                        {m.invitationLink && (
                           <button 
-                            onClick={(e) => handleExternalLink(e, m.meetingRoomId)}
+                            onClick={(e) => handleExternalLink(e, m.invitationLink)}
                             className="p-2.5 bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-900/5 z-20"
                             title="Vào phòng họp"
                           >
@@ -422,14 +422,23 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-white/5 flex justify-end gap-3">
+            <div className="p-6 border-t border-white/5 bg-white/5 flex flex-wrap justify-end gap-3">
+              {selectedPublicMeeting.invitationLink && (
+                 <button 
+                  onClick={(e) => handleExternalLink(e, selectedPublicMeeting.invitationLink)}
+                  className="px-6 py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-900/20 flex items-center gap-2"
+                >
+                  <MailOpen size={14} />
+                  XEM GIẤY MỜI
+                </button>
+              )}
               {selectedPublicMeeting.meetingRoomId && (
                  <button 
                   onClick={(e) => handleExternalLink(e, selectedPublicMeeting.meetingRoomId)}
                   className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-900/20 flex items-center gap-2"
                 >
                   <ExternalLink size={14} />
-                  ID: {selectedPublicMeeting.meetingRoomId}
+                  VÀO PHÒNG HỌP
                 </button>
               )}
               <button 

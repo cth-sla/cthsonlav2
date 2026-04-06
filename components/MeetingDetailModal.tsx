@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Meeting } from '../types';
 import { analyzeMeetingEfficiency } from '../services/geminiService';
 import MeetingPreCheck from './MeetingPreCheck';
-import { ExternalLink, FileText, Link as LinkIcon } from 'lucide-react';
+import { ExternalLink, FileText, Link as LinkIcon, MailOpen } from 'lucide-react';
 
 interface MeetingDetailModalProps {
   meeting: Meeting;
@@ -93,14 +93,23 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+             {meeting.invitationLink && (
+               <button 
+                  onClick={(e) => openMeetingRoom(e, meeting.invitationLink)}
+                  className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-emerald-100 dark:shadow-none hover:bg-emerald-700 transition-all"
+               >
+                  <MailOpen className="w-4 h-4" />
+                  <span>XEM GIẤY MỜI</span>
+               </button>
+             )}
              {meeting.meetingRoomId && (
                <button 
                   onClick={(e) => openMeetingRoom(e, meeting.meetingRoomId)}
                   className="flex-1 sm:flex-none justify-center px-4 md:px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all"
                >
                   <ExternalLink className="w-4 h-4" />
-                  <span>ID: {meeting.meetingRoomId}</span>
+                  <span>VÀO PHÒNG HỌP</span>
                </button>
              )}
              <button 
@@ -166,11 +175,19 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                       </p>
                    </div>
                    {meeting.meetingRoomId && (
-                    <div className="sm:col-span-2">
+                    <div>
                        <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">ID phòng họp</p>
                        <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1 flex items-center gap-2">
                           {meeting.meetingRoomId}
-                          <LinkIcon size={14} className="text-indigo-400" />
+                       </div>
+                    </div>
+                   )}
+                   {meeting.invitationLink && (
+                    <div className="sm:col-span-2">
+                       <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Link giấy mời</p>
+                       <div className="text-sm font-black text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-2 break-all">
+                          {meeting.invitationLink}
+                          <LinkIcon size={14} className="text-blue-400" />
                        </div>
                     </div>
                    )}

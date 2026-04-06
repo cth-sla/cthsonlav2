@@ -27,6 +27,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     description: '',
     participants: '',
     meetingRoomId: '',
+    invitationLink: '',
   });
   
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
@@ -65,6 +66,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
         meetingRoomId: editingMeeting.meetingRoomId || '',
+        invitationLink: editingMeeting.invitationLink || '',
       });
       setSelectedEndpointIds(editingMeeting.endpoints.map(e => e.id));
     } else {
@@ -79,6 +81,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         description: '',
         participants: '',
         meetingRoomId: '',
+        invitationLink: '',
       });
       setSelectedEndpointIds([]);
     }
@@ -140,7 +143,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       endpoints: selectedEndpoints,
       status: editingMeeting?.status || 'SCHEDULED',
       cancelReason: editingMeeting?.cancelReason,
-      meetingRoomId: formData.meetingRoomId.trim() || undefined
+      meetingRoomId: formData.meetingRoomId.trim() || undefined,
+      invitationLink: formData.invitationLink.trim() || undefined
     };
 
     if (editingMeeting && onUpdate) {
@@ -249,16 +253,26 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp *</label>
+                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Link giấy mời</label>
                 <input 
-                  required
                   type="text" 
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
-                  placeholder="Nhập ID phòng họp (VD: 123-456-789)..."
+                  placeholder="Nhập link giấy mời từ hệ thống lưu trữ..."
+                  value={formData.invitationLink}
+                  onChange={e => setFormData({...formData, invitationLink: e.target.value})}
+                />
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium italic">Đường dẫn xem giấy mời hoặc tài liệu cuộc họp.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp</label>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
+                  placeholder="Nhập ID phòng họp (không bắt buộc)..."
                   value={formData.meetingRoomId}
                   onChange={e => setFormData({...formData, meetingRoomId: e.target.value})}
                 />
-                <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium italic">Nhập mã định danh của phòng họp trực tuyến.</p>
               </div>
 
               <div className="space-y-2">
