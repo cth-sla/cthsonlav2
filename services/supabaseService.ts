@@ -62,7 +62,9 @@ const mapEndpoint = (e: any): Endpoint => ({
   name: e.name || 'N/A',
   location: e.location || 'N/A',
   status: (e.status as EndpointStatus) || EndpointStatus.DISCONNECTED,
-  lastConnected: e.last_connected || e.lastConnected || 'N/A'
+  lastConnected: e.last_connected || e.lastConnected || 'N/A',
+  ip1: e.ip_1 || '',
+  ip2: e.ip_2 || ''
 });
 
 const mapStaff = (s: any): Staff => ({
@@ -182,7 +184,9 @@ export const supabaseService = {
       location: e.location,
       status: e.status,
       // Fix: Use e.lastConnected instead of e.last_connected to match Endpoint type
-      last_connected: e.lastConnected
+      last_connected: e.lastConnected,
+      ip_1: e.ip1 || null,
+      ip_2: e.ip2 || null
     });
     if (error) throw error;
   },

@@ -21,6 +21,8 @@ export interface Endpoint {
   location: string;
   status: EndpointStatus;
   lastConnected: string;
+  ip1?: string;
+  ip2?: string;
 }
 
 export interface Unit {

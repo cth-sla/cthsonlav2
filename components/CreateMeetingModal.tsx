@@ -363,7 +363,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                           <span className={`text-sm font-bold truncate ${selectedEndpointIds.includes(ep.id) ? 'text-blue-700 dark:text-blue-300' : 'text-gray-800 dark:text-slate-200'}`}>{ep.name}</span>
                           <span className={`w-2 h-2 rounded-full shrink-0 ${ep.status === EndpointStatus.CONNECTED ? 'bg-green-500' : 'bg-red-500'}`}></span>
                         </div>
-                        <p className="text-[10px] text-gray-500 dark:text-slate-400 font-medium mt-0.5 truncate uppercase tracking-widest">{ep.location}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-slate-400 font-medium mt-0.5 truncate uppercase tracking-widest">
+                          {ep.location} {ep.ip1 && `• IP: ${ep.ip1}`}
+                        </p>
                       </div>
                     </label>
                   ))}

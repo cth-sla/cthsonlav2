@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS public.endpoints (
     location TEXT,
     status TEXT DEFAULT 'DISCONNECTED',
     last_connected TEXT,
+    ip_1 TEXT,
+    ip_2 TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 

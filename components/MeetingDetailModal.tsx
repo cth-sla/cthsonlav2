@@ -275,7 +275,9 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                                  <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
                                  <div className="min-w-0">
                                    <p className="text-xs font-bold text-gray-800 dark:text-white truncate uppercase">{ep.name}</p>
-                                   <p className="text-[9px] text-gray-400 dark:text-slate-500 font-medium truncate uppercase tracking-widest">{ep.location}</p>
+                                   <p className="text-[9px] text-gray-400 dark:text-slate-500 font-medium truncate uppercase tracking-widest">
+                                     {ep.location} {ep.ip1 && `• IP: ${ep.ip1}`}
+                                   </p>
                                  </div>
                               </div>
                               {isChecked && (

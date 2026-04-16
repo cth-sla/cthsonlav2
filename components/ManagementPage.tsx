@@ -284,6 +284,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
               <tr>
                 <th className="px-6 py-4">Tên điểm cầu</th>
                 <th className="px-6 py-4">Vị trí</th>
+                <th className="px-6 py-4">IP 1</th>
+                <th className="px-6 py-4">IP 2</th>
                 <th className="px-6 py-4">Trạng thái</th>
                 <th className="px-6 py-4 text-right">Hành động</th>
               </tr>
@@ -293,6 +295,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{e.name}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{e.location}</td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip1 || '---'}</td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip2 || '---'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
                       e.status === EndpointStatus.CONNECTED ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
@@ -464,6 +468,10 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   <>
                     <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white" placeholder="Tên điểm cầu" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
                     <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none text-gray-900 dark:text-white" placeholder="Vị trí / Địa điểm" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white" placeholder="IP 1" value={formData.ip1 || ''} onChange={e => setFormData({...formData, ip1: e.target.value})} />
+                      <input className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white" placeholder="IP 2" value={formData.ip2 || ''} onChange={e => setFormData({...formData, ip2: e.target.value})} />
+                    </div>
                   </>
                 )}
 
