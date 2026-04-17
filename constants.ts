@@ -8,15 +8,15 @@ export const MOCK_USERS: User[] = [
 ];
 
 export const MOCK_ENDPOINTS = [
-  { id: '1', name: 'Điểm cầu Hà Nội', location: 'Tầng 5, Tòa nhà A', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:00' },
-  { id: '2', name: 'Điểm cầu TP.HCM', location: 'Tòa nhà B, Quận 1', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:05' },
-  { id: '3', name: 'Điểm cầu Đà Nẵng', location: 'VP Đại diện Miền Trung', status: EndpointStatus.DISCONNECTED, lastConnected: '2024-05-19 17:30' },
-  { id: '4', name: 'Điểm cầu Cần Thơ', location: 'VP Cần Thơ', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:15' },
-  { id: '5', name: 'Điểm cầu Hải Phòng', location: 'VP Hải Phòng', status: EndpointStatus.DISCONNECTED, lastConnected: '2024-05-18 10:00' },
-  { id: '6', name: 'Điểm cầu Nghệ An', location: 'VP Nghệ An', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:20' },
-  { id: '7', name: 'Điểm cầu Quảng Ninh', location: 'VP Quảng Ninh', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:22' },
-  { id: '8', name: 'Điểm cầu Khánh Hòa', location: 'VP Nha Trang', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:25' },
-  { id: '9', name: 'Điểm cầu Hà Giang', location: 'VP Hà Giang', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:30' },
+  { id: '1', name: 'Điểm cầu Hà Nội', location: 'Tầng 5, Tòa nhà A', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:00', ip1: '10.8.0.1', ip2: '192.168.1.1' },
+  { id: '2', name: 'Điểm cầu TP.HCM', location: 'Tòa nhà B, Quận 1', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:05', ip1: '10.8.0.2', ip2: '192.168.1.2' },
+  { id: '3', name: 'Điểm cầu Đà Nẵng', location: 'VP Đại diện Miền Trung', status: EndpointStatus.DISCONNECTED, lastConnected: '2024-05-19 17:30', ip1: '10.8.0.3', ip2: '192.168.1.3' },
+  { id: '4', name: 'Điểm cầu Cần Thơ', location: 'VP Cần Thơ', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:15', ip1: '10.8.0.4', ip2: '192.168.1.4' },
+  { id: '5', name: 'Điểm cầu Hải Phòng', location: 'VP Hải Phòng', status: EndpointStatus.DISCONNECTED, lastConnected: '2024-05-18 10:00', ip1: '10.8.0.5', ip2: '192.168.1.5' },
+  { id: '6', name: 'Điểm cầu Nghệ An', location: 'VP Nghệ An', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:20', ip1: '10.8.0.6', ip2: '192.168.1.6' },
+  { id: '7', name: 'Điểm cầu Quảng Ninh', location: 'VP Quảng Ninh', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:22', ip1: '10.8.0.7', ip2: '192.168.1.7' },
+  { id: '8', name: 'Điểm cầu Khánh Hòa', location: 'VP Nha Trang', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:25', ip1: '10.8.0.8', ip2: '192.168.1.8' },
+  { id: '9', name: 'Điểm cầu Hà Giang', location: 'VP Hà Giang', status: EndpointStatus.CONNECTED, lastConnected: '2024-05-20 08:30', ip1: '10.8.0.9', ip2: '192.168.1.9' },
 ];
 
 export const MOCK_UNITS: Unit[] = [
