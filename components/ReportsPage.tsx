@@ -7,7 +7,7 @@ import {
 import { Meeting, Endpoint, User } from '../types';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
-import { Calendar, Building2, CheckCircle, AlertTriangle, FileText, Download, TrendingUp, Users, Clock, Hash } from 'lucide-react';
+import { Calendar, Building2, CheckCircle, AlertTriangle, FileText, Download, TrendingUp, Users, Clock, Hash, XCircle } from 'lucide-react';
 
 interface ReportsPageProps {
   meetings: Meeting[];
@@ -182,7 +182,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
         </div>
 
         {/* Quick Stats Summary Area */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-[1.5rem]">
             <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400 mb-2">
               <Calendar size={18} />
@@ -204,8 +204,15 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
             </div>
             <p className="text-3xl font-black text-slate-900 dark:text-white">{reportStats.postponed}</p>
           </div>
-          <div className="p-5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-[1.5rem]">
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-2">
+          <div className="p-5 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-[1.5rem]">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 mb-2">
+              <XCircle size={18} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Đã huỷ</span>
+            </div>
+            <p className="text-3xl font-black text-slate-900 dark:text-white">{reportStats.cancelled}</p>
+          </div>
+          <div className="p-5 bg-slate-50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-800 rounded-[1.5rem]">
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 mb-2">
               <Building2 size={18} />
               <span className="text-[10px] font-black uppercase tracking-widest">Số đơn vị</span>
             </div>
