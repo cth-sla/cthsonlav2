@@ -9,6 +9,7 @@ interface StatCardProps {
   trendUp?: boolean;
   description?: React.ReactNode;
   tooltipTitle?: string;
+  color?: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({ 
@@ -18,13 +19,19 @@ const StatCard: React.FC<StatCardProps> = ({
   trend, 
   trendUp, 
   description,
-  tooltipTitle = "Chi tiết chỉ số"
+  tooltipTitle = "Chi tiết chỉ số",
+  color = "text-slate-900 dark:text-white"
 }) => {
   return (
     <div className="relative group bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-none border border-slate-100 dark:border-slate-800 flex flex-col justify-between transition-all duration-500 hover:shadow-[0_20px_50px_rgba(59,130,246,0.08)] hover:border-blue-200 dark:hover:border-blue-500/50 hover:-translate-y-2 overflow-visible">
       <div className="flex items-center justify-between mb-6">
-        <div className="p-4 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-[1.25rem] group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
-          {/* Fix: Validate that icon is a React element and use React.ReactElement<any> to allow passing 'size' and 'strokeWidth' props */}
+        <div className={`p-4 rounded-[1.25rem] transition-all duration-500 shadow-sm ${color.includes('blue') ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white' : 
+          color.includes('emerald') ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white' :
+          color.includes('amber') ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white' :
+          color.includes('indigo') ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white' :
+          color.includes('yellow') ? 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-600 group-hover:text-white' :
+          color.includes('red') ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 group-hover:bg-red-600 group-hover:text-white' :
+          'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
           {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<any>, { size: 24, strokeWidth: 2.5 })}
         </div>
         {trend && (
@@ -42,10 +49,10 @@ const StatCard: React.FC<StatCardProps> = ({
       <div>
         <p className="text-[11px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mb-1">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">
+          <h3 className={`text-4xl font-black tracking-tighter transition-colors duration-300 ${color}`}>
             {value}
           </h3>
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-1.5"></div>
+          <div className={`w-1.5 h-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-1.5 ${color.replace('text-', 'bg-')}`}></div>
         </div>
       </div>
 

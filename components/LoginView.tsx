@@ -114,9 +114,9 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
       {/* Background Image - Modern & Smooth */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-[30000ms] scale-110 animate-slow-zoom"
-        style={{ backgroundImage: 'url("https://69a6ae9f581800b707fba36a.imgix.net/QTTB.png")' }}
+        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2601")' }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-slate-100/40 to-white/90 dark:from-slate-950/95 dark:via-slate-900/80 dark:to-slate-950/90 transition-colors duration-500"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F5F5F5]/90 via-[#F5F5F5]/60 to-[#F5F5F5]/90 dark:from-slate-950/95 dark:via-slate-900/80 dark:to-slate-950/90 transition-colors duration-500"></div>
       </div>
 
       <div className="w-full max-w-7xl px-6 relative z-10 flex flex-col lg:flex-row items-stretch gap-10 py-8 lg:py-12 min-h-[90vh]">
@@ -136,12 +136,12 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
              </div>
             </div>
             <h1 className="flex flex-col items-start text-left space-y-1">
-              <span className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-tight">
+              <span className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-tight drop-shadow-sm">
                 {systemSettings.shortName}
               </span>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-0.5 bg-blue-500 rounded-full"></div>
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">
+                <div className="w-12 h-1 bg-blue-600 rounded-full"></div>
+                <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.4em]">
                   {systemSettings.systemName}
                 </span>
               </div>
@@ -151,16 +151,16 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-3 gap-4 shrink-0">
              {[
-               { label: 'Cuộc họp Tuần', val: stats.week, color: 'text-blue-400', icon: <Calendar size={14} /> },
-               { label: 'Cuộc họp Tháng', val: stats.month, color: 'text-emerald-400', icon: <Clock size={14} /> },
-               { label: 'Cuộc họp Năm', val: stats.year, color: 'text-amber-400', icon: <Activity size={14} /> }
+               { label: 'Cuộc họp Tuần', val: stats.week, color: 'text-blue-600 dark:text-blue-400', iconColor: 'text-blue-500', icon: <Calendar size={18} /> },
+               { label: 'Cuộc họp Tháng', val: stats.month, color: 'text-emerald-500 dark:text-emerald-400', iconColor: 'text-emerald-500', icon: <Clock size={18} /> },
+               { label: 'Cuộc họp Năm', val: stats.year, color: 'text-amber-500 dark:text-amber-400', iconColor: 'text-amber-500', icon: <Activity size={18} /> }
              ].map((s, idx) => (
-               <div key={idx} className="bg-white dark:bg-white/5 backdrop-blur-md border border-gray-200 dark:border-white/10 p-4 rounded-2xl flex flex-col shadow-sm dark:shadow-none">
-                  <div className="flex items-center gap-2 mb-1 opacity-60">
-                    <span className={s.color}>{s.icon}</span>
-                    <span className="text-[8px] font-black text-slate-500 dark:text-white uppercase tracking-widest">{s.label}</span>
+               <div key={idx} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 p-5 rounded-[1.5rem] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none transition-all hover:translate-y-[-2px] hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)]">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className={s.iconColor}>{s.icon}</span>
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.1em]">{s.label}</span>
                   </div>
-                  <span className={`text-2xl font-black ${s.color}`}>{s.val}</span>
+                  <span className={`text-4xl font-black ${s.color}`}>{s.val}</span>
                </div>
              ))}
           </div>
@@ -325,8 +325,8 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
               <button 
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/30 active:bg-blue-800'
+                className={`w-full py-4 rounded-[1.25rem] font-black text-xs uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
+                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/30'
                 }`}
               >
                 {isLoading ? (

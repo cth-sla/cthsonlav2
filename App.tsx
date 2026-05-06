@@ -536,10 +536,10 @@ const App: React.FC = () => {
 
                {/* Primary Stats */}
                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                  <StatCard title="Họp trong Tuần" value={dashboardStats.weekly} icon={<CalendarDays color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tuần này." />
-                  <StatCard title="Họp trong Tháng" value={dashboardStats.monthly} icon={<FileText color={systemSettings.primaryColor} />} description="Tổng số cuộc họp diễn ra trong tháng này." />
-                  <StatCard title="Họp trong Năm" value={dashboardStats.yearly} icon={<BarChart3 className="text-amber-500" />} description={`Tổng số cuộc họp trong năm ${new Date().getFullYear()}.`} />
-                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<MonitorPlay color={systemSettings.primaryColor} />} description="Tỷ lệ điểm cầu đang trực tuyến." />
+                  <StatCard title="Họp trong Tuần" value={dashboardStats.weekly} icon={<CalendarDays />} description="Tổng số cuộc họp diễn ra trong tuần này." color="text-blue-600 dark:text-blue-400" />
+                  <StatCard title="Họp trong Tháng" value={dashboardStats.monthly} icon={<FileText />} description="Tổng số cuộc họp diễn ra trong tháng này." color="text-emerald-500 dark:text-emerald-400" />
+                  <StatCard title="Họp trong Năm" value={dashboardStats.yearly} icon={<BarChart3 />} description={`Tổng số cuộc họp trong năm ${new Date().getFullYear()}.`} color="text-amber-500 dark:text-amber-400" />
+                  <StatCard title="Uptime Hạ tầng" value={`${dashboardStats.uptime}%`} icon={<MonitorPlay />} description="Tỷ lệ điểm cầu đang trực tuyến." color="text-indigo-600 dark:text-indigo-400" />
                </div>
 
                {/* Efficiency KPIs Section */}
@@ -549,29 +549,32 @@ const App: React.FC = () => {
                     <StatCard 
                       title="Thời lượng TB (Giờ)" 
                       value={dashboardStats.avgDuration} 
-                      icon={<Clock className="text-indigo-500" />} 
+                      icon={<Clock />} 
                       trend="Ổn định"
                       trendUp={true}
                       description="Thời gian trung bình của mỗi cuộc họp diễn ra trên hệ thống."
                       tooltipTitle="Hiệu suất thời gian"
+                      color="text-indigo-600 dark:text-indigo-400"
                     />
                     <StatCard 
                       title="Tỷ lệ đúng giờ" 
                       value={`${dashboardStats.onTimeRate}%`} 
-                      icon={<Zap className="text-yellow-500" />} 
+                      icon={<Zap />} 
                       trend="+2.1%"
                       trendUp={true}
                       description="Tỷ lệ các cuộc họp bắt đầu và kết nối điểm cầu đúng thời gian quy định."
                       tooltipTitle="Độ tin cậy hạ tầng"
+                      color="text-yellow-600 dark:text-yellow-400"
                     />
                     <StatCard 
                       title="Điểm hiệu quả" 
                       value={dashboardStats.engagementScore} 
-                      icon={<Target className="text-red-500" />} 
+                      icon={<Target />} 
                       trend="+8"
                       trendUp={true}
                       description="Điểm số đánh giá mức độ tương tác và quy mô tổ chức các hội nghị."
                       tooltipTitle="Chỉ số tương tác"
+                      color="text-red-600 dark:text-red-400"
                     />
                   </div>
                </div>
