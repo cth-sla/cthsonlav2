@@ -99,7 +99,7 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans bg-[#F5F5F5] dark:bg-slate-950 transition-colors duration-500">
       {/* Dark Mode Toggle for Login Page */}
       <div className="absolute top-6 right-6 z-[100]">
         <button 

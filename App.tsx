@@ -397,7 +397,7 @@ const App: React.FC = () => {
   const primaryTextStyle = { color: systemSettings.primaryColor };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-slate-950 overflow-hidden relative transition-colors duration-300">
+    <div className="min-h-screen flex bg-[#808080] dark:bg-slate-950 overflow-hidden relative transition-colors duration-300">
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
       )}
@@ -482,7 +482,7 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F5F5F5] dark:bg-slate-950 transition-colors duration-300">
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 md:px-8 justify-between shrink-0 shadow-sm transition-colors duration-300">
           <button onClick={toggleSidebar} className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><Menu size={24} /></button>
           
@@ -624,13 +624,13 @@ const App: React.FC = () => {
                </div>
 
                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                  <div className="p-6 md:p-8 border-b border-gray-50 dark:border-slate-700 flex justify-between items-center bg-gray-50/30 dark:bg-slate-900/30">
+                  <div className="p-6 md:p-8 border-b border-gray-50 dark:border-slate-700 flex justify-between items-center bg-[#F5F5F5]/30 dark:bg-slate-900/30">
                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">Cuộc họp gần đây</h3>
                      <button onClick={() => setActiveTab('meetings')} style={primaryTextStyle} className="text-xs font-bold hover:underline">Xem tất cả</button>
                   </div>
                   <div className="overflow-x-auto">
                      <table className="w-full text-left text-sm min-w-[800px]">
-                        <thead className="bg-gray-50/50 dark:bg-slate-900/50 text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+                        <thead className="bg-[#F5F5F5]/50 dark:bg-slate-900/50 text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
                            <tr>
                               <th className="px-8 py-4">Tên cuộc họp</th>
                               <th className="px-8 py-4">Đơn vị chủ trì</th>

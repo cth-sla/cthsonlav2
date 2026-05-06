@@ -211,7 +211,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
             </div>
             <p className="text-3xl font-black text-slate-900 dark:text-white">{reportStats.cancelled}</p>
           </div>
-          <div className="p-5 bg-slate-50 dark:bg-slate-900/20 border border-slate-100 dark:border-slate-800 rounded-[1.5rem]">
+          <div className="p-5 bg-[#F5F5F5] dark:bg-slate-900/20 border border-slate-100 dark:border-slate-800 rounded-[1.5rem]">
             <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400 mb-2">
               <Building2 size={18} />
               <span className="text-[10px] font-black uppercase tracking-widest">Số đơn vị</span>
@@ -227,7 +227,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
                <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
                Biểu đồ phân bổ cuộc họp ({groupBy === 'unit' ? 'Theo đơn vị' : 'Theo thời gian'})
              </h3>
-             <div className="h-[350px] w-full bg-slate-50/30 dark:bg-slate-900/30 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+             <div className="h-[350px] w-full bg-[#F5F5F5]/30 dark:bg-slate-900/30 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700">
                <ResponsiveContainer width="100%" height="100%">
                  <BarChart data={statsData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -269,7 +269,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {statsData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                  <tr key={i} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{row.name}</td>
                     <td className="px-6 py-3.5 text-center font-black text-blue-600 dark:text-blue-400 text-base">{row.value}</td>
                     <td className="px-6 py-3.5 text-right font-bold text-slate-400 dark:text-slate-500">{((row.value / reportStats.total) * 100).toFixed(1)}%</td>
@@ -288,7 +288,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
           </h3>
           <div className="border border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden">
             <table className="w-full text-left text-[11px]">
-              <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] uppercase font-black tracking-widest">
+              <thead className="bg-[#F5F5F5] dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] uppercase font-black tracking-widest">
                 <tr>
                   <th className="px-4 py-3"><div className="flex items-center gap-1"><FileText size={10} /> Tên hội nghị</div></th>
                   <th className="px-4 py-3"><div className="flex items-center gap-1"><Building2 size={10} /> Đơn vị chủ trì</div></th>
@@ -300,7 +300,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                 {filteredMeetings.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                  <tr key={m.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-white max-w-[200px] leading-tight">
                       <div className={m.status === 'CANCELLED' ? 'line-through opacity-50' : ''}>{m.title}</div>
                       {m.cancelReason && <div className="text-[9px] font-medium text-red-500 mt-1 italic">Lý do: {m.cancelReason}</div>}

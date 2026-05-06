@@ -136,7 +136,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col h-full w-full">
-      <div className="p-4 md:p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col gap-4 bg-gray-50/30 dark:bg-slate-900/30">
+      <div className="p-4 md:p-5 border-b border-gray-100 dark:border-slate-700 flex flex-col gap-4 bg-[#F5F5F5]/30 dark:bg-slate-900/30">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100 dark:shadow-blue-900/20 shrink-0">
@@ -222,9 +222,9 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       <div className="overflow-x-auto flex-1 w-full relative">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="bg-slate-50/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-black tracking-widest border-b border-slate-100 dark:border-slate-800">
+            <tr className="bg-[#F5F5F5]/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-black tracking-widest border-b border-slate-100 dark:border-slate-800">
               <th 
-                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 group transition-colors sticky left-0 bg-slate-50/80 dark:bg-slate-900/80 z-10"
+                className="px-4 md:px-6 py-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 group transition-colors sticky left-0 bg-[#F5F5F5]/80 dark:bg-slate-900/80 z-10"
                 onClick={() => handleSort('title')}
               >
                 <div className="flex items-center">
@@ -471,7 +471,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
       )}
 
       {totalPages > 1 && (
-        <div className="px-4 md:px-6 py-4 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+        <div className="px-4 md:px-6 py-4 bg-[#F5F5F5]/50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
           <div className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest hidden md:block">
             Hiển thị <span className="text-blue-600 dark:text-blue-400 font-black">{startIndex + 1}-{endIndex}</span> trong <span className="text-gray-900 dark:text-white font-black">{filteredAndSortedMeetings.length}</span> cuộc họp
           </div>

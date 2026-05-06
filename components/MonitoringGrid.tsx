@@ -230,7 +230,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
             })}
           </div>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center py-16 bg-gray-50/50 dark:bg-slate-800/50 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-700">
+          <div className="absolute inset-0 flex flex-col items-center justify-center py-16 bg-[#F5F5F5]/50 dark:bg-slate-800/50 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-700">
             <div className="p-5 bg-white dark:bg-slate-800 rounded-full shadow-sm mb-4">
               <MonitorPlay className="w-10 h-10 text-gray-200 dark:text-slate-700" />
             </div>
@@ -265,7 +265,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
               <ChevronLeft size={18} strokeWidth={3} />
             </button>
             
-            <div className="flex items-center px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl">
+            <div className="flex items-center px-4 py-2 bg-[#F5F5F5] dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl">
                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mr-3">Trang</span>
                <span className="text-sm font-black text-blue-600 dark:text-blue-400">{currentPage}</span>
                <span className="text-[10px] font-black text-gray-300 dark:text-slate-600 mx-2">/</span>

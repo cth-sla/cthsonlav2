@@ -128,7 +128,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-50 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/20 dark:bg-slate-800/20">
+        <div className="p-6 border-b border-gray-50 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-[#F5F5F5]/20 dark:bg-slate-800/20">
           <div className="relative w-full md:w-96">
             <input 
               type="text" 
@@ -150,7 +150,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
+            <thead className="bg-[#F5F5F5]/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
               <tr>
                 <th className="px-8 py-4">Thông tin người dùng</th>
                 <th className="px-8 py-4">Tên đăng nhập</th>
@@ -220,7 +220,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-transparent dark:border-slate-800">
-            <div className="p-8 border-b border-gray-50 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
+            <div className="p-8 border-b border-gray-50 dark:border-slate-800 flex justify-between items-center bg-[#F5F5F5]/50 dark:bg-slate-800/50">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-100 dark:shadow-none">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>

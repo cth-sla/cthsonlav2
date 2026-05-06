@@ -141,7 +141,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
-        <div className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto no-scrollbar">
+        <div className="flex bg-[#F5F5F5] dark:bg-slate-800 p-1 rounded-lg overflow-x-auto no-scrollbar">
           {['units', 'staff', 'groups', 'endpoints', 'settings'].map((tab) => (
             <button 
               key={tab}
@@ -183,7 +183,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto">
         {activeTab === 'units' && (
           <table className="w-full text-left text-sm min-w-[600px]">
-            <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên đơn vị</th>
                 <th className="px-6 py-4">Mã đơn vị</th>
@@ -192,7 +192,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {filteredUnits.map(unit => (
-                <tr key={unit.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={unit.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{unit.name}</td>
                   <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{unit.code}</td>
                   <td className="px-6 py-4 text-right space-x-2">
@@ -207,7 +207,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
         {activeTab === 'staff' && (
           <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Cán bộ chủ trì</th>
                 <th className="px-6 py-4">Chức vụ</th>
@@ -218,7 +218,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {filteredStaff.map(s => (
-                <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={s.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs">
@@ -256,7 +256,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
         {activeTab === 'groups' && (
           <table className="w-full text-left text-sm min-w-[600px]">
-            <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên nhóm</th>
                 <th className="px-6 py-4">Mô tả</th>
@@ -265,7 +265,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {filteredGroups.map(g => (
-                <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={g.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{g.name}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{g.description || '---'}</td>
                   <td className="px-6 py-4 text-right space-x-2">
@@ -280,7 +280,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
         {activeTab === 'endpoints' && (
           <table className="w-full text-left text-sm min-w-[600px]">
-            <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4">Tên điểm cầu</th>
                 <th className="px-6 py-4">Vị trí</th>
@@ -292,7 +292,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {filteredEndpoints.map(e => (
-                <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr key={e.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{e.name}</td>
                   <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{e.location}</td>
                   <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip1 || '---'}</td>
@@ -326,7 +326,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   Logo hệ thống (Base64)
                 </label>
                 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-gray-50 dark:bg-slate-800/50 border border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-[#F5F5F5] dark:bg-slate-800/50 border border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem]">
                   <div className="w-32 h-32 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     {settingsForm.logoBase64 ? (
                       <img src={settingsForm.logoBase64} alt="Preview" className="max-w-full max-h-full object-contain" />
