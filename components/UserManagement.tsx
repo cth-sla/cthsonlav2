@@ -150,7 +150,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-[#F5F5F5]/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
+            <thead className="bg-[#F5F5F5]/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
               <tr>
                 <th className="px-8 py-4">Thông tin người dùng</th>
                 <th className="px-8 py-4">Tên đăng nhập</th>

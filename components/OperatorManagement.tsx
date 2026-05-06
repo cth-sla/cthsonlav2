@@ -240,7 +240,7 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-gray-50/50 dark:bg-slate-900/50 text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+            <thead className="bg-[#F5F5F5]/50 dark:bg-slate-900/50 text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
               <tr>
                 <th className="px-8 py-4">Họ và Tên</th>
                 <th className="px-8 py-4">Chức vụ</th>

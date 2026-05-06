@@ -288,7 +288,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ meetings, currentUser }) => {
           </h3>
           <div className="border border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden">
             <table className="w-full text-left text-[11px]">
-              <thead className="bg-[#F5F5F5] dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] uppercase font-black tracking-widest">
+              <thead className="bg-[#F5F5F5] dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-[9px] uppercase font-black tracking-widest">
                 <tr>
                   <th className="px-4 py-3"><div className="flex items-center gap-1"><FileText size={10} /> Tên hội nghị</div></th>
                   <th className="px-4 py-3"><div className="flex items-center gap-1"><Building2 size={10} /> Đơn vị chủ trì</div></th>
