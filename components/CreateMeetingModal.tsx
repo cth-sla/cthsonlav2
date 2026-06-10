@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { Video, MapPin } from 'lucide-react';
 import { Endpoint, EndpointStatus, Meeting, Unit, Staff } from '../types';
 
 interface CreateMeetingModalProps {
@@ -28,6 +29,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
     participants: '',
     meetingRoomId: '',
     invitationLink: '',
+    meetingFormat: 'TRUC_TUYEN' as 'TRUC_TUYEN' | 'TRUC_TIEP',
   });
   
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
@@ -67,6 +69,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         participants: editingMeeting.participants.join(', '),
         meetingRoomId: editingMeeting.meetingRoomId || '',
         invitationLink: editingMeeting.invitationLink || '',
+        meetingFormat: editingMeeting.meetingFormat || (editingMeeting.meetingRoomId ? 'TRUC_TUYEN' : 'TRUC_TIEP'),
       });
       setSelectedEndpointIds(editingMeeting.endpoints.map(e => e.id));
     } else {
@@ -82,6 +85,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         participants: '',
         meetingRoomId: '',
         invitationLink: '',
+        meetingFormat: 'TRUC_TUYEN',
       });
       setSelectedEndpointIds([]);
     }
@@ -143,8 +147,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       endpoints: selectedEndpoints,
       status: editingMeeting?.status || 'SCHEDULED',
       cancelReason: editingMeeting?.cancelReason,
-      meetingRoomId: formData.meetingRoomId.trim() || undefined,
-      invitationLink: formData.invitationLink.trim() || undefined
+      meetingRoomId: formData.meetingFormat === 'TRUC_TUYEN' ? (formData.meetingRoomId.trim() || undefined) : undefined,
+      invitationLink: formData.invitationLink.trim() || undefined,
+      meetingFormat: formData.meetingFormat
     };
 
     if (editingMeeting && onUpdate) {
@@ -264,16 +269,48 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                 <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium italic">Đường dẫn xem giấy mời hoặc tài liệu cuộc họp.</p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp</label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
-                  placeholder="Nhập ID phòng họp"
-                  value={formData.meetingRoomId}
-                  onChange={e => setFormData({...formData, meetingRoomId: e.target.value})}
-                />
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Hình thức họp *</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, meetingFormat: 'TRUC_TUYEN' })}
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all ${
+                      formData.meetingFormat === 'TRUC_TUYEN'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                        : 'bg-gray-50/50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Video size={16} />
+                    Trực tuyến
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, meetingFormat: 'TRUC_TIEP' })}
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all ${
+                      formData.meetingFormat === 'TRUC_TIEP'
+                        ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 shadow-sm'
+                        : 'bg-gray-50/50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <MapPin size={16} />
+                    Trực tiếp
+                  </button>
+                </div>
               </div>
+
+              {formData.meetingFormat === 'TRUC_TUYEN' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
+                    placeholder="Nhập ID phòng họp"
+                    value={formData.meetingRoomId}
+                    onChange={e => setFormData({...formData, meetingRoomId: e.target.value})}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Thành phần khác</label>

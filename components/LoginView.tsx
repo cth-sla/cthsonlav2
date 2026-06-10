@@ -200,15 +200,26 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h4 className={`text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors line-clamp-1 ${isCancelled ? 'line-through' : ''}`}>
                             {m.title}
                           </h4>
                           {isCancelled ? (
-                            <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black rounded uppercase border border-red-500/20">Huỷ</span>
+                            <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black rounded uppercase border border-red-500/20 shrink-0">Huỷ</span>
                           ) : isPostponed ? (
-                            <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20">Hoãn</span>
+                            <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20 shrink-0">Hoãn</span>
                           ) : null}
+                          {m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black rounded uppercase border border-emerald-500/20 shrink-0 select-none">
+                              <Video size={10} className="shrink-0" />
+                              Trực tuyến
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20 shrink-0 select-none">
+                              <MapPin size={10} className="shrink-0" />
+                              Trực tiếp
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 overflow-hidden flex-wrap">
                           <span className="text-[10px] text-slate-500 dark:text-white/40 font-bold uppercase whitespace-nowrap">Chủ trì: {m.chairPerson}</span>
@@ -394,9 +405,25 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Cán bộ chủ trì</p>
                   <p className="text-sm font-black text-white">{selectedPublicMeeting.chairPerson}</p>
                 </div>
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 col-span-2">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Đơn vị tổ chức</p>
-                  <p className="text-sm font-black text-blue-400 uppercase tracking-tight">{selectedPublicMeeting.hostUnit}</p>
+                  <p className="text-sm font-black text-blue-400 uppercase tracking-tight line-clamp-1">{selectedPublicMeeting.hostUnit}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Hình thức họp</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {selectedPublicMeeting.meetingFormat ? selectedPublicMeeting.meetingFormat === 'TRUC_TUYEN' : selectedPublicMeeting.meetingRoomId ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-lg uppercase tracking-wider border border-emerald-500/30">
+                        <Video size={14} />
+                        Trực tuyến
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 text-amber-400 text-xs font-black rounded-lg uppercase tracking-wider border border-amber-500/30">
+                        <MapPin size={14} />
+                        Trực tiếp
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -65,6 +65,7 @@ export interface Meeting {
   cancelReason?: string;
   invitationLink?: string;
   meetingRoomId?: string;
+  meetingFormat?: 'TRUC_TUYEN' | 'TRUC_TIEP';
 }
 
 export interface StatData {
