@@ -210,10 +210,17 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
                             <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20 shrink-0">Hoãn</span>
                           ) : null}
                           {m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black rounded uppercase border border-emerald-500/20 shrink-0 select-none">
-                              <Video size={10} className="shrink-0" />
-                              Trực tuyến
-                            </span>
+                            <>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black rounded uppercase border border-emerald-500/20 shrink-0 select-none">
+                                <Video size={10} className="shrink-0" />
+                                Trực tuyến
+                              </span>
+                              {m.meetingRoomId && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[8px] font-bold font-mono rounded uppercase border border-indigo-500/20 shrink-0 select-none">
+                                  ID: {m.meetingRoomId}
+                                </span>
+                              )}
+                            </>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20 shrink-0 select-none">
                               <MapPin size={10} className="shrink-0" />
