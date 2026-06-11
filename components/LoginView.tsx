@@ -233,12 +233,12 @@ const LoginView: React.FC<LoginViewProps> = ({
                           ) : null}
                           {m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
                             <>
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-black rounded uppercase border border-emerald-500/20 shrink-0 select-none">
-                                <Video size={10} className="shrink-0" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black rounded-md uppercase border border-emerald-500/20 shrink-0 select-none">
+                                <Video size={11} className="shrink-0" />
                                 Trực tuyến
                               </span>
                               {m.meetingRoomId && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[8px] font-bold font-mono rounded uppercase border border-indigo-500/20 shrink-0 select-none">
+                                <span className="inline-flex items-center px-2.5 py-0.5 bg-blue-600 dark:bg-indigo-500/30 text-white dark:text-cyan-300 text-xs font-black font-mono rounded-md border border-blue-600 dark:border-indigo-500/50 shrink-0 select-none tracking-wider shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
                                   ID: {m.meetingRoomId}
                                 </span>
                               )}
@@ -457,12 +457,19 @@ const LoginView: React.FC<LoginViewProps> = ({
               </div>
 
               {selectedPublicMeeting.meetingRoomId && (
-                <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></div>
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">ID phòng họp:</p>
+                <div className="p-5 bg-gradient-to-r from-indigo-500/10 via-indigo-500/20 to-indigo-500/10 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-indigo-500/5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                    </span>
+                    <p className="text-[11px] font-black text-indigo-300 uppercase tracking-[0.1em]">Mã ID phòng họp trực tuyến</p>
                   </div>
-                  <p className="text-sm font-black text-white font-mono tracking-wider">{selectedPublicMeeting.meetingRoomId}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-amber-400 dark:text-amber-300 font-mono tracking-widest px-4 py-1.5 bg-slate-950/60 rounded-xl border border-white/10 select-all shadow-inner">
+                      {selectedPublicMeeting.meetingRoomId}
+                    </span>
+                  </div>
                 </div>
               )}
 
