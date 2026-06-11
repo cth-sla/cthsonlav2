@@ -33,6 +33,7 @@ storageService.init();
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showPublicView, setShowPublicView] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment' | 'operators'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -291,7 +292,7 @@ const App: React.FC = () => {
     };
   }, [meetings, endpoints]);
 
-  const handleLogout = () => { setCurrentUser(null); setActiveTab('dashboard'); };
+  const handleLogout = () => { setCurrentUser(null); setShowPublicView(false); setActiveTab('dashboard'); };
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
   const handleTabChange = (tab: typeof activeTab) => {
@@ -371,15 +372,20 @@ const App: React.FC = () => {
     }
   };
 
-  if (!currentUser) return (
+  if (!currentUser || showPublicView) return (
     <>
       <LoginView 
         users={users} 
         meetings={meetings} 
-        onLoginSuccess={setCurrentUser} 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setShowPublicView(false);
+        }} 
         systemSettings={systemSettings} 
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        isAdminLoggedIn={!!currentUser && currentUser.role === 'ADMIN'}
+        onBackToAdmin={() => setShowPublicView(false)}
       />
       {showToast && currentAlertMeeting && (
         <NotificationToast 
@@ -496,6 +502,20 @@ const App: React.FC = () => {
           </div>
  
           <div className="flex items-center gap-2 md:gap-4">
+            {isAdmin && (
+              <button 
+                onClick={() => setShowPublicView(true)}
+                className="p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group relative animate-pulse-subtle"
+                title="Xem lịch công tác (Ngoài trang chủ)"
+              >
+                <CalendarDays size={20} className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                </span>
+              </button>
+            )}
+
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group relative"

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -10,9 +10,20 @@ interface LoginViewProps {
   systemSettings: SystemSettings;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  isAdminLoggedIn?: boolean;
+  onBackToAdmin?: () => void;
 }
 
-const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, systemSettings, isDarkMode, onToggleDarkMode }) => {
+const LoginView: React.FC<LoginViewProps> = ({ 
+  users, 
+  meetings, 
+  onLoginSuccess, 
+  systemSettings, 
+  isDarkMode, 
+  onToggleDarkMode,
+  isAdminLoggedIn = false,
+  onBackToAdmin
+}) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -100,8 +111,19 @@ const LoginView: React.FC<LoginViewProps> = ({ users, meetings, onLoginSuccess, 
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans bg-[#F5F5F5] dark:bg-slate-950 transition-colors duration-500">
-      {/* Dark Mode Toggle for Login Page */}
-      <div className="absolute top-6 right-6 z-[100]">
+      {/* Dark Mode & Back To Admin Toggle for Login Page */}
+      <div className="absolute top-6 right-6 z-[100] flex items-center gap-3">
+        {isAdminLoggedIn && onBackToAdmin && (
+          <button 
+            type="button"
+            onClick={onBackToAdmin}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs uppercase tracking-wider transition-all select-none shadow-[0_4px_12px_rgba(37,99,235,0.3)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.4)] active:scale-95 border border-blue-500"
+            title="Quay lại Bảng điều khiển Quản trị"
+          >
+            <LayoutDashboard size={14} />
+            <span className="hidden sm:inline">Trang Quản trị</span>
+          </button>
+        )}
         <button 
           onClick={onToggleDarkMode}
           className="p-3 bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-white/20 dark:hover:bg-white/10 transition-all shadow-xl"
