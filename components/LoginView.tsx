@@ -212,9 +212,9 @@ const LoginView: React.FC<LoginViewProps> = ({
                         isCancelled ? 'opacity-60 grayscale-[0.5]' : ''
                       }`}
                     >
-                      <div className="flex flex-col items-center justify-center min-w-[85px] border-r border-gray-100 dark:border-white/10 pr-4">
-                        <span className={`text-lg font-black ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                          {formatMeetingTime(m.startTime)}
+                      <div className="flex flex-col items-center justify-center min-w-[105px] border-r border-gray-100 dark:border-white/10 pr-4 shrink-0">
+                        <span className={`text-[14px] font-black tracking-tight ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                          {formatMeetingTime(m.startTime)} - {formatMeetingTime(m.endTime)}
                         </span>
                         <span className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase mt-1 text-center leading-tight">
                           {formatMeetingDate(m.startTime)}
@@ -428,7 +428,7 @@ const LoginView: React.FC<LoginViewProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Thời gian</p>
-                  <p className="text-sm font-black text-white">{formatMeetingTime(selectedPublicMeeting.startTime)} • {formatMeetingDate(selectedPublicMeeting.startTime)}</p>
+                  <p className="text-sm font-black text-white">{formatMeetingTime(selectedPublicMeeting.startTime)} - {formatMeetingTime(selectedPublicMeeting.endTime)} • {formatMeetingDate(selectedPublicMeeting.startTime)}</p>
                 </div>
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Cán bộ chủ trì</p>
