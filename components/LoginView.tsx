@@ -203,6 +203,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                 upcomingMeetings.map((m) => {
                   const isCancelled = m.status === 'CANCELLED';
                   const isPostponed = m.status === 'POSTPONED';
+                  const isChangedFormat = m.status === 'CHANGED_FORMAT';
  
                   return (
                     <div 
@@ -213,10 +214,20 @@ const LoginView: React.FC<LoginViewProps> = ({
                       }`}
                     >
                       <div className="flex flex-col items-center justify-center min-w-[105px] border-r border-gray-100 dark:border-white/10 pr-4 shrink-0">
-                        <span className={`text-[14px] font-black tracking-tight ${isCancelled ? 'text-red-400' : isPostponed ? 'text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        <span className={`text-[14px] font-black tracking-tight ${
+                          isCancelled ? 'text-red-400' : 
+                          isPostponed ? 'text-amber-400' : 
+                          isChangedFormat ? 'text-purple-400 dark:text-purple-300' : 
+                          'text-blue-600 dark:text-blue-400'
+                        }`}>
                           {formatMeetingTime(m.startTime)} - {formatMeetingTime(m.endTime)}
                         </span>
-                        <span className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase mt-1 text-center leading-tight">
+                        <span className={`text-[10.5px] font-black uppercase mt-1.5 text-center leading-tight tracking-wider transition-colors ${
+                          isCancelled ? 'text-red-500 dark:text-red-400' :
+                          isPostponed ? 'text-amber-600 dark:text-amber-400' :
+                          isChangedFormat ? 'text-purple-600 dark:text-purple-400' :
+                          'text-slate-500 dark:text-white/40'
+                        }`}>
                           {formatMeetingDate(m.startTime)}
                         </span>
                       </div>
@@ -230,6 +241,8 @@ const LoginView: React.FC<LoginViewProps> = ({
                             <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black rounded uppercase border border-red-500/20 shrink-0">Huỷ</span>
                           ) : isPostponed ? (
                             <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black rounded uppercase border border-amber-500/20 shrink-0">Hoãn</span>
+                          ) : isChangedFormat ? (
+                            <span className="px-1.5 py-0.5 bg-purple-500/25 text-purple-600 dark:text-purple-400 text-[8px] font-black rounded uppercase border border-purple-500/35 shrink-0">Chuyển HT</span>
                           ) : null}
                           {m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
                             <>
@@ -400,6 +413,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                 <div className={`w-12 h-12 flex items-center justify-center rounded-2xl shadow-lg ${
                   selectedPublicMeeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' :
                   selectedPublicMeeting.status === 'POSTPONED' ? 'bg-amber-500/20 text-amber-400' :
+                  selectedPublicMeeting.status === 'CHANGED_FORMAT' ? 'bg-purple-500/25 text-purple-400 border border-purple-500/20' :
                   'bg-blue-500/20 text-blue-400'
                 }`}>
                   <FileText size={24} />
