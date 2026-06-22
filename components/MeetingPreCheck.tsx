@@ -9,9 +9,43 @@ interface MeetingPreCheckProps {
   onUpdate: (meeting: Meeting) => void;
 }
 
+const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
+  const name = (ep.name || '').toUpperCase();
+  const location = (ep.location || '').toUpperCase();
+  
+  if (
+    name.includes('UBND') || 
+    name.includes('ỦY BAN NHÂN DÂN') || 
+    name.includes('HĐND') || 
+    name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+    name.includes('TỈNH ỦY') ||
+    name.includes('TỈNH UỶ') ||
+    name.includes('VĂN PHÒNG TỈNH')
+  ) {
+    return 'UBND';
+  }
+  
+  if (
+    name.startsWith('P. ') || 
+    name.startsWith('X. ') || 
+    name.startsWith('TT. ') || 
+    name.includes('PHƯỜNG') || 
+    name.includes('XÃ') || 
+    name.includes('THỊ TRẤN') ||
+    location.includes('PHƯỜNG') ||
+    location.includes('XÃ') ||
+    location.includes('THỊ TRẤN')
+  ) {
+    return 'XA_PHUONG';
+  }
+  
+  return 'SO_NGANH';
+};
+
 const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onUpdate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'CHECKED' | 'UNCHECKED'>('ALL');
+  const [groupFilter, setGroupFilter] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
   const [localChecks, setLocalChecks] = useState<Record<string, { checked: boolean; notes: string }>>(
     meeting.endpointChecks || {}
   );
@@ -29,9 +63,10 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                             e.location.toLowerCase().includes(searchTerm.toLowerCase());
       const isChecked = localChecks[e.id]?.checked || false;
       const matchesFilter = filter === 'ALL' || (filter === 'CHECKED' ? isChecked : !isChecked);
-      return matchesSearch && matchesFilter;
+      const matchesGroup = groupFilter === 'ALL' || getEndpointGroup(e) === groupFilter;
+      return matchesSearch && matchesFilter && matchesGroup;
     });
-  }, [meeting.endpoints, searchTerm, filter, localChecks]);
+  }, [meeting.endpoints, searchTerm, filter, groupFilter, localChecks]);
 
   const handleToggleCheck = (id: string) => {
     setLocalChecks(prev => ({
@@ -152,6 +187,23 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
                 key={btn.id}
                 onClick={() => setFilter(btn.id as any)}
                 className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === btn.id ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
+            {[
+              { id: 'ALL', label: 'Tất cả nhóm' },
+              { id: 'XA_PHUONG', label: 'Xã/phường' },
+              { id: 'SO_NGANH', label: 'Sở/Ngành' },
+              { id: 'UBND', label: 'UBND' }
+            ].map(btn => (
+              <button 
+                key={btn.id}
+                onClick={() => setGroupFilter(btn.id as any)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${groupFilter === btn.id ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
               >
                 {btn.label}
               </button>

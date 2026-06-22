@@ -10,9 +10,43 @@ interface MonitoringGridProps {
 
 const ITEMS_PER_PAGE = 12;
 
+const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
+  const name = (ep.name || '').toUpperCase();
+  const location = (ep.location || '').toUpperCase();
+  
+  if (
+    name.includes('UBND') || 
+    name.includes('ỦY BAN NHÂN DÂN') || 
+    name.includes('HĐND') || 
+    name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+    name.includes('TỈNH ỦY') ||
+    name.includes('TỈNH UỶ') ||
+    name.includes('VĂN PHÒNG TỈNH')
+  ) {
+    return 'UBND';
+  }
+  
+  if (
+    name.startsWith('P. ') || 
+    name.startsWith('X. ') || 
+    name.startsWith('TT. ') || 
+    name.includes('PHƯỜNG') || 
+    name.includes('XÃ') || 
+    name.includes('THỊ TRẤN') ||
+    location.includes('PHƯỜNG') ||
+    location.includes('XÃ') ||
+    location.includes('THỊ TRẤN')
+  ) {
+    return 'XA_PHUONG';
+  }
+  
+  return 'SO_NGANH';
+};
+
 const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndpoint }) => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [locationFilter, setLocationFilter] = useState<string>('ALL');
+  const [groupFilter, setGroupFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -24,16 +58,17 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
     return endpoints.filter(ep => {
       const matchesStatus = statusFilter === 'ALL' || ep.status === statusFilter;
       const matchesLocation = locationFilter === 'ALL' || ep.location === locationFilter;
+      const matchesGroup = groupFilter === 'ALL' || getEndpointGroup(ep) === groupFilter;
       const matchesSearch = ep.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             ep.location.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesStatus && matchesLocation && matchesSearch;
+      return matchesStatus && matchesLocation && matchesGroup && matchesSearch;
     });
-  }, [endpoints, statusFilter, locationFilter, searchTerm]);
+  }, [endpoints, statusFilter, locationFilter, groupFilter, searchTerm]);
 
   // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, locationFilter, searchTerm]);
+  }, [statusFilter, locationFilter, groupFilter, searchTerm]);
 
   const { paginatedEndpoints, totalPages, startIndex, endIndex } = useMemo(() => {
     const total = filteredEndpoints.length;
@@ -138,6 +173,21 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
 
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <div className="flex items-center space-x-2 shrink-0">
+            <label htmlFor="group-filter" className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Nhóm:</label>
+            <select
+                id="group-filter"
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+                className="text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow cursor-pointer text-gray-900 dark:text-white"
+            >
+                <option value="ALL">Tất cả</option>
+                <option value="XA_PHUONG">Xã/Phường</option>
+                <option value="SO_NGANH">Sở/Ngành</option>
+                <option value="UBND">UBND</option>
+            </select>
+            </div>
+
+            <div className="flex items-center space-x-2 shrink-0">
             <label htmlFor="status-filter" className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">Trạng thái:</label>
             <select
                 id="status-filter"
@@ -158,7 +208,7 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                 id="location-filter"
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow cursor-pointer text-gray-900 dark:text-white"
+                className="text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow cursor-pointer text-gray-950 dark:text-white"
             >
                 <option value="ALL">Khu vực</option>
                 {locations.map(loc => (
@@ -203,6 +253,22 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                   </div>
 
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {(() => {
+                        const group = getEndpointGroup(ep);
+                        const badgeStyles = group === 'UBND'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-400 border border-indigo-200/30'
+                          : group === 'XA_PHUONG'
+                          ? 'bg-teal-50 dark:bg-teal-950/30 text-teal-750 dark:text-teal-400 border border-teal-200/30'
+                          : 'bg-amber-50 dark:bg-amber-950/30 text-amber-750 dark:text-amber-400 border border-amber-200/30';
+                        const label = group === 'UBND' ? 'UBND' : group === 'XA_PHUONG' ? 'Xã/Phường' : 'Sở/Ngành';
+                        return (
+                          <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${badgeStyles}`}>
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <h4 className="text-sm font-black text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight uppercase tracking-tight">{ep.name}</h4>
                     <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate uppercase font-bold tracking-widest mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                       <div className="flex items-center gap-1.5">

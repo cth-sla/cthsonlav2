@@ -46,6 +46,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'units' | 'staff' | 'groups' | 'endpoints' | 'settings'>('units');
   const [searchTerm, setSearchTerm] = useState('');
+  const [endpointGroup, setEndpointGroup] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -71,10 +72,46 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     g.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredEndpoints = endpoints.filter(e => 
-    e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
+    const name = (ep.name || '').toUpperCase();
+    const location = (ep.location || '').toUpperCase();
+    
+    if (
+      name.includes('UBND') || 
+      name.includes('ỦY BAN NHÂN DÂN') || 
+      name.includes('HĐND') || 
+      name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+      name.includes('TỈNH ỦY') ||
+      name.includes('TỈNH UỶ') ||
+      name.includes('VĂN PHÒNG TỈNH')
+    ) {
+      return 'UBND';
+    }
+    
+    if (
+      name.startsWith('P. ') || 
+      name.startsWith('X. ') || 
+      name.startsWith('TT. ') || 
+      name.includes('PHƯỜNG') || 
+      name.includes('XÃ') || 
+      name.includes('THỊ TRẤN') ||
+      location.includes('PHƯỜNG') ||
+      location.includes('XÃ') ||
+      location.includes('THỊ TRẤN')
+    ) {
+      return 'XA_PHUONG';
+    }
+    
+    return 'SO_NGANH';
+  };
+
+  const filteredEndpoints = endpoints.filter(e => {
+    const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.location.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (endpointGroup === 'ALL') return true;
+    return getEndpointGroup(e) === endpointGroup;
+  });
 
   const getUnitName = (id: string) => units.find(u => u.id === id)?.name || 'N/A';
 
@@ -145,8 +182,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           {['units', 'staff', 'groups', 'endpoints', 'settings'].map((tab) => (
             <button 
               key={tab}
-              onClick={() => { setActiveTab(tab as any); setSearchTerm(''); }}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
+              onClick={() => { setActiveTab(tab as any); setSearchTerm(''); setEndpointGroup('ALL'); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-gray-550 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
               style={activeTab === tab ? primaryTextStyle : {}}
             >
               {tab === 'units' ? 'Đơn vị' : 
@@ -279,39 +316,84 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'endpoints' && (
-          <table className="w-full text-left text-sm min-w-[600px]">
-            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Tên điểm cầu</th>
-                <th className="px-6 py-4">Vị trí</th>
-                <th className="px-6 py-4">IP 1</th>
-                <th className="px-6 py-4">IP 2</th>
-                <th className="px-6 py-4">Trạng thái</th>
-                <th className="px-6 py-4 text-right">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-              {filteredEndpoints.map(e => (
-                <tr key={e.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{e.name}</td>
-                  <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{e.location}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip1 || '---'}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip2 || '---'}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
-                      e.status === EndpointStatus.CONNECTED ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                    }`}>
-                      {e.status === EndpointStatus.CONNECTED ? 'Online' : 'Offline'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openModal(e)} className="text-blue-600 font-bold hover:underline">Sửa</button>
-                    <button onClick={() => onDeleteEndpoint(e.id)} className="text-red-600 font-bold hover:underline">Xóa</button>
-                  </td>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-50/50 dark:bg-slate-800/10 border-b border-gray-100 dark:border-slate-850 gap-3">
+              <div className="flex flex-wrap gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl w-full sm:w-auto border border-gray-200/50 dark:border-slate-700">
+                {(['ALL', 'XA_PHUONG', 'SO_NGANH', 'UBND'] as const).map((group) => {
+                  const label = group === 'ALL' ? 'Tất cả' :
+                                group === 'XA_PHUONG' ? 'Xã/phường' :
+                                group === 'SO_NGANH' ? 'Sở/Ngành' : 'UBND';
+                  return (
+                    <button
+                      key={group}
+                      onClick={() => setEndpointGroup(group)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all uppercase tracking-wider ${
+                        endpointGroup === group
+                          ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest shrink-0">
+                Hiển thị: <span className="text-blue-600 dark:text-blue-400 font-black">{filteredEndpoints.length}</span> điểm cầu
+              </div>
+            </div>
+
+            <table className="w-full text-left text-sm min-w-[600px]">
+              <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Tên điểm cầu</th>
+                  <th className="px-6 py-4">Nhóm</th>
+                  <th className="px-6 py-4">Vị trí</th>
+                  <th className="px-6 py-4">IP 1</th>
+                  <th className="px-6 py-4">IP 2</th>
+                  <th className="px-6 py-4">Trạng thái</th>
+                  <th className="px-6 py-4 text-right">Hành động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                {filteredEndpoints.map(e => (
+                  <tr key={e.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{e.name}</td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const group = getEndpointGroup(e);
+                        const styles = group === 'UBND' 
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/30' 
+                          : group === 'XA_PHUONG' 
+                          ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-800/30' 
+                          : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30';
+                        const label = group === 'UBND' ? 'UBND' : group === 'XA_PHUONG' ? 'Xã/Phường' : 'Sở/Ngành';
+                        return (
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${styles}`}>
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{e.location}</td>
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip1 || '---'}</td>
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 font-mono text-xs">{e.ip2 || '---'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
+                        e.status === EndpointStatus.CONNECTED ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                      }`}>
+                        {e.status === EndpointStatus.CONNECTED ? 'Online' : 'Offline'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button onClick={() => openModal(e)} className="text-blue-600 font-bold hover:underline">Sửa</button>
+                      <button onClick={() => onDeleteEndpoint(e.id)} className="text-red-600 font-bold hover:underline">Xóa</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {activeTab === 'settings' && (

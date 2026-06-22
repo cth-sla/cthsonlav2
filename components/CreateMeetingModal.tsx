@@ -14,6 +14,39 @@ interface CreateMeetingModalProps {
   editingMeeting?: Meeting | null;
 }
 
+const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
+  const name = (ep.name || '').toUpperCase();
+  const location = (ep.location || '').toUpperCase();
+  
+  if (
+    name.includes('UBND') || 
+    name.includes('ỦY BAN NHÂN DÂN') || 
+    name.includes('HĐND') || 
+    name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+    name.includes('TỈNH ỦY') ||
+    name.includes('TỈNH UỶ') ||
+    name.includes('VĂN PHÒNG TỈNH')
+  ) {
+    return 'UBND';
+  }
+  
+  if (
+    name.startsWith('P. ') || 
+    name.startsWith('X. ') || 
+    name.startsWith('TT. ') || 
+    name.includes('PHƯỜNG') || 
+    name.includes('XÃ') || 
+    name.includes('THỊ TRẤN') ||
+    location.includes('PHƯỜNG') ||
+    location.includes('XÃ') ||
+    location.includes('THỊ TRẤN')
+  ) {
+    return 'XA_PHUONG';
+  }
+  
+  return 'SO_NGANH';
+};
+
 const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ 
   isOpen, onClose, onCreate, onUpdate, units, staff, availableEndpoints, editingMeeting 
 }) => {
@@ -34,6 +67,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
 
   const formatISOToLocalInput = (isoStr: string) => {
     if (!isoStr) return '';
@@ -89,6 +123,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       });
       setSelectedEndpointIds([]);
     }
+    setSelectedGroup('ALL');
   }, [editingMeeting, isOpen]);
 
   const filteredStaffForUnit = useMemo(() => {
@@ -97,11 +132,14 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   }, [formData.hostUnitId, staff]);
 
   const filteredEndpoints = useMemo(() => {
-    return availableEndpoints.filter(ep => 
-      ep.name.toLowerCase().includes(endpointSearch.toLowerCase()) ||
-      ep.location.toLowerCase().includes(endpointSearch.toLowerCase())
-    );
-  }, [endpointSearch, availableEndpoints]);
+    return availableEndpoints.filter(ep => {
+      const matchesSearch = ep.name.toLowerCase().includes(endpointSearch.toLowerCase()) ||
+                            ep.location.toLowerCase().includes(endpointSearch.toLowerCase());
+      if (!matchesSearch) return false;
+      if (selectedGroup === 'ALL') return true;
+      return getEndpointGroup(ep) === selectedGroup;
+    });
+  }, [endpointSearch, availableEndpoints, selectedGroup]);
 
   if (!isOpen) return null;
 
@@ -355,13 +393,36 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   <svg className="w-4 h-4 absolute left-3.5 top-3 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
 
+                {/* Chọn lọc theo Nhóm */}
+                <div className="flex flex-wrap gap-1 bg-white dark:bg-slate-900/40 p-1 border border-gray-200/60 dark:border-slate-800 rounded-xl shadow-sm">
+                  {(['ALL', 'XA_PHUONG', 'SO_NGANH', 'UBND'] as const).map((group) => {
+                    const label = group === 'ALL' ? 'Tất cả' :
+                                  group === 'XA_PHUONG' ? 'Xã/phường' :
+                                  group === 'SO_NGANH' ? 'Sở/Ngành' : 'UBND';
+                    return (
+                      <button
+                        key={group}
+                        type="button"
+                        onClick={() => setSelectedGroup(group)}
+                        className={`flex-1 min-w-[70px] py-1.5 rounded-lg text-[10px] font-black transition-all uppercase tracking-wider ${
+                          selectedGroup === group
+                            ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="flex justify-between px-2">
                   <button 
                     type="button"
-                    onClick={() => setSelectedEndpointIds(availableEndpoints.map(e => e.id))}
+                    onClick={() => setSelectedEndpointIds(filteredEndpoints.map(e => e.id))}
                     className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider hover:text-blue-800 dark:hover:text-blue-300"
                   >
-                    Chọn tất cả
+                    Chọn tất cả ({filteredEndpoints.length})
                   </button>
                   <button 
                     type="button"
