@@ -79,8 +79,9 @@ CREATE TABLE IF NOT EXISTS public.meetings (
     cancel_reason TEXT,
     invitation_link TEXT,
     meeting_room_id TEXT,
+    meeting_format TEXT, -- Thêm cột hình thức họp (TRUC_TUYEN / TRUC_TIEP)
     created_at TIMESTAMPTZ DEFAULT now(),
-    CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED'))
+    CONSTRAINT meetings_status_check CHECK (status IN ('SCHEDULED', 'CANCELLED', 'POSTPONED', 'CHANGED_FORMAT'))
 );
 
 -- 7. Bảng Quản lý Tài khoản
