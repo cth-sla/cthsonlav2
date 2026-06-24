@@ -373,7 +373,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect, isAdmin, 
                             onClick={(e) => { e.stopPropagation(); onEdit?.(meeting); }}
                             className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-100 dark:border-emerald-800 disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
                             title="Chỉnh sửa"
-                            disabled={isSpecial}
+                            disabled={isCancelled}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>

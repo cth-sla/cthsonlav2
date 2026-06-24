@@ -244,7 +244,15 @@ const LoginView: React.FC<LoginViewProps> = ({
                           ) : isChangedFormat ? (
                             <span className="px-1.5 py-0.5 bg-purple-500/25 text-purple-600 dark:text-purple-400 text-[8px] font-black rounded uppercase border border-purple-500/35 shrink-0">Chuyển HT</span>
                           ) : null}
-                          {m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
+                          {isCancelled || isPostponed ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 text-[9.5px] font-bold rounded-md border shrink-0 select-none max-w-[240px] truncate ${
+                              isCancelled 
+                                ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' 
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                            }`} title={m.cancelReason || 'Chưa cập nhật lý do'}>
+                              Lý do: {m.cancelReason || 'Chưa cập nhật lý do'}
+                            </span>
+                          ) : m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
                             <>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black rounded-md uppercase border border-emerald-500/20 shrink-0 select-none">
                                 <Video size={11} className="shrink-0" />

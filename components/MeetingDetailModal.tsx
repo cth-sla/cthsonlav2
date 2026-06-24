@@ -243,7 +243,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
 
           <div className="md:col-span-4 space-y-8">
              <section>
-                {meeting.meetingRoomId && (
+                {meeting.meetingRoomId && meeting.status !== 'CANCELLED' && meeting.status !== 'POSTPONED' && (
                    <div className="mb-4 p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-800/30 rounded-2xl flex items-center justify-between shadow-sm">
                       <div className="flex items-center gap-2">
                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
@@ -260,45 +260,60 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 </div>
              </section>
 
-             <section>
-                <h4 className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-4">Các điểm cầu ({meeting.endpoints.length})</h4>
-                <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                   {meeting.endpoints.map(ep => {
-                      const checkInfo = meeting.endpointChecks?.[ep.id];
-                      const isChecked = checkInfo?.checked;
-                      const techNotes = checkInfo?.notes;
-                      
-                      return (
-                        <div key={ep.id} className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl flex flex-col gap-2 shadow-sm transition-all hover:border-blue-100 dark:hover:border-blue-900/50">
-                           <div className="flex items-center justify-between">
-                              <div className="min-w-0 flex items-center gap-3">
-                                 <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                                 <div className="min-w-0">
-                                   <p className="text-xs font-bold text-gray-800 dark:text-white truncate uppercase">{ep.name}</p>
-                                   <p className="text-[9px] text-gray-400 dark:text-slate-500 font-medium truncate uppercase tracking-widest">
-                                     {ep.location} {ep.ip1 && `• IP: ${ep.ip1}`}
-                                   </p>
+             {meeting.status === 'CANCELLED' || meeting.status === 'POSTPONED' ? (
+                <section className={`${
+                  meeting.status === 'CANCELLED' ? 'bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/30'
+                } border-2 p-5 rounded-[2rem]`}>
+                   <h4 className={`text-[10px] font-black uppercase tracking-widest mb-2 ${
+                     meeting.status === 'CANCELLED' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
+                   }`}>Lý do {meeting.status === 'CANCELLED' ? 'huỷ' : 'hoãn'} cuộc họp</h4>
+                   <p className={`text-xs font-black leading-relaxed italic ${
+                     meeting.status === 'CANCELLED' ? 'text-red-900 dark:text-red-200' : 'text-amber-900 dark:text-amber-200'
+                   }`}>
+                      {meeting.cancelReason || 'Không có lý do chi tiết.'}
+                   </p>
+                </section>
+             ) : (
+                <section>
+                   <h4 className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-4">Các điểm cầu ({meeting.endpoints.length})</h4>
+                   <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                      {meeting.endpoints.map(ep => {
+                         const checkInfo = meeting.endpointChecks?.[ep.id];
+                         const isChecked = checkInfo?.checked;
+                         const techNotes = checkInfo?.notes;
+                         
+                         return (
+                           <div key={ep.id} className="p-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl flex flex-col gap-2 shadow-sm transition-all hover:border-blue-100 dark:hover:border-blue-900/50">
+                              <div className="flex items-center justify-between">
+                                 <div className="min-w-0 flex items-center gap-3">
+                                    <div className={`shrink-0 w-2 h-2 rounded-full ${ep.status === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-gray-800 dark:text-white truncate uppercase">{ep.name}</p>
+                                      <p className="text-[9px] text-gray-400 dark:text-slate-500 font-medium truncate uppercase tracking-widest">
+                                        {ep.location} {ep.ip1 && `• IP: ${ep.ip1}`}
+                                      </p>
+                                    </div>
                                  </div>
+                                 {isChecked && (
+                                    <div className="shrink-0 p-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg" title="Đã kiểm tra kỹ thuật">
+                                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                 )}
                               </div>
-                              {isChecked && (
-                                 <div className="shrink-0 p-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg" title="Đã kiểm tra kỹ thuật">
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                              {techNotes && (
+                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium italic leading-tight">
+                                       <span className="font-black uppercase text-[8px] text-slate-400 dark:text-slate-500 mr-1">Ghi chú KT:</span>
+                                       {techNotes}
+                                    </p>
                                  </div>
                               )}
                            </div>
-                           {techNotes && (
-                              <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
-                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium italic leading-tight">
-                                    <span className="font-black uppercase text-[8px] text-slate-400 dark:text-slate-500 mr-1">Ghi chú KT:</span>
-                                    {techNotes}
-                                 </p>
-                              </div>
-                           )}
-                        </div>
-                      );
-                   })}
-                </div>
-             </section>
+                         );
+                      })}
+                   </div>
+                </section>
+             )}
 
              <section className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">

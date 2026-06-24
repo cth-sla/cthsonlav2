@@ -68,6 +68,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
+  const [status, setStatus] = useState<'SCHEDULED' | 'CANCELLED' | 'POSTPONED' | 'CHANGED_FORMAT'>('SCHEDULED');
+  const [cancelReason, setCancelReason] = useState('');
 
   const formatISOToLocalInput = (isoStr: string) => {
     if (!isoStr) return '';
@@ -106,6 +108,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         meetingFormat: editingMeeting.meetingFormat || (editingMeeting.meetingRoomId ? 'TRUC_TUYEN' : 'TRUC_TIEP'),
       });
       setSelectedEndpointIds(editingMeeting.endpoints.map(e => e.id));
+      setStatus(editingMeeting.status || 'SCHEDULED');
+      setCancelReason(editingMeeting.cancelReason || '');
     } else {
       setFormData({
         title: '',
@@ -122,6 +126,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
         meetingFormat: 'TRUC_TUYEN',
       });
       setSelectedEndpointIds([]);
+      setStatus('SCHEDULED');
+      setCancelReason('');
     }
     setSelectedGroup('ALL');
   }, [editingMeeting, isOpen]);
@@ -183,8 +189,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       description: formData.description,
       participants: formData.participants.split(',').map(p => p.trim()).filter(p => p !== ""),
       endpoints: selectedEndpoints,
-      status: editingMeeting?.status || 'SCHEDULED',
-      cancelReason: editingMeeting?.cancelReason,
+      status: editingMeeting ? status : 'SCHEDULED',
+      cancelReason: (status === 'CANCELLED' || status === 'POSTPONED') ? cancelReason : undefined,
       meetingRoomId: formData.meetingFormat === 'TRUC_TUYEN' ? (formData.meetingRoomId.trim() || undefined) : undefined,
       invitationLink: formData.invitationLink.trim() || undefined,
       meetingFormat: formData.meetingFormat
@@ -336,6 +342,41 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   </button>
                 </div>
               </div>
+
+              {editingMeeting && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Trạng thái cuộc họp *</label>
+                    <select
+                      required
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all cursor-pointer text-gray-900 dark:text-white"
+                      value={status}
+                      onChange={e => setStatus(e.target.value as any)}
+                    >
+                      <option value="SCHEDULED" className="dark:bg-slate-800">Lên lịch (Bình thường)</option>
+                      <option value="POSTPONED" className="dark:bg-slate-800">Tạm hoãn</option>
+                      <option value="CANCELLED" className="dark:bg-slate-800">Huỷ cuộc họp</option>
+                      <option value="CHANGED_FORMAT" className="dark:bg-slate-800">Chuyển hình thức họp</option>
+                    </select>
+                  </div>
+
+                  {(status === 'CANCELLED' || status === 'POSTPONED') && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                      <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
+                        Lý do {status === 'CANCELLED' ? 'huỷ' : 'hoãn'} cuộc họp *
+                      </label>
+                      <textarea
+                        required
+                        rows={2}
+                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition-all text-gray-900 dark:text-white"
+                        placeholder={`Nhập lý do chi tiết ${status === 'CANCELLED' ? 'huỷ' : 'hoãn'}...`}
+                        value={cancelReason}
+                        onChange={e => setCancelReason(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {formData.meetingFormat === 'TRUC_TUYEN' && (
                 <div className="space-y-2">
