@@ -252,13 +252,13 @@ const LoginView: React.FC<LoginViewProps> = ({
                             }`} title={m.cancelReason || 'Chưa cập nhật lý do'}>
                               Lý do: {m.cancelReason || 'Chưa cập nhật lý do'}
                             </span>
-                          ) : m.meetingFormat ? m.meetingFormat === 'TRUC_TUYEN' : m.meetingRoomId ? (
+                          ) : (m.meetingFormat === 'TRUC_TUYEN' || (!m.meetingFormat && m.meetingRoomId)) ? (
                             <>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black rounded-md uppercase border border-emerald-500/20 shrink-0 select-none">
                                 <Video size={11} className="shrink-0" />
                                 Trực tuyến
                               </span>
-                              {m.meetingRoomId && (
+                              {m.meetingRoomId && !isChangedFormat && (
                                 <span className="inline-flex items-center px-2.5 py-0.5 bg-blue-600 dark:bg-indigo-500/30 text-white dark:text-cyan-300 text-xs font-black font-mono rounded-md border border-blue-600 dark:border-indigo-500/50 shrink-0 select-none tracking-wider shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
                                   ID: {m.meetingRoomId}
                                 </span>
@@ -447,6 +447,16 @@ const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               )}
 
+              {selectedPublicMeeting.status === 'POSTPONED' && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+                  <AlertTriangle className="text-amber-400 shrink-0 mt-0.5" size={16} />
+                  <div>
+                    <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Thông báo hoãn họp:</p>
+                    <p className="text-xs text-white font-medium mt-1 leading-relaxed italic">{selectedPublicMeeting.cancelReason || 'Không có lý do chi tiết.'}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Thời gian</p>
@@ -463,7 +473,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                   <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Hình thức họp</p>
                   <div className="flex items-center gap-2 mt-1">
-                    {selectedPublicMeeting.meetingFormat ? selectedPublicMeeting.meetingFormat === 'TRUC_TUYEN' : selectedPublicMeeting.meetingRoomId ? (
+                    {(selectedPublicMeeting.meetingFormat === 'TRUC_TUYEN' || (!selectedPublicMeeting.meetingFormat && selectedPublicMeeting.meetingRoomId)) ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-lg uppercase tracking-wider border border-emerald-500/30">
                         <Video size={14} />
                         Trực tuyến
@@ -478,7 +488,10 @@ const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               </div>
 
-              {selectedPublicMeeting.meetingRoomId && (
+              {selectedPublicMeeting.meetingRoomId && 
+               selectedPublicMeeting.status !== 'CANCELLED' && 
+               selectedPublicMeeting.status !== 'POSTPONED' && 
+               selectedPublicMeeting.status !== 'CHANGED_FORMAT' && (
                 <div className="p-5 bg-gradient-to-r from-indigo-500/10 via-indigo-500/20 to-indigo-500/10 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-indigo-500/5">
                   <div className="flex items-center gap-2.5">
                     <span className="relative flex h-2.5 w-2.5">
