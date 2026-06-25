@@ -280,9 +280,15 @@ export const supabaseService = {
 
   async getSettings(): Promise<SystemSettings | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('system_settings').select('*').single();
-    if (error) return null;
-    return mapSettings(data);
+    // Tối ưu: Dùng limit(1) thay vì single() để tránh lỗi nghiêm trọng khi bảng trống hoặc bị lỗi RLS
+    const { data, error } = await supabase.from('system_settings').select('*').limit(1);
+    if (error || !data || data.length === 0) {
+      if (error) {
+        console.error("Lỗi tải cấu hình hệ thống từ Supabase:", error);
+      }
+      return null;
+    }
+    return mapSettings(data[0]);
   },
 
   async updateSettings(s: SystemSettings) {

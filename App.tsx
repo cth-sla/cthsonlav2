@@ -135,37 +135,80 @@ const App: React.FC = () => {
       
       setIsSyncing(true);
       try {
-        const [cloudMeetings, cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudSettings, cloudOperators] = await Promise.all([
-          supabaseService.getMeetings(),
-          supabaseService.getEndpoints(),
-          supabaseService.getUnits(),
-          supabaseService.getStaff(),
-          supabaseService.getGroups(),
-          supabaseService.getUsers(),
-          supabaseService.getSettings(),
-          supabaseService.getOperators()
+        console.log("Bắt đầu đồng bộ dữ liệu từ Supabase...");
+        
+        // 1. Luôn ưu tiên lấy Cấu hình hệ thống và Lịch họp (Không để các bảng khác chặn đứng)
+        const [cloudSettings, cloudMeetings] = await Promise.all([
+          supabaseService.getSettings()
+            .then(res => {
+              console.log("Đã tải cấu hình hệ thống từ Supabase:", res);
+              return res;
+            })
+            .catch(err => {
+              console.error("Lỗi tải cấu hình hệ thống:", err);
+              return null;
+            }),
+          supabaseService.getMeetings()
+            .then(res => {
+              console.log(`Đã tải ${res?.length || 0} cuộc họp từ Supabase`);
+              return res;
+            })
+            .catch(err => {
+              console.error("Lỗi tải lịch họp:", err);
+              return [];
+            })
         ]);
 
-        // Cập nhật dữ liệu từ Cloud vào State và Local Storage
-        setMeetings(cloudMeetings); 
-        storageService.saveMeetings(cloudMeetings);
-        
-        setEndpoints(cloudEndpoints); storageService.saveEndpoints(cloudEndpoints);
-        setUnits(cloudUnits); storageService.saveUnits(cloudUnits);
-        setStaff(cloudStaff); storageService.saveStaff(cloudStaff);
-        setGroups(cloudGroups); storageService.saveGroups(cloudGroups);
-        setUsers(cloudUsers); storageService.saveUsers(cloudUsers);
-        setOperators(cloudOperators);
-        
         if (cloudSettings) {
           setSystemSettings(cloudSettings);
           storageService.saveSystemSettings(cloudSettings);
+        } else {
+          console.warn("Không có cấu hình hệ thống trả về từ Supabase (có thể do lỗi RLS hoặc bảng trống)");
         }
-        
+
+        if (cloudMeetings && cloudMeetings.length > 0) {
+          setMeetings(cloudMeetings);
+          storageService.saveMeetings(cloudMeetings);
+        }
+
+        // 2. Tải các bảng dữ liệu danh mục & quản trị (Sử dụng catch riêng để không chặn lẫn nhau)
+        const [cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudOperators] = await Promise.all([
+          supabaseService.getEndpoints().catch(err => { console.error("Lỗi tải endpoints:", err); return []; }),
+          supabaseService.getUnits().catch(err => { console.error("Lỗi tải units:", err); return []; }),
+          supabaseService.getStaff().catch(err => { console.error("Lỗi tải staff:", err); return []; }),
+          supabaseService.getGroups().catch(err => { console.error("Lỗi tải groups:", err); return []; }),
+          supabaseService.getUsers().catch(err => { console.error("Lỗi tải users:", err); return []; }),
+          supabaseService.getOperators().catch(err => { console.error("Lỗi tải operators:", err); return []; })
+        ]);
+
+        if (cloudEndpoints && cloudEndpoints.length > 0) {
+          setEndpoints(cloudEndpoints);
+          storageService.saveEndpoints(cloudEndpoints);
+        }
+        if (cloudUnits && cloudUnits.length > 0) {
+          setUnits(cloudUnits);
+          storageService.saveUnits(cloudUnits);
+        }
+        if (cloudStaff && cloudStaff.length > 0) {
+          setStaff(cloudStaff);
+          storageService.saveStaff(cloudStaff);
+        }
+        if (cloudGroups && cloudGroups.length > 0) {
+          setGroups(cloudGroups);
+          storageService.saveGroups(cloudGroups);
+        }
+        if (cloudUsers && cloudUsers.length > 0) {
+          setUsers(cloudUsers);
+          storageService.saveUsers(cloudUsers);
+        }
+        if (cloudOperators && cloudOperators.length > 0) {
+          setOperators(cloudOperators);
+        }
+
         setLastRefreshed(new Date());
         setHasSyncedOnce(true);
       } catch (err) {
-        console.error("Đồng bộ thất bại:", err);
+        console.error("Lỗi trong quá trình đồng bộ dữ liệu:", err);
       } finally {
         setIsSyncing(false);
       }
@@ -173,8 +216,13 @@ const App: React.FC = () => {
 
     syncData();
 
+    // Chỉ đăng ký subscription realtime cho các bảng cần thiết
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings', 'system_operators'];
     const subscriptions = tables.map(table => {
+      // Với khách vãng lai chưa đăng nhập, chỉ nên subscribe các bảng công khai để tránh lỗi realtime channel
+      if (!currentUser && table !== 'system_settings' && table !== 'meetings') {
+        return null;
+      }
       return supabaseService.subscribeTable(table, (payload) => {
         const { eventType, old, mappedData } = payload;
         
