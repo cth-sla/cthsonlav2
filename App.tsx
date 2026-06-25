@@ -39,10 +39,11 @@ const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || 
-        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      // Mặc định là Chế độ tối (dark) nếu chưa lưu cấu hình khác (ví dụ: light)
+      const theme = localStorage.getItem('theme');
+      return theme !== 'light';
     }
-    return false;
+    return true;
   });
   
   const [meetings, setMeetings] = useState<Meeting[]>(() => storageService.getMeetings());
@@ -216,6 +217,12 @@ const App: React.FC = () => {
 
     syncData();
 
+    // Tự động kiểm tra và làm mới (auto-refresh) dữ liệu từ Supabase mỗi 30 giây
+    const refreshInterval = setInterval(() => {
+      console.log("Tự động làm mới dữ liệu định kỳ (30 giây)...");
+      syncData();
+    }, 30000);
+
     // Chỉ đăng ký subscription realtime cho các bảng cần thiết
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings', 'system_operators'];
     const subscriptions = tables.map(table => {
@@ -267,7 +274,10 @@ const App: React.FC = () => {
       });
     });
 
-    return () => subscriptions.forEach(sub => sub?.unsubscribe());
+    return () => {
+      clearInterval(refreshInterval);
+      subscriptions.forEach(sub => sub?.unsubscribe());
+    };
   }, [currentUser?.id]);
 
   const dashboardStats = useMemo(() => {
