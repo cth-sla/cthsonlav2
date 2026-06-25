@@ -87,6 +87,8 @@ export interface SystemSettings {
   shortName: string;
   logoBase64?: string;
   primaryColor: string;
+  supportQrBase64?: string;
+  supportPhone?: string;
 }
 
 export interface SystemOperator {

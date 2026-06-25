@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     short_name TEXT NOT NULL DEFAULT 'E-MEETING SLA',
     logo_base_64 TEXT,
     primary_color TEXT DEFAULT '#3B82F6',
+    support_qr_base_64 TEXT,
+    support_phone TEXT,
     updated_at TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT one_row_only CHECK (id = 1)
 );

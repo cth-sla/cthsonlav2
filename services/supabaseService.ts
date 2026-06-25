@@ -114,7 +114,9 @@ const mapSettings = (s: any): SystemSettings => ({
   systemName: s.system_name || s.systemName || '',
   shortName: s.short_name || s.shortName || '',
   logoBase64: s.logo_base_64 || s.logoBase64 || '',
-  primaryColor: s.primary_color || s.primaryColor || '#3B82F6'
+  primaryColor: s.primary_color || s.primaryColor || '#3B82F6',
+  supportQrBase64: s.support_qr_base_64 || s.supportQrBase64 || '',
+  supportPhone: s.support_phone || s.supportPhone || ''
 });
 
 const unmapSettings = (s: SystemSettings) => ({
@@ -122,7 +124,9 @@ const unmapSettings = (s: SystemSettings) => ({
   system_name: s.systemName,
   short_name: s.shortName,
   logo_base_64: s.logoBase64,
-  primary_color: s.primaryColor
+  primary_color: s.primaryColor,
+  support_qr_base_64: s.supportQrBase64 || null,
+  support_phone: s.supportPhone || null
 });
 
 const mapOperator = (o: any): SystemOperator => ({

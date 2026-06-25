@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings } from '../types';
-import { Upload, X, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode } from 'lucide-react';
 
 interface ManagementPageProps {
   units: Unit[];
@@ -53,10 +53,30 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [formData, setFormData] = useState<any>({});
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(systemSettings);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSettingsForm(systemSettings);
   }, [systemSettings]);
+
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // Giới hạn 1MB
+        alert("Kích thước ảnh quá lớn. Vui lòng chọn ảnh dưới 1MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettingsForm({ ...settingsForm, supportQrBase64: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeQr = () => {
+    setSettingsForm({ ...settingsForm, supportQrBase64: '' });
+  };
 
   const filteredUnits = units.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -397,94 +417,174 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
         )}
 
         {activeTab === 'settings' && (
-          <div className="p-8 max-w-2xl space-y-8">
+          <div className="p-8 w-full space-y-8">
             <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Cấu hình hệ thống</h4>
             
-            <div className="space-y-6">
-              {/* Logo Section */}
-              <div className="space-y-4">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                  <ImageIcon size={18} className="text-blue-600 dark:text-blue-400" />
-                  Logo hệ thống (Base64)
-                </label>
-                
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-[#F5F5F5] dark:bg-slate-800/50 border border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem]">
-                  <div className="w-32 h-32 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    {settingsForm.logoBase64 ? (
-                      <img src={settingsForm.logoBase64} alt="Preview" className="max-w-full max-h-full object-contain" />
-                    ) : (
-                      <div className="text-gray-300 dark:text-slate-600 flex flex-col items-center">
-                        <ImageIcon size={32} />
-                        <span className="text-[9px] font-bold mt-2 uppercase">No Logo</span>
-                      </div>
-                    )}
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              {/* Left Column: General system settings */}
+              <div className="space-y-6">
+                {/* Logo Section */}
+                <div className="space-y-4">
+                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
+                    <ImageIcon size={18} className="text-blue-600 dark:text-blue-400" />
+                    Logo hệ thống (Base64)
+                  </label>
                   
-                  <div className="space-y-3">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
-                      Logo sẽ hiển thị ở Sidebar và trang Đăng nhập. <br/>
-                      Định dạng khuyên dùng: <b>PNG hoặc SVG (Nền trong suốt)</b>. <br/>
-                      Dung lượng tối đa: <b>1MB</b>.
-                    </p>
-                    <div className="flex gap-2">
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleLogoUpload} 
-                        accept="image/*" 
-                        className="hidden" 
-                      />
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2 shadow-sm"
-                      >
-                        <Upload size={14} />
-                        Tải ảnh lên
-                      </button>
-                      {settingsForm.logoBase64 && (
-                        <button 
-                          onClick={removeLogo}
-                          className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all flex items-center gap-2"
-                        >
-                          <Trash2 size={14} />
-                          Xóa logo
-                        </button>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-[#F5F5F5] dark:bg-slate-800/50 border border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem]">
+                    <div className="w-32 h-32 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                      {settingsForm.logoBase64 ? (
+                        <img src={settingsForm.logoBase64} alt="Preview" className="max-w-full max-h-full object-contain" />
+                      ) : (
+                        <div className="text-gray-300 dark:text-slate-600 flex flex-col items-center">
+                          <ImageIcon size={32} />
+                          <span className="text-[9px] font-bold mt-2 uppercase">No Logo</span>
+                        </div>
                       )}
                     </div>
+                    
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                        Logo sẽ hiển thị ở Sidebar và trang Đăng nhập. <br/>
+                        Định dạng khuyên dùng: <b>PNG hoặc SVG (Nền trong suốt)</b>. <br/>
+                        Dung lượng tối đa: <b>1MB</b>.
+                      </p>
+                      <div className="flex gap-2">
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleLogoUpload} 
+                          accept="image/*" 
+                          className="hidden" 
+                        />
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <Upload size={14} />
+                          Tải ảnh lên
+                        </button>
+                        {settingsForm.logoBase64 && (
+                          <button 
+                            onClick={removeLogo}
+                            className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all flex items-center gap-2"
+                          >
+                            <Trash2 size={14} />
+                            Xóa logo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Tên hệ thống</label>
+                  <input 
+                    type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
+                    value={settingsForm.systemName}
+                    onChange={e => setSettingsForm({...settingsForm, systemName: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Tên viết tắt (Sidebar)</label>
+                  <input 
+                    type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
+                    value={settingsForm.shortName}
+                    onChange={e => setSettingsForm({...settingsForm, shortName: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Màu chủ đạo</label>
+                  <div className="flex gap-3">
+                    <input 
+                      type="color" className="w-12 h-12 p-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl cursor-pointer"
+                      value={settingsForm.primaryColor}
+                      onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
+                    />
+                    <input 
+                      type="text" className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white"
+                      value={settingsForm.primaryColor}
+                      onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Tên hệ thống</label>
-                <input 
-                  type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
-                  value={settingsForm.systemName}
-                  onChange={e => setSettingsForm({...settingsForm, systemName: e.target.value})}
-                />
-              </div>
+              {/* Right Column: Support Information Configuration */}
+              <div className="space-y-6 bg-slate-50 dark:bg-slate-800/20 p-6 rounded-[2rem] border border-gray-150 dark:border-slate-800">
+                <h5 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-gray-200/50 dark:border-slate-800 pb-3">
+                  <Phone size={16} className="text-blue-600 dark:text-blue-400" />
+                  Thông tin hỗ trợ kỹ thuật
+                </h5>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Tên viết tắt (Sidebar)</label>
-                <input 
-                  type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
-                  value={settingsForm.shortName}
-                  onChange={e => setSettingsForm({...settingsForm, shortName: e.target.value})}
-                />
-              </div>
+                {/* QR Code upload (80x80) */}
+                <div className="space-y-4">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
+                    <QrCode size={16} className="text-blue-600 dark:text-blue-400" />
+                    Ảnh mã QR hỗ trợ (Ảnh 80x80)
+                  </label>
+                  
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-4 bg-white dark:bg-slate-900 border border-dashed border-gray-300 dark:border-slate-700 rounded-2xl">
+                    <div className="w-20 h-20 bg-white dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                      {settingsForm.supportQrBase64 ? (
+                        <img src={settingsForm.supportQrBase64} alt="Support QR" className="w-20 h-20 object-contain" />
+                      ) : (
+                        <div className="text-gray-300 dark:text-slate-600 flex flex-col items-center">
+                          <QrCode size={24} />
+                          <span className="text-[8px] font-bold mt-1 uppercase">No QR</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-gray-500 dark:text-slate-400 leading-relaxed">
+                        Mã QR hỗ trợ, liên hệ (Zalo, Telegram, v.v.).<br/>
+                        Hiển thị kích thước cố định: <b>80x80 px</b>.<br/>
+                        Dung lượng tối đa: <b>1MB</b>.
+                      </p>
+                      <div className="flex gap-2">
+                        <input 
+                          type="file" 
+                          ref={qrInputRef} 
+                          onChange={handleQrUpload} 
+                          accept="image/*" 
+                          className="hidden" 
+                        />
+                        <button 
+                          onClick={() => qrInputRef.current?.click()}
+                          className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1 shadow-sm"
+                        >
+                          <Upload size={12} />
+                          Tải ảnh
+                        </button>
+                        {settingsForm.supportQrBase64 && (
+                          <button 
+                            onClick={removeQr}
+                            className="px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all flex items-center gap-1"
+                          >
+                            <Trash2 size={12} />
+                            Xóa QR
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Màu chủ đạo</label>
-                <div className="flex gap-3">
+                {/* Support phone number */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
+                    <Phone size={16} className="text-blue-600 dark:text-blue-400" />
+                    Số điện thoại hỗ trợ (Hiển thị to rõ)
+                  </label>
                   <input 
-                    type="color" className="w-12 h-12 p-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl cursor-pointer"
-                    value={settingsForm.primaryColor}
-                    onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
-                  />
-                  <input 
-                    type="text" className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white"
-                    value={settingsForm.primaryColor}
-                    onChange={e => setSettingsForm({...settingsForm, primaryColor: e.target.value})}
+                    type="text" 
+                    placeholder="Ví dụ: 0912.345.678"
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
+                    value={settingsForm.supportPhone || ''}
+                    onChange={e => setSettingsForm({...settingsForm, supportPhone: e.target.value})}
                   />
                 </div>
               </div>

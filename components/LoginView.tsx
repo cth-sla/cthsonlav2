@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode } from 'lucide-react';
 
 interface LoginViewProps {
   users: User[];
@@ -409,6 +409,61 @@ const LoginView: React.FC<LoginViewProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Support Information Box */}
+          {(systemSettings.supportQrBase64 || systemSettings.supportPhone) ? (
+            <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
+              {systemSettings.supportQrBase64 && (
+                <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
+                  <img 
+                    src={systemSettings.supportQrBase64} 
+                    alt="Support QR" 
+                    className="w-[80px] h-[80px] object-contain select-none rounded-lg" 
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-0 space-y-1">
+                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                  HỖ TRỢ KỸ THUẬT
+                </p>
+                {systemSettings.supportPhone && (
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
+                      Hotline liên hệ:
+                    </p>
+                    <a 
+                      href={`tel:${systemSettings.supportPhone.replace(/\./g, '')}`}
+                      className="block text-2xl font-black text-slate-800 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer leading-tight font-sans"
+                    >
+                      {systemSettings.supportPhone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
+              <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900/50 p-1.5 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
+                <div className="text-gray-300 dark:text-white/20 flex flex-col items-center">
+                  <QrCode size={24} />
+                  <span className="text-[8px] font-bold mt-1 uppercase tracking-wider text-slate-400 dark:text-white/30">Mã QR</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                  HỖ TRỢ KỸ THUẬT
+                </p>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
+                    Hotline liên hệ:
+                  </p>
+                  <span className="block text-xl font-black text-slate-300 dark:text-white/30 tracking-tight leading-tight">
+                    Chưa cấu hình
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
