@@ -3,6 +3,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { User, SystemSettings, Meeting } from '../types';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode } from 'lucide-react';
 
+const FIXED_SUPPORT_PHONE = '0328.007.999';
+const FIXED_SUPPORT_QR = 'data:image/png;base64,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';
+
 interface LoginViewProps {
   users: User[];
   meetings: Meeting[];
@@ -411,59 +414,31 @@ const LoginView: React.FC<LoginViewProps> = ({
           </div>
 
           {/* Support Information Box */}
-          {(systemSettings.supportQrBase64 || systemSettings.supportPhone) ? (
-            <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
-              {systemSettings.supportQrBase64 && (
-                <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
-                  <img 
-                    src={systemSettings.supportQrBase64} 
-                    alt="Support QR" 
-                    className="w-[80px] h-[80px] object-contain select-none rounded-lg" 
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
-                  HỖ TRỢ KỸ THUẬT
+          <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
+            <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
+              <img 
+                src={systemSettings.supportQrBase64 || FIXED_SUPPORT_QR} 
+                alt="Support QR" 
+                className="w-[80px] h-[80px] object-contain select-none rounded-lg" 
+              />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                HỖ TRỢ KỸ THUẬT
+              </p>
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
+                  Hotline liên hệ:
                 </p>
-                {systemSettings.supportPhone && (
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
-                      Hotline liên hệ:
-                    </p>
-                    <a 
-                      href={`tel:${systemSettings.supportPhone.replace(/\./g, '')}`}
-                      className="block text-2xl font-black text-slate-800 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer leading-tight font-sans"
-                    >
-                      {systemSettings.supportPhone}
-                    </a>
-                  </div>
-                )}
+                <a 
+                  href={`tel:${(systemSettings.supportPhone || FIXED_SUPPORT_PHONE).replace(/\./g, '')}`}
+                  className="block text-2xl font-black text-slate-800 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer leading-tight font-sans"
+                >
+                  {systemSettings.supportPhone || FIXED_SUPPORT_PHONE}
+                </a>
               </div>
             </div>
-          ) : (
-            <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
-              <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900/50 p-1.5 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
-                <div className="text-gray-300 dark:text-white/20 flex flex-col items-center">
-                  <QrCode size={24} />
-                  <span className="text-[8px] font-bold mt-1 uppercase tracking-wider text-slate-400 dark:text-white/30">Mã QR</span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
-                  HỖ TRỢ KỸ THUẬT
-                </p>
-                <div className="space-y-0.5">
-                  <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
-                    Hotline liên hệ:
-                  </p>
-                  <span className="block text-xl font-black text-slate-300 dark:text-white/30 tracking-tight leading-tight">
-                    Chưa cấu hình
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
