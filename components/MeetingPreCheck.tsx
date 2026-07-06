@@ -111,10 +111,10 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
       return;
     }
 
-    const header = "Tên điểm cầu,Vị trí,Trạng thái kiểm tra,Ghi chú kỹ thuật\n";
+    const header = "Tên điểm cầu,Vị trí,Trạng thái kết nối,Ghi chú kỹ thuật\n";
     const rows = meeting.endpoints.map(ep => {
       const checkInfo = localChecks[ep.id] || { checked: false, notes: '' };
-      const statusText = checkInfo.checked ? "Đã kiểm tra" : "Chưa kiểm tra";
+      const statusText = checkInfo.checked ? "Đã kết nối" : "Chưa kết nối";
       const cleanNotes = (checkInfo.notes || "").replace(/"/g, '""');
       return `"${ep.name.replace(/"/g, '""')}","${ep.location.replace(/"/g, '""')}","${statusText}","${cleanNotes}"`;
     }).join("\n");
@@ -180,8 +180,8 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
             {[
               { id: 'ALL', label: 'Tất cả' },
-              { id: 'CHECKED', label: 'Đã kiểm tra' },
-              { id: 'UNCHECKED', label: 'Chưa kiểm tra' }
+              { id: 'CHECKED', label: 'Đã kết nối' },
+              { id: 'UNCHECKED', label: 'Chưa kết nối' }
             ].map(btn => (
               <button 
                 key={btn.id}
@@ -307,11 +307,11 @@ const MeetingPreCheck: React.FC<MeetingPreCheckProps> = ({ meeting, onClose, onU
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700 shadow-sm"></div>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Chưa kiểm tra</span>
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Chưa kết nối</span>
             </div>
           </div>
           <div className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">
-            HỆ THỐNG GIÁM SÁT SLA v3.1 • {new Date().toLocaleDateString('vi-VN')}
+            HỆ THỐNG GIÁM SÁT CTH • {new Date().toLocaleDateString('vi-VN')}
           </div>
         </div>
       </div>
