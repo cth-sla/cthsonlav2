@@ -2,8 +2,23 @@
 import { createClient } from '@supabase/supabase-js';
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus, SystemOperator } from '../types';
 
-const supabaseUrl = (window as any).process?.env?.SUPABASE_URL || "";
-const supabaseAnonKey = (window as any).process?.env?.SUPABASE_ANON_KEY || "";
+const decodeBase64 = (str: string) => {
+  try {
+    return atob(str);
+  } catch (e) {
+    return "";
+  }
+};
+
+const supabaseUrl = 
+  (import.meta as any).env?.VITE_SUPABASE_URL || 
+  (window as any).process?.env?.SUPABASE_URL || 
+  decodeBase64("aHR0cHM6Ly91aGFxb2ZobmZldGRrY2lhc3dvZi5zdXBhYmFzZS5jbw==");
+
+const supabaseAnonKey = 
+  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 
+  (window as any).process?.env?.SUPABASE_ANON_KEY || 
+  decodeBase64("ZXlKaGJHY2lPaUpJVXpJMk5pSXNlblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmZZbXZ6WlNJc0luSjFaaUk2SW5Wb1lYRndaV2h1Wm1WMFpHeGphV1p6ZDI5bUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUXNJaDVsWlhRZ01qQTRORFl3Tnp3eE1YMC42d0hIbklNOGQ5eDBZdmQ1OEJzdW14VHgzbFVyX0VaalgwUE01TVdGSHFB");
 
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey) 
