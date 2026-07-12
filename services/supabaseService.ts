@@ -1,6 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, EndpointStatus, SystemOperator } from '../types';
+import { mysqlClientService } from './mysqlService';
+import { storageService } from './storageService';
 
 const decodeBase64 = (str: string) => {
   try {
@@ -18,7 +20,7 @@ const supabaseUrl =
 const supabaseAnonKey = 
   (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 
   (window as any).process?.env?.SUPABASE_ANON_KEY || 
-  decodeBase64("ZXlKaGJHY2lPaUpJVXpJMk5pSXNlblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmZZbXZ6WlNJc0luSjFaaUk2SW5Wb1lYRndaV2h1Wm1WMFpHeGphV1p6ZDI5bUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUXNJaDVsWlhRZ01qQTRORFl3Tnp3eE1YMC42d0hIbklNOGQ5eDBZdmQ1OEJzdW14VHgzbFVyX0VaalgwUE01TVdGSHFB");
+  decodeBase64("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5Wb1lYRnZabWh1Wm1WMFpHdGphV0Z6ZDI5bUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUXlPakUzTmprd016RTVNREVzSW1WNGNDSTZNakE0TkRZd056a3dNWDAuNndISG5JTThkOXgwWXZkNThCc3VteFR4M2xVcl9FWmpYMFBNNU1XRkhxQQ==");
 
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey) 
@@ -162,192 +164,208 @@ const unmapOperator = (o: SystemOperator) => ({
 });
 
 export const supabaseService = {
-  isConfigured: () => !!supabase,
+  isConfigured: () => true,
 
   async getMeetings(): Promise<Meeting[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('meetings').select('*').order('start_time', { ascending: false });
-    if (error) {
-      console.error("Supabase error fetching meetings:", error);
-      return [];
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbMeetings = await mysqlClientService.getMeetings();
+      if (dbMeetings && dbMeetings.length > 0) return dbMeetings;
     }
-    return (data || []).map(mapMeeting);
+    return storageService.getMeetings();
   },
 
   async upsertMeeting(m: Meeting) {
-    if (!supabase) return;
-    const payload = unmapMeeting(m);
-    const { error } = await supabase.from('meetings').upsert(payload);
-    if (error) {
-      console.error("Supabase error upserting meeting:", error);
-      throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertMeeting(m);
     }
+    const local = storageService.getMeetings();
+    const idx = local.findIndex(x => x.id === m.id);
+    if (idx >= 0) local[idx] = m;
+    else local.push(m);
+    storageService.saveMeetings(local);
   },
 
   async deleteMeeting(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('meetings').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteMeeting(id);
+    }
+    const local = storageService.getMeetings();
+    storageService.saveMeetings(local.filter(x => x.id !== id));
   },
 
   async getEndpoints(): Promise<Endpoint[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('endpoints').select('*').order('name');
-    if (error) return [];
-    return (data || []).map(mapEndpoint);
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbEndpoints = await mysqlClientService.getEndpoints();
+      if (dbEndpoints && dbEndpoints.length > 0) return dbEndpoints;
+    }
+    return storageService.getEndpoints();
   },
 
   async upsertEndpoint(e: Endpoint) {
-    if (!supabase) return;
-    const { error } = await supabase.from('endpoints').upsert({
-      id: e.id,
-      name: e.name,
-      location: e.location,
-      status: e.status,
-      // Fix: Use e.lastConnected instead of e.last_connected to match Endpoint type
-      last_connected: e.lastConnected,
-      ip_1: e.ip1 || null,
-      ip_2: e.ip2 || null
-    });
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertEndpoint(e);
+    }
+    const local = storageService.getEndpoints();
+    const idx = local.findIndex(x => x.id === e.id);
+    if (idx >= 0) local[idx] = e;
+    else local.push(e);
+    storageService.saveEndpoints(local);
   },
 
   async deleteEndpoint(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('endpoints').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteEndpoint(id);
+    }
+    const local = storageService.getEndpoints();
+    storageService.saveEndpoints(local.filter(x => x.id !== id));
   },
 
   async getUnits(): Promise<Unit[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('units').select('*').order('name');
-    if (error) return [];
-    return (data || []).map(mapUnit);
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbUnits = await mysqlClientService.getUnits();
+      if (dbUnits && dbUnits.length > 0) return dbUnits;
+    }
+    return storageService.getUnits();
   },
 
   async upsertUnit(u: Unit) {
-    if (!supabase) return;
-    const { error } = await supabase.from('units').upsert(u);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertUnit(u);
+    }
+    const local = storageService.getUnits();
+    const idx = local.findIndex(x => x.id === u.id);
+    if (idx >= 0) local[idx] = u;
+    else local.push(u);
+    storageService.saveUnits(local);
   },
 
   async deleteUnit(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('units').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteUnit(id);
+    }
+    const local = storageService.getUnits();
+    storageService.saveUnits(local.filter(x => x.id !== id));
   },
 
   async getStaff(): Promise<Staff[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('staff').select('*').order('full_name');
-    if (error) return [];
-    return (data || []).map(mapStaff);
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbStaff = await mysqlClientService.getStaff();
+      if (dbStaff && dbStaff.length > 0) return dbStaff;
+    }
+    return storageService.getStaff();
   },
 
   async upsertStaff(s: Staff) {
-    if (!supabase) return;
-    const { error } = await supabase.from('staff').upsert(unmapStaff(s));
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertStaff(s);
+    }
+    const local = storageService.getStaff();
+    const idx = local.findIndex(x => x.id === s.id);
+    if (idx >= 0) local[idx] = s;
+    else local.push(s);
+    storageService.saveStaff(local);
   },
 
   async deleteStaff(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('staff').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteStaff(id);
+    }
+    const local = storageService.getStaff();
+    storageService.saveStaff(local.filter(x => x.id !== id));
   },
 
   async getGroups(): Promise<ParticipantGroup[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('participant_groups').select('*').order('name');
-    return data || [];
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbGroups = await mysqlClientService.getGroups();
+      if (dbGroups && dbGroups.length > 0) return dbGroups;
+    }
+    return storageService.getGroups();
   },
 
   async upsertGroup(g: ParticipantGroup) {
-    if (!supabase) return;
-    const { error } = await supabase.from('participant_groups').upsert(g);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertGroup(g);
+    }
+    const local = storageService.getGroups();
+    const idx = local.findIndex(x => x.id === g.id);
+    if (idx >= 0) local[idx] = g;
+    else local.push(g);
+    storageService.saveGroups(local);
   },
 
   async deleteGroup(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('participant_groups').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteGroup(id);
+    }
+    const local = storageService.getGroups();
+    storageService.saveGroups(local.filter(x => x.id !== id));
   },
 
   async getUsers(): Promise<User[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('users').select('*').order('username');
-    if (error) return [];
-    return (data || []).map(mapUser);
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbUsers = await mysqlClientService.getUsers();
+      if (dbUsers && dbUsers.length > 0) return dbUsers;
+    }
+    return storageService.getUsers();
   },
 
   async upsertUser(u: User) {
-    if (!supabase) return;
-    const { error } = await supabase.from('users').upsert(unmapUser(u));
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertUser(u);
+    }
+    const local = storageService.getUsers();
+    const idx = local.findIndex(x => x.id === u.id);
+    if (idx >= 0) local[idx] = u;
+    else local.push(u);
+    storageService.saveUsers(local);
   },
 
   async deleteUser(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteUser(id);
+    }
+    const local = storageService.getUsers();
+    storageService.saveUsers(local.filter(x => x.id !== id));
   },
 
   async getSettings(): Promise<SystemSettings | null> {
-    if (!supabase) return null;
-    // Tối ưu: Dùng limit(1) thay vì single() để tránh lỗi nghiêm trọng khi bảng trống hoặc bị lỗi RLS
-    const { data, error } = await supabase.from('system_settings').select('*').limit(1);
-    if (error || !data || data.length === 0) {
-      if (error) {
-        console.error("Lỗi tải cấu hình hệ thống từ Supabase:", error);
-      }
-      return null;
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbSettings = await mysqlClientService.getSettings();
+      if (dbSettings) return dbSettings;
     }
-    return mapSettings(data[0]);
+    return storageService.getSystemSettings();
   },
 
   async updateSettings(s: SystemSettings) {
-    if (!supabase) return;
-    const { error } = await supabase.from('system_settings').upsert(unmapSettings(s));
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.updateSettings(s);
+    }
+    storageService.saveSystemSettings(s);
   },
 
   async getOperators(): Promise<SystemOperator[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.from('system_operators').select('*').order('full_name');
-    if (error) return [];
-    return (data || []).map(mapOperator);
+    if (mysqlClientService.isUsingRealAPI()) {
+      const dbOperators = await mysqlClientService.getOperators();
+      if (dbOperators && dbOperators.length > 0) return dbOperators;
+    }
+    return [];
   },
 
   async upsertOperator(o: SystemOperator) {
-    if (!supabase) return;
-    const { error } = await supabase.from('system_operators').upsert(unmapOperator(o));
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.upsertOperator(o);
+    }
   },
 
   async deleteOperator(id: string) {
-    if (!supabase) return;
-    const { error } = await supabase.from('system_operators').delete().eq('id', id);
-    if (error) throw error;
+    if (mysqlClientService.isUsingRealAPI()) {
+      await mysqlClientService.deleteOperator(id);
+    }
   },
 
   subscribeTable(table: string, callback: (payload: any) => void) {
-    if (!supabase) return null;
-    return supabase
-      .channel(`public:${table}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
-        let mappedData = payload.new;
-        if (payload.new) {
-          if (table === 'meetings') mappedData = mapMeeting(payload.new);
-          else if (table === 'endpoints') mappedData = mapEndpoint(payload.new);
-          else if (table === 'staff') mappedData = mapStaff(payload.new);
-          else if (table === 'units') mappedData = mapUnit(payload.new);
-          else if (table === 'users') mappedData = mapUser(payload.new);
-          else if (table === 'system_settings') mappedData = mapSettings(payload.new);
-          else if (table === 'system_operators') mappedData = mapOperator(payload.new);
-        }
-        callback({ ...payload, mappedData });
-      })
-      .subscribe();
+    return {
+      unsubscribe: () => {}
+    };
   }
 };
