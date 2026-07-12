@@ -233,67 +233,68 @@ const reqUrl = (phpAction: string, expressEndpoint: string): string => {
  * Nếu chưa cấu hình backend, các phương thức này sẽ tự động fall back về lưu trữ Local để chạy demo ổn định.
  */
 export const mysqlClientService = {
-  // Tự động sử dụng Real API khi chạy trên môi trường production (Hostinger) hoặc khi được kích hoạt thủ công
+  // Luôn trả về true để ứng dụng ưu tiên sử dụng cơ sở dữ liệu MySQL của Hostinger.
   isUsingRealAPI: () => {
-    return (import.meta as any).env?.PROD || localStorage.getItem('USE_REAL_API') === 'true';
+    return true;
   },
 
   async getSettings(): Promise<SystemSettings | null> {
     if (!this.isUsingRealAPI()) return null;
-    try {
-      const res = await fetch(reqUrl('getSettings', 'settings'));
-      return res.ok ? await res.json() : null;
-    } catch (e) {
-      console.warn("MySQL settings API failed, using local fallback.", e);
-      return null;
+    const res = await fetch(reqUrl('getSettings', 'settings'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    return data;
   },
 
   async updateSettings(s: SystemSettings): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('updateSettings', 'settings'), {
+    const res = await fetch(reqUrl('updateSettings', 'settings'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(s)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getMeetings(): Promise<Meeting[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getMeetings', 'meetings'));
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((m: any) => ({
-        ...m,
-        hostUnit: m.hostUnit || m.host_unit_name,
-        hostUnitId: m.hostUnitId || m.host_unit_id,
-        chairPerson: m.chairPerson || m.chair_person_name,
-        chairPersonId: m.chairPersonId || m.chair_person_id,
-        startTime: m.startTime || m.start_time,
-        endTime: m.endTime || m.end_time,
-        participants: typeof m.participants === 'string' ? JSON.parse(m.participants) : (m.participants || []),
-        endpoints: typeof m.endpoints === 'string' ? JSON.parse(m.endpoints) : (m.endpoints || []),
-        endpointChecks: typeof m.endpointChecks === 'string' ? JSON.parse(m.endpointChecks) : 
-                        (typeof m.endpoint_checks === 'string' ? JSON.parse(m.endpoint_checks) : (m.endpointChecks || m.endpoint_checks || {})),
-        cancelReason: m.cancelReason || m.cancel_reason,
-        invitationLink: m.invitationLink || m.invitation_link,
-        meetingRoomId: m.meetingRoomId || m.meeting_room_id,
-        meetingFormat: m.meetingFormat || m.meeting_format
-      }));
-    } catch (e) {
-      console.error("Lỗi lấy meetings từ MySQL API:", e);
-      return [];
+    const res = await fetch(reqUrl('getMeetings', 'meetings'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    if (!Array.isArray(data)) return [];
+    return data.map((m: any) => ({
+      ...m,
+      hostUnit: m.hostUnit || m.host_unit_name,
+      hostUnitId: m.hostUnitId || m.host_unit_id,
+      chairPerson: m.chairPerson || m.chair_person_name,
+      chairPersonId: m.chairPersonId || m.chair_person_id,
+      startTime: m.startTime || m.start_time,
+      endTime: m.endTime || m.end_time,
+      participants: typeof m.participants === 'string' ? JSON.parse(m.participants) : (m.participants || []),
+      endpoints: typeof m.endpoints === 'string' ? JSON.parse(m.endpoints) : (m.endpoints || []),
+      endpointChecks: typeof m.endpointChecks === 'string' ? JSON.parse(m.endpointChecks) : 
+                      (typeof m.endpoint_checks === 'string' ? JSON.parse(m.endpoint_checks) : (m.endpointChecks || m.endpoint_checks || {})),
+      cancelReason: m.cancelReason || m.cancel_reason,
+      invitationLink: m.invitationLink || m.invitation_link,
+      meetingRoomId: m.meetingRoomId || m.meeting_room_id,
+      meetingFormat: m.meetingFormat || m.meeting_format
+    }));
   },
 
   async upsertMeeting(m: Meeting): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertMeeting', 'meetings'), {
+    const res = await fetch(reqUrl('upsertMeeting', 'meetings'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(m)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteMeeting(id: string): Promise<void> {
@@ -301,36 +302,38 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteMeeting&id=${encodeURIComponent(id)}`
       : `/api/meetings/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getEndpoints(): Promise<Endpoint[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getEndpoints', 'endpoints'));
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((e: any) => ({
-        id: e.id,
-        name: e.name,
-        location: e.location,
-        status: e.status,
-        lastConnected: e.lastConnected || e.last_connected,
-        ip1: e.ip1 || e.ip_1,
-        ip2: e.ip2 || e.ip_2
-      }));
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getEndpoints', 'endpoints'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    if (!Array.isArray(data)) return [];
+    return data.map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      location: e.location,
+      status: e.status,
+      lastConnected: e.lastConnected || e.last_connected,
+      ip1: e.ip1 || e.ip_1,
+      ip2: e.ip2 || e.ip_2
+    }));
   },
 
   async upsertEndpoint(e: Endpoint): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertEndpoint', 'endpoints'), {
+    const res = await fetch(reqUrl('upsertEndpoint', 'endpoints'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(e)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteEndpoint(id: string): Promise<void> {
@@ -338,26 +341,29 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteEndpoint&id=${encodeURIComponent(id)}`
       : `/api/endpoints/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getUnits(): Promise<Unit[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getUnits', 'units'));
-      return res.ok ? await res.json() : [];
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getUnits', 'units'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    return Array.isArray(data) ? data : [];
   },
 
   async upsertUnit(u: Unit): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertUnit', 'units'), {
+    const res = await fetch(reqUrl('upsertUnit', 'units'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(u)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteUnit(id: string): Promise<void> {
@@ -365,35 +371,37 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteUnit&id=${encodeURIComponent(id)}`
       : `/api/units/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getStaff(): Promise<Staff[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getStaff', 'staff'));
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((s: any) => ({
-        id: s.id,
-        fullName: s.fullName || s.full_name,
-        unitId: s.unitId || s.unit_id,
-        position: s.position,
-        email: s.email,
-        phone: s.phone
-      }));
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getStaff', 'staff'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    if (!Array.isArray(data)) return [];
+    return data.map((s: any) => ({
+      id: s.id,
+      fullName: s.fullName || s.full_name,
+      unitId: s.unitId || s.unit_id,
+      position: s.position,
+      email: s.email,
+      phone: s.phone
+    }));
   },
 
   async upsertStaff(s: Staff): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertStaff', 'staff'), {
+    const res = await fetch(reqUrl('upsertStaff', 'staff'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(s)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteStaff(id: string): Promise<void> {
@@ -401,26 +409,29 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteStaff&id=${encodeURIComponent(id)}`
       : `/api/staff/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getGroups(): Promise<ParticipantGroup[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getGroups', 'groups'));
-      return res.ok ? await res.json() : [];
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getGroups', 'groups'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    return Array.isArray(data) ? data : [];
   },
 
   async upsertGroup(g: ParticipantGroup): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertGroup', 'groups'), {
+    const res = await fetch(reqUrl('upsertGroup', 'groups'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(g)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteGroup(id: string): Promise<void> {
@@ -428,34 +439,36 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteGroup&id=${encodeURIComponent(id)}`
       : `/api/groups/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getUsers(): Promise<User[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getUsers', 'users'));
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((u: any) => ({
-        id: u.id,
-        username: u.username,
-        fullName: u.fullName || u.full_name,
-        role: u.role,
-        password: u.password
-      }));
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getUsers', 'users'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    if (!Array.isArray(data)) return [];
+    return data.map((u: any) => ({
+      id: u.id,
+      username: u.username,
+      fullName: u.fullName || u.full_name,
+      role: u.role,
+      password: u.password
+    }));
   },
 
   async upsertUser(u: User): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertUser', 'users'), {
+    const res = await fetch(reqUrl('upsertUser', 'users'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(u)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteUser(id: string): Promise<void> {
@@ -463,35 +476,37 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteUser&id=${encodeURIComponent(id)}`
       : `/api/users/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async getOperators(): Promise<SystemOperator[]> {
     if (!this.isUsingRealAPI()) return [];
-    try {
-      const res = await fetch(reqUrl('getOperators', 'operators'));
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((o: any) => ({
-        id: o.id,
-        fullName: o.fullName || o.full_name,
-        position: o.position,
-        endpointId: o.endpointId || o.endpoint_id,
-        phone: o.phone,
-        createdAt: o.createdAt || o.created_at
-      }));
-    } catch (e) {
-      return [];
+    const res = await fetch(reqUrl('getOperators', 'operators'));
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    const data = await res.json();
+    if (data && data.status === 'error') {
+      throw new Error(data.message || "MySQL Connection Error");
     }
+    if (!Array.isArray(data)) return [];
+    return data.map((o: any) => ({
+      id: o.id,
+      fullName: o.fullName || o.full_name,
+      position: o.position,
+      endpointId: o.endpointId || o.endpoint_id,
+      phone: o.phone,
+      createdAt: o.createdAt || o.created_at
+    }));
   },
 
   async upsertOperator(o: SystemOperator): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    await fetch(reqUrl('upsertOperator', 'operators'), {
+    const res = await fetch(reqUrl('upsertOperator', 'operators'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(o)
     });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
 
   async deleteOperator(id: string): Promise<void> {
@@ -499,6 +514,7 @@ export const mysqlClientService = {
     const url = isPHPHosting 
       ? `/api.php?action=deleteOperator&id=${encodeURIComponent(id)}`
       : `/api/operators/${encodeURIComponent(id)}`;
-    await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   }
 };

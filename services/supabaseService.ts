@@ -168,8 +168,11 @@ export const supabaseService = {
 
   async getMeetings(): Promise<Meeting[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbMeetings = await mysqlClientService.getMeetings();
-      if (dbMeetings && dbMeetings.length > 0) return dbMeetings;
+      try {
+        return await mysqlClientService.getMeetings();
+      } catch (e) {
+        console.warn("Lấy meetings từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getMeetings();
   },
@@ -195,8 +198,11 @@ export const supabaseService = {
 
   async getEndpoints(): Promise<Endpoint[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbEndpoints = await mysqlClientService.getEndpoints();
-      if (dbEndpoints && dbEndpoints.length > 0) return dbEndpoints;
+      try {
+        return await mysqlClientService.getEndpoints();
+      } catch (e) {
+        console.warn("Lấy endpoints từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getEndpoints();
   },
@@ -222,8 +228,11 @@ export const supabaseService = {
 
   async getUnits(): Promise<Unit[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbUnits = await mysqlClientService.getUnits();
-      if (dbUnits && dbUnits.length > 0) return dbUnits;
+      try {
+        return await mysqlClientService.getUnits();
+      } catch (e) {
+        console.warn("Lấy units từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getUnits();
   },
@@ -249,8 +258,11 @@ export const supabaseService = {
 
   async getStaff(): Promise<Staff[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbStaff = await mysqlClientService.getStaff();
-      if (dbStaff && dbStaff.length > 0) return dbStaff;
+      try {
+        return await mysqlClientService.getStaff();
+      } catch (e) {
+        console.warn("Lấy staff từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getStaff();
   },
@@ -276,8 +288,11 @@ export const supabaseService = {
 
   async getGroups(): Promise<ParticipantGroup[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbGroups = await mysqlClientService.getGroups();
-      if (dbGroups && dbGroups.length > 0) return dbGroups;
+      try {
+        return await mysqlClientService.getGroups();
+      } catch (e) {
+        console.warn("Lấy groups từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getGroups();
   },
@@ -303,8 +318,11 @@ export const supabaseService = {
 
   async getUsers(): Promise<User[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbUsers = await mysqlClientService.getUsers();
-      if (dbUsers && dbUsers.length > 0) return dbUsers;
+      try {
+        return await mysqlClientService.getUsers();
+      } catch (e) {
+        console.warn("Lấy users từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getUsers();
   },
@@ -330,8 +348,11 @@ export const supabaseService = {
 
   async getSettings(): Promise<SystemSettings | null> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbSettings = await mysqlClientService.getSettings();
-      if (dbSettings) return dbSettings;
+      try {
+        return await mysqlClientService.getSettings();
+      } catch (e) {
+        console.warn("Lấy settings từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return storageService.getSystemSettings();
   },
@@ -345,8 +366,11 @@ export const supabaseService = {
 
   async getOperators(): Promise<SystemOperator[]> {
     if (mysqlClientService.isUsingRealAPI()) {
-      const dbOperators = await mysqlClientService.getOperators();
-      if (dbOperators && dbOperators.length > 0) return dbOperators;
+      try {
+        return await mysqlClientService.getOperators();
+      } catch (e) {
+        console.warn("Lấy operators từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      }
     }
     return [];
   },
