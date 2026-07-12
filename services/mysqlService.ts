@@ -221,11 +221,19 @@ const isPHPHosting = true; // Đặt mặc định là true cho môi trường H
 
 /**
  * Hàm bổ trợ tự động chuyển đổi URL cho phù hợp với môi trường Hosting:
- * - Nếu dùng PHP (Hostinger): dùng dạng /api.php?action=actionName
- * - Nếu dùng Node Express: dùng dạng /api/endpointName
+ * - Nếu dùng PHP (Hostinger): dùng dạng api.php?action=actionName (không có gạch chéo đầu để hỗ trợ cả thư mục con)
+ * - Nếu dùng Node Express: dùng dạng api/endpointName
  */
-const reqUrl = (phpAction: string, expressEndpoint: string): string => {
-  return isPHPHosting ? `/api.php?action=${phpAction}` : `/api/${expressEndpoint}`;
+const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string = ''): string => {
+  if (isPHPHosting) {
+    return extraParams 
+      ? `api.php?action=${phpAction}&${extraParams}`
+      : `api.php?action=${phpAction}`;
+  } else {
+    return extraParams
+      ? `api/${expressEndpoint}/${extraParams}`
+      : `api/${expressEndpoint}`;
+  }
 };
 
 /**
@@ -299,9 +307,7 @@ export const mysqlClientService = {
 
   async deleteMeeting(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteMeeting&id=${encodeURIComponent(id)}`
-      : `/api/meetings/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteMeeting', `meetings/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -338,9 +344,7 @@ export const mysqlClientService = {
 
   async deleteEndpoint(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteEndpoint&id=${encodeURIComponent(id)}`
-      : `/api/endpoints/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteEndpoint', `endpoints/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -368,9 +372,7 @@ export const mysqlClientService = {
 
   async deleteUnit(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteUnit&id=${encodeURIComponent(id)}`
-      : `/api/units/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteUnit', `units/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -406,9 +408,7 @@ export const mysqlClientService = {
 
   async deleteStaff(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteStaff&id=${encodeURIComponent(id)}`
-      : `/api/staff/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteStaff', `staff/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -436,9 +436,7 @@ export const mysqlClientService = {
 
   async deleteGroup(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteGroup&id=${encodeURIComponent(id)}`
-      : `/api/groups/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteGroup', `groups/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -473,9 +471,7 @@ export const mysqlClientService = {
 
   async deleteUser(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteUser&id=${encodeURIComponent(id)}`
-      : `/api/users/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteUser', `users/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   },
@@ -511,9 +507,7 @@ export const mysqlClientService = {
 
   async deleteOperator(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = isPHPHosting 
-      ? `/api.php?action=deleteOperator&id=${encodeURIComponent(id)}`
-      : `/api/operators/${encodeURIComponent(id)}`;
+    const url = reqUrl('deleteOperator', `operators/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
   }
