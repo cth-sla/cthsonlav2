@@ -457,11 +457,37 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
 
               {formData.meetingFormat === 'TRUC_TUYEN' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-bold text-gray-700 dark:text-slate-300">ID phòng họp</label>
+                    <span className="text-[11px] text-gray-500 dark:text-slate-400">Chọn nhanh hoặc nhập ID thực tế</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 py-1">
+                    {['1@10.8.0.1', '2@10.8.0.1', '3@10.8.0.1', '4@10.8.0.1'].map(id => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setFormData({...formData, meetingRoomId: id})}
+                        className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all ${
+                          formData.meetingRoomId === id
+                            ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-750 border-gray-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {id}
+                      </button>
+                    ))}
+                    {formData.meetingRoomId && !['1@10.8.0.1', '2@10.8.0.1', '3@10.8.0.1', '4@10.8.0.1'].includes(formData.meetingRoomId) && (
+                      <div className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg border bg-blue-50/50 dark:bg-slate-900 border-blue-200 text-blue-600 dark:text-blue-400">
+                        ID thực tế: {formData.meetingRoomId}
+                      </div>
+                    )}
+                  </div>
+
                   <input 
                     type="text" 
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-mono"
-                    placeholder="Nhập ID phòng họp"
+                    placeholder="Nhập ID phòng họp thực tế"
                     value={formData.meetingRoomId}
                     onChange={e => setFormData({...formData, meetingRoomId: e.target.value})}
                   />
