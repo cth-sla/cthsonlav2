@@ -74,36 +74,54 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   const [status, setStatus] = useState<'SCHEDULED' | 'CANCELLED' | 'POSTPONED' | 'CHANGED_FORMAT'>('SCHEDULED');
   const [cancelReason, setCancelReason] = useState('');
 
-  const formatISOToLocalInput = (isoStr: string) => {
-    if (!isoStr) return '';
-    const date = new Date(isoStr);
-    if (isNaN(date.getTime())) return '';
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('10:00');
 
-  const formatLocalInputToISO = (localStr: string) => {
-    if (!localStr) return '';
-    const date = new Date(localStr);
-    return isNaN(date.getTime()) ? localStr : date.toISOString();
+  const parseDateTimeString = (str: string) => {
+    if (!str) return { date: '', time: '08:00' };
+    let d: Date;
+    if (str.includes('Z') || str.includes('+')) {
+      d = new Date(str);
+    } else {
+      d = new Date(str.replace(' ', 'T'));
+    }
+    
+    if (isNaN(d.getTime())) {
+      return { date: '', time: '08:00' };
+    }
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`
+    };
   };
 
   useEffect(() => {
     if (editingMeeting) {
+      const startParsed = parseDateTimeString(editingMeeting.startTime);
+      const endParsed = parseDateTimeString(editingMeeting.endTime);
+      
+      setStartDate(startParsed.date);
+      setStartTime(startParsed.time);
+      setEndDate(endParsed.date);
+      setEndTime(endParsed.time);
+
       setFormData({
         title: editingMeeting.title,
         hostUnit: editingMeeting.hostUnit,
         hostUnitId: editingMeeting.hostUnitId || '',
         chairPerson: editingMeeting.chairPerson,
         chairPersonId: editingMeeting.chairPersonId || '',
-        startTime: formatISOToLocalInput(editingMeeting.startTime),
-        endTime: formatISOToLocalInput(editingMeeting.endTime),
+        startTime: '',
+        endTime: '',
         description: editingMeeting.description,
         participants: editingMeeting.participants.join(', '),
         meetingRoomId: editingMeeting.meetingRoomId || '',
@@ -114,6 +132,12 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       setStatus(editingMeeting.status || 'SCHEDULED');
       setCancelReason(editingMeeting.cancelReason || '');
     } else {
+      const todayStr = new Date().toISOString().split('T')[0];
+      setStartDate(todayStr);
+      setStartTime('08:00');
+      setEndDate(todayStr);
+      setEndTime('10:00');
+
       setFormData({
         title: '',
         hostUnit: '',
@@ -180,6 +204,12 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       return;
     }
 
+    const timePattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timePattern.test(startTime) || !timePattern.test(endTime)) {
+      alert("Thời gian nhập không hợp lệ. Vui lòng nhập đúng định dạng 24-giờ (ví dụ: 14:30).");
+      return;
+    }
+
     const meetingData: Meeting = {
       id: editingMeeting ? editingMeeting.id : `MEET-${Math.floor(1000 + Math.random() * 9000)}`,
       title: formData.title,
@@ -187,8 +217,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       hostUnitId: formData.hostUnitId,
       chairPerson: formData.chairPerson,
       chairPersonId: formData.chairPersonId,
-      startTime: formatLocalInputToISO(formData.startTime),
-      endTime: formatLocalInputToISO(formData.endTime),
+      startTime: `${startDate} ${startTime}:00`,
+      endTime: `${endDate} ${endTime}:00`,
       description: formData.description,
       participants: formData.participants.split(',').map(p => p.trim()).filter(p => p !== ""),
       endpoints: selectedEndpoints,
@@ -284,23 +314,67 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Thời điểm bắt đầu *</label>
-                  <input 
-                    required
-                    type="datetime-local" 
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white"
-                    value={formData.startTime}
-                    onChange={e => setFormData({...formData, startTime: e.target.value})}
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      required
+                      type="date" 
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-medium"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                    />
+                    <input 
+                      required
+                      type="text" 
+                      placeholder="HH:mm"
+                      pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                      title="Định dạng 24-giờ (ví dụ: 14:30)"
+                      className="w-32 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white text-center font-mono font-bold"
+                      value={startTime}
+                      onChange={e => {
+                        let val = e.target.value;
+                        val = val.replace(/[^0-9:]/g, '');
+                        if (val.length === 2 && !val.includes(':') && startTime.length < 2) {
+                          val = val + ':';
+                        }
+                        if (val.length > 5) {
+                          val = val.slice(0, 5);
+                        }
+                        setStartTime(val);
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-gray-700 dark:text-slate-300">Dự kiến kết thúc *</label>
-                  <input 
-                    required
-                    type="datetime-local" 
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white"
-                    value={formData.endTime}
-                    onChange={e => setFormData({...formData, endTime: e.target.value})}
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      required
+                      type="date" 
+                      className="flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white font-medium"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                    />
+                    <input 
+                      required
+                      type="text" 
+                      placeholder="HH:mm"
+                      pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                      title="Định dạng 24-giờ (ví dụ: 17:00)"
+                      className="w-32 px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-700 focus:outline-none transition-all text-gray-900 dark:text-white text-center font-mono font-bold"
+                      value={endTime}
+                      onChange={e => {
+                        let val = e.target.value;
+                        val = val.replace(/[^0-9:]/g, '');
+                        if (val.length === 2 && !val.includes(':') && endTime.length < 2) {
+                          val = val + ':';
+                        }
+                        if (val.length > 5) {
+                          val = val.slice(0, 5);
+                        }
+                        setEndTime(val);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
