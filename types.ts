@@ -15,6 +15,12 @@ export interface User {
   password?: string;
 }
 
+export interface EndpointGroup {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface Endpoint {
   id: string;
   name: string;
@@ -23,6 +29,7 @@ export interface Endpoint {
   lastConnected: string;
   ip1?: string;
   ip2?: string;
+  groupId?: string;
 }
 
 export interface Unit {

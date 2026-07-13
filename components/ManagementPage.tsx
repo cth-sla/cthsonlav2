@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings } from '../types';
+import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings, EndpointGroup } from '../types';
 import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode } from 'lucide-react';
 
 interface ManagementPageProps {
@@ -8,6 +8,7 @@ interface ManagementPageProps {
   staff: Staff[];
   participantGroups: ParticipantGroup[];
   endpoints: Endpoint[];
+  endpointGroups: EndpointGroup[];
   systemSettings: SystemSettings;
   onAddUnit: (unit: Omit<Unit, 'id'>) => void;
   onUpdateUnit: (unit: Unit) => void;
@@ -17,10 +18,13 @@ interface ManagementPageProps {
   onUpdateGroup: (group: ParticipantGroup) => void;
   onAddEndpoint: (endpoint: Omit<Endpoint, 'id' | 'status' | 'lastConnected'>) => void;
   onUpdateEndpoint: (endpoint: Endpoint) => void;
+  onAddEndpointGroup: (group: Omit<EndpointGroup, 'id'>) => void;
+  onUpdateEndpointGroup: (group: EndpointGroup) => void;
   onDeleteUnit: (id: string) => void;
   onDeleteStaff: (id: string) => void;
   onDeleteGroup: (id: string) => void;
   onDeleteEndpoint: (id: string) => void;
+  onDeleteEndpointGroup: (id: string) => void;
   onUpdateSettings: (settings: SystemSettings) => void;
 }
 
@@ -29,6 +33,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   staff,
   participantGroups,
   endpoints,
+  endpointGroups = [],
   systemSettings,
   onAddUnit,
   onUpdateUnit,
@@ -38,15 +43,18 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   onUpdateGroup,
   onAddEndpoint,
   onUpdateEndpoint,
+  onAddEndpointGroup,
+  onUpdateEndpointGroup,
   onDeleteUnit,
   onDeleteStaff,
   onDeleteGroup,
   onDeleteEndpoint,
+  onDeleteEndpointGroup,
   onUpdateSettings
 }) => {
-  const [activeTab, setActiveTab] = useState<'units' | 'staff' | 'groups' | 'endpoints' | 'settings'>('units');
+  const [activeTab, setActiveTab] = useState<'units' | 'staff' | 'groups' | 'endpointGroups' | 'endpoints' | 'settings'>('units');
   const [searchTerm, setSearchTerm] = useState('');
-  const [endpointGroup, setEndpointGroup] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
+  const [endpointGroup, setEndpointGroup] = useState<string>('ALL');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -92,7 +100,13 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     g.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
+  const filteredEndpointGroups = endpointGroups.filter(eg =>
+    eg.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getEndpointGroup = (ep: Endpoint): string => {
+    if (ep.groupId) return ep.groupId;
+    
     const name = (ep.name || '').toUpperCase();
     const location = (ep.location || '').toUpperCase();
     
@@ -105,7 +119,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       name.includes('TỈNH UỶ') ||
       name.includes('VĂN PHÒNG TỈNH')
     ) {
-      return 'UBND';
+      return 'TINH';
     }
     
     if (
@@ -142,8 +156,9 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     } else {
       if (activeTab === 'units') setFormData({ name: '', code: '', description: '' });
       else if (activeTab === 'staff') setFormData({ fullName: '', position: '', unitId: '', email: '', phone: '' });
-      else if (activeTab === 'endpoints') setFormData({ name: '', location: '', status: EndpointStatus.DISCONNECTED });
+      else if (activeTab === 'endpoints') setFormData({ name: '', location: '', status: EndpointStatus.DISCONNECTED, groupId: '' });
       else if (activeTab === 'groups') setFormData({ name: '', description: '' });
+      else if (activeTab === 'endpointGroups') setFormData({ name: '', description: '' });
     }
     setIsModalOpen(true);
   };
@@ -164,6 +179,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       editingItem ? onUpdateEndpoint(formData as Endpoint) : onAddEndpoint(formData as Omit<Endpoint, 'id' | 'status' | 'lastConnected'>);
     } else if (activeTab === 'groups') {
       editingItem ? onUpdateGroup(formData as ParticipantGroup) : onAddGroup(formData as Omit<ParticipantGroup, 'id'>);
+    } else if (activeTab === 'endpointGroups') {
+      editingItem ? onUpdateEndpointGroup(formData as EndpointGroup) : onAddEndpointGroup(formData as Omit<EndpointGroup, 'id'>);
     }
     closeModal();
   };
@@ -199,7 +216,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
         <div className="flex bg-[#F5F5F5] dark:bg-slate-800 p-1 rounded-lg overflow-x-auto no-scrollbar">
-          {['units', 'staff', 'groups', 'endpoints', 'settings'].map((tab) => (
+          {['units', 'staff', 'groups', 'endpointGroups', 'endpoints', 'settings'].map((tab) => (
             <button 
               key={tab}
               onClick={() => { setActiveTab(tab as any); setSearchTerm(''); setEndpointGroup('ALL'); }}
@@ -209,6 +226,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
               {tab === 'units' ? 'Đơn vị' : 
                tab === 'staff' ? 'Cán bộ' : 
                tab === 'groups' ? 'Thành phần' : 
+               tab === 'endpointGroups' ? 'Nhóm điểm cầu' : 
                tab === 'endpoints' ? 'Điểm cầu' : 'Cấu hình'}
             </button>
           ))}
@@ -335,25 +353,46 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           </table>
         )}
 
+        {activeTab === 'endpointGroups' && (
+          <table className="w-full text-left text-sm min-w-[600px]">
+            <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-550 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Tên nhóm</th>
+                <th className="px-6 py-4">Mô tả</th>
+                <th className="px-6 py-4 text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+              {filteredEndpointGroups.map(eg => (
+                <tr key={eg.id} className="hover:bg-[#F5F5F5] dark:hover:bg-slate-800/30 transition-colors">
+                  <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{eg.name}</td>
+                  <td className="px-6 py-4 text-gray-600 dark:text-slate-300">{eg.description || '---'}</td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button onClick={() => openModal(eg)} className="text-blue-600 font-bold hover:underline">Sửa</button>
+                    <button onClick={() => onDeleteEndpointGroup(eg.id)} className="text-red-600 font-bold hover:underline">Xóa</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
         {activeTab === 'endpoints' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-50/50 dark:bg-slate-800/10 border-b border-gray-100 dark:border-slate-850 gap-3">
               <div className="flex flex-wrap gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl w-full sm:w-auto border border-gray-200/50 dark:border-slate-700">
-                {(['ALL', 'XA_PHUONG', 'SO_NGANH', 'UBND'] as const).map((group) => {
-                  const label = group === 'ALL' ? 'Tất cả' :
-                                group === 'XA_PHUONG' ? 'Xã/phường' :
-                                group === 'SO_NGANH' ? 'Sở/Ngành' : 'UBND';
+                {[{ id: 'ALL', name: 'Tất cả' }, ...endpointGroups].map((group) => {
                   return (
                     <button
-                      key={group}
-                      onClick={() => setEndpointGroup(group)}
+                      key={group.id}
+                      onClick={() => setEndpointGroup(group.id)}
                       className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all uppercase tracking-wider ${
-                        endpointGroup === group
+                        endpointGroup === group.id
                           ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
-                          : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                          : 'text-gray-550 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                       }`}
                     >
-                      {label}
+                      {group.name}
                     </button>
                   );
                 })}
@@ -364,7 +403,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </div>
 
             <table className="w-full text-left text-sm min-w-[600px]">
-              <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
+              <thead className="bg-[#F5F5F5] dark:bg-slate-800/50 text-gray-550 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Tên điểm cầu</th>
                   <th className="px-6 py-4">Nhóm</th>
@@ -381,13 +420,19 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{e.name}</td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const group = getEndpointGroup(e);
-                        const styles = group === 'UBND' 
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/30' 
-                          : group === 'XA_PHUONG' 
-                          ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-800/30' 
-                          : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30';
-                        const label = group === 'UBND' ? 'UBND' : group === 'XA_PHUONG' ? 'Xã/Phường' : 'Sở/Ngành';
+                        const gId = getEndpointGroup(e);
+                        const groupObj = endpointGroups.find(eg => eg.id === gId);
+                        const label = groupObj ? groupObj.name : 'Chưa gán';
+                        
+                        let styles = 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30';
+                        if (gId === 'TINH') {
+                          styles = 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/30';
+                        } else if (gId === 'XA_PHUONG') {
+                          styles = 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-800/30';
+                        } else if (gId === 'SO_NGANH') {
+                          styles = 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/30';
+                        }
+                        
                         return (
                           <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${styles}`}>
                             {label}
@@ -609,7 +654,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 {editingItem ? 'Cập nhật' : 'Thêm mới'} {
                   activeTab === 'units' ? 'Đơn vị' : 
                   activeTab === 'staff' ? 'Cán bộ' : 
-                  activeTab === 'groups' ? 'Thành phần' : 'Điểm cầu'
+                  activeTab === 'groups' ? 'Thành phần' : 
+                  activeTab === 'endpointGroups' ? 'Nhóm điểm cầu' : 'Điểm cầu'
                 }
               </h3>
               <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600">
@@ -646,9 +692,20 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   </>
                 )}
 
+                {activeTab === 'endpointGroups' && (
+                  <>
+                    <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white" placeholder="Tên nhóm điểm cầu" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <textarea className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none text-gray-900 dark:text-white" placeholder="Mô tả" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} />
+                  </>
+                )}
+
                 {activeTab === 'endpoints' && (
                   <>
                     <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white" placeholder="Tên điểm cầu" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <select required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white" value={formData.groupId || ''} onChange={e => setFormData({...formData, groupId: e.target.value})}>
+                      <option value="">-- Chọn nhóm điểm cầu --</option>
+                      {endpointGroups.map(eg => <option key={eg.id} value={eg.id}>{eg.name}</option>)}
+                    </select>
                     <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none text-gray-900 dark:text-white" placeholder="Vị trí / Địa điểm" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} />
                     <div className="grid grid-cols-2 gap-4">
                       <input className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white" placeholder="IP 1" value={formData.ip1 || ''} onChange={e => setFormData({...formData, ip1: e.target.value})} />

@@ -1,4 +1,4 @@
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator } from '../types';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator, EndpointGroup } from '../types';
 import { mysqlClientService } from './mysqlService';
 import { storageService } from './storageService';
 
@@ -189,6 +189,30 @@ export const supabaseService = {
 
   async deleteOperator(id: string): Promise<void> {
     await mysqlClientService.deleteOperator(id);
+  },
+
+  async getEndpointGroups(): Promise<EndpointGroup[]> {
+    try {
+      return await mysqlClientService.getEndpointGroups();
+    } catch (e) {
+      console.warn("Lấy endpoint groups từ MySQL thất bại, sử dụng fallback cục bộ:", e);
+      return storageService.getEndpointGroups();
+    }
+  },
+
+  async upsertEndpointGroup(g: EndpointGroup): Promise<void> {
+    await mysqlClientService.upsertEndpointGroup(g);
+    const local = storageService.getEndpointGroups();
+    const idx = local.findIndex(x => x.id === g.id);
+    if (idx >= 0) local[idx] = g;
+    else local.push(g);
+    storageService.saveEndpointGroups(local);
+  },
+
+  async deleteEndpointGroup(id: string): Promise<void> {
+    await mysqlClientService.deleteEndpointGroup(id);
+    const local = storageService.getEndpointGroups();
+    storageService.saveEndpointGroups(local.filter(x => x.id !== id));
   },
 
   subscribeTable(table: string, callback: (payload: any) => void) {

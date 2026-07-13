@@ -1,5 +1,5 @@
 
-import { Meeting, EndpointStatus, Unit, Staff, ParticipantGroup, User } from './types';
+import { Meeting, EndpointStatus, Unit, Staff, ParticipantGroup, User, EndpointGroup } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: '1', username: 'admin', fullName: 'Quản trị viên Hệ thống', role: 'ADMIN', password: 'admin' },
@@ -121,4 +121,10 @@ export const MOCK_PARTICIPANT_GROUPS: ParticipantGroup[] = [
   { id: 'G2', name: 'Hội đồng quản trị', description: 'Các thành viên HĐQT' },
   { id: 'G3', name: 'Trưởng phó các phòng ban', description: 'Đội ngũ quản lý cấp trung' },
   { id: 'G4', name: 'Toàn thể cán bộ nhân viên', description: 'Tất cả nhân viên công ty' },
+];
+
+export const MOCK_ENDPOINT_GROUPS: EndpointGroup[] = [
+  { id: 'XA_PHUONG', name: 'Xã/Phường', description: 'Các điểm cầu thuộc UBND xã, phường, thị trấn' },
+  { id: 'SO_NGANH', name: 'Sở/Ngành', description: 'Các điểm cầu thuộc sở, ban, ngành cấp tỉnh' },
+  { id: 'TINH', name: 'Tỉnh', description: 'Các điểm cầu thuộc UBND tỉnh, HĐND tỉnh, Tỉnh ủy' },
 ];

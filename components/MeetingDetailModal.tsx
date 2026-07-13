@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Meeting } from '../types';
+import { Meeting, EndpointGroup } from '../types';
 import { analyzeMeetingEfficiency } from '../services/geminiService';
 import MeetingPreCheck from './MeetingPreCheck';
 import { ExternalLink, FileText, Link as LinkIcon, MailOpen } from 'lucide-react';
 
 interface MeetingDetailModalProps {
   meeting: Meeting;
+  endpointGroups?: EndpointGroup[];
   onClose: () => void;
   onUpdate?: (meeting: Meeting) => void;
 }
 
-const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClose, onUpdate }) => {
+const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, endpointGroups = [], onClose, onUpdate }) => {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState(meeting.notes || '');
@@ -350,6 +351,7 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
       {showPreCheck && (
         <MeetingPreCheck 
           meeting={meeting} 
+          endpointGroups={endpointGroups}
           onClose={() => setShowPreCheck(false)} 
           onUpdate={handleUpdateMeeting}
         />

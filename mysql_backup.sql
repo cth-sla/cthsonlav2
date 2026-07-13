@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS `meetings`;
 DROP TABLE IF EXISTS `staff`;
 DROP TABLE IF EXISTS `units`;
 DROP TABLE IF EXISTS `endpoints`;
+DROP TABLE IF EXISTS `endpoint_groups`;
 DROP TABLE IF EXISTS `participant_groups`;
 DROP TABLE IF EXISTS `users`;
 SET FOREIGN_KEY_CHECKS = 1;
@@ -28,6 +29,14 @@ CREATE TABLE `system_settings` (
   `support_qr_base_64` LONGTEXT,
   `support_phone` VARCHAR(50),
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.5 Bảng Nhóm điểm cầu ( endpoint_groups )
+CREATE TABLE `endpoint_groups` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Bảng Danh mục Đơn vị ( units )
@@ -60,7 +69,9 @@ CREATE TABLE `endpoints` (
   `last_connected` VARCHAR(255),
   `ip_1` VARCHAR(100),
   `ip_2` VARCHAR(100),
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `group_id` VARCHAR(50),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`group_id`) REFERENCES `endpoint_groups`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Bảng Nhóm thành phần tham gia ( participant_groups )
@@ -144,17 +155,23 @@ INSERT INTO `staff` (`id`, `full_name`, `unit_id`, `position`, `email`, `phone`)
 ('S3', 'Lê Văn C', 'U3', 'Phó phòng Kế hoạch', 'vanc@example.com', '0901112223'),
 ('S4', 'Phạm Minh D', 'U1', 'Chánh Văn phòng', 'minhd@example.com', '0915556667');
 
+-- Bảng `endpoint_groups`
+INSERT INTO `endpoint_groups` (`id`, `name`, `description`) VALUES
+('XA_PHUONG', 'Xã/Phường', 'Các điểm cầu thuộc UBND xã, phường, thị trấn'),
+('SO_NGANH', 'Sở/Ngành', 'Các điểm cầu thuộc sở, ban, ngành cấp tỉnh'),
+('TINH', 'Tỉnh', 'Các điểm cầu thuộc UBND tỉnh, HĐND tỉnh, Tỉnh ủy');
+
 -- Bảng `endpoints`
-INSERT INTO `endpoints` (`id`, `name`, `location`, `status`, `last_connected`, `ip_1`, `ip_2`) VALUES
-('1', 'Điểm cầu Hà Nội', 'Tầng 5, Tòa nhà A', 'CONNECTED', '2024-05-20 08:00', '10.8.0.1', '192.168.1.1'),
-('2', 'Điểm cầu TP.HCM', 'Tòa nhà B, Quận 1', 'CONNECTED', '2024-05-20 08:05', '10.8.0.2', '192.168.1.2'),
-('3', 'Điểm cầu Đà Nẵng', 'VP Đại diện Miền Trung', 'DISCONNECTED', '2024-05-19 17:30', '10.8.0.3', '192.168.1.3'),
-('4', 'Điểm cầu Cần Thơ', 'VP Cần Thơ', 'CONNECTED', '2024-05-20 08:15', '10.8.0.4', '192.168.1.4'),
-('5', 'Điểm cầu Hải Phòng', 'VP Hải Phòng', 'DISCONNECTED', '2024-05-18 10:00', '10.8.0.5', '192.168.1.5'),
-('6', 'Điểm cầu Nghệ An', 'VP Nghệ An', 'CONNECTED', '2024-05-20 08:20', '10.8.0.6', '192.168.1.6'),
-('7', 'Điểm cầu Quảng Ninh', 'VP Quảng Ninh', 'CONNECTED', '2024-05-20 08:22', '10.8.0.7', '192.168.1.7'),
-('8', 'Điểm cầu Khánh Hòa', 'VP Nha Trang', 'CONNECTED', '2024-05-20 08:25', '10.8.0.8', '192.168.1.8'),
-('9', 'Điểm cầu Hà Giang', 'VP Hà Giang', 'CONNECTED', '2024-05-20 08:30', '10.8.0.9', '192.168.1.9');
+INSERT INTO `endpoints` (`id`, `name`, `location`, `status`, `last_connected`, `ip_1`, `ip_2`, `group_id`) VALUES
+('1', 'Điểm cầu Hà Nội', 'Tầng 5, Tòa nhà A', 'CONNECTED', '2024-05-20 08:00', '10.8.0.1', '192.168.1.1', 'TINH'),
+('2', 'Điểm cầu TP.HCM', 'Tòa nhà B, Quận 1', 'CONNECTED', '2024-05-20 08:05', '10.8.0.2', '192.168.1.2', 'TINH'),
+('3', 'Điểm cầu Đà Nẵng', 'VP Đại diện Miền Trung', 'DISCONNECTED', '2024-05-19 17:30', '10.8.0.3', '192.168.1.3', 'TINH'),
+('4', 'Điểm cầu Cần Thơ', 'VP Cần Thơ', 'CONNECTED', '2024-05-20 08:15', '10.8.0.4', '192.168.1.4', 'SO_NGANH'),
+('5', 'Điểm cầu Hải Phòng', 'VP Hải Phòng', 'DISCONNECTED', '2024-05-18 10:00', '10.8.0.5', '192.168.1.5', 'SO_NGANH'),
+('6', 'Điểm cầu Nghệ An', 'VP Nghệ An', 'CONNECTED', '2024-05-20 08:20', '10.8.0.6', '192.168.1.6', 'SO_NGANH'),
+('7', 'Điểm cầu Quảng Ninh', 'VP Quảng Ninh', 'CONNECTED', '2024-05-20 08:22', '10.8.0.7', '192.168.1.7', 'XA_PHUONG'),
+('8', 'Điểm cầu Khánh Hòa', 'VP Nha Trang', 'CONNECTED', '2024-05-20 08:25', '10.8.0.8', '192.168.1.8', 'XA_PHUONG'),
+('9', 'Điểm cầu Hà Giang', 'VP Hà Giang', 'CONNECTED', '2024-05-20 08:30', '10.8.0.9', '192.168.1.9', 'XA_PHUONG');
 
 -- Bảng `participant_groups`
 INSERT INTO `participant_groups` (`id`, `name`, `description`) VALUES

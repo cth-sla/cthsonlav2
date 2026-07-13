@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Video, MapPin } from 'lucide-react';
-import { Endpoint, EndpointStatus, Meeting, Unit, Staff } from '../types';
+import { Endpoint, EndpointStatus, Meeting, Unit, Staff, EndpointGroup } from '../types';
 
 interface CreateMeetingModalProps {
   isOpen: boolean;
@@ -11,44 +11,12 @@ interface CreateMeetingModalProps {
   units: Unit[];
   staff: Staff[];
   availableEndpoints: Endpoint[];
+  endpointGroups: EndpointGroup[];
   editingMeeting?: Meeting | null;
 }
 
-const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
-  const name = (ep.name || '').toUpperCase();
-  const location = (ep.location || '').toUpperCase();
-  
-  if (
-    name.includes('UBND') || 
-    name.includes('ỦY BAN NHÂN DÂN') || 
-    name.includes('HĐND') || 
-    name.includes('HỘI ĐỒNG NHÂN DÂN') ||
-    name.includes('TỈNH ỦY') ||
-    name.includes('TỈNH UỶ') ||
-    name.includes('VĂN PHÒNG TỈNH')
-  ) {
-    return 'UBND';
-  }
-  
-  if (
-    name.startsWith('P. ') || 
-    name.startsWith('X. ') || 
-    name.startsWith('TT. ') || 
-    name.includes('PHƯỜNG') || 
-    name.includes('XÃ') || 
-    name.includes('THỊ TRẤN') ||
-    location.includes('PHƯỜNG') ||
-    location.includes('XÃ') ||
-    location.includes('THỊ TRẤN')
-  ) {
-    return 'XA_PHUONG';
-  }
-  
-  return 'SO_NGANH';
-};
-
 const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ 
-  isOpen, onClose, onCreate, onUpdate, units, staff, availableEndpoints, editingMeeting 
+  isOpen, onClose, onCreate, onUpdate, units, staff, availableEndpoints, endpointGroups = [], editingMeeting 
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -67,7 +35,42 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
   
   const [selectedEndpointIds, setSelectedEndpointIds] = useState<string[]>([]);
   const [endpointSearch, setEndpointSearch] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<'ALL' | 'XA_PHUONG' | 'SO_NGANH' | 'UBND'>('ALL');
+  const [selectedGroup, setSelectedGroup] = useState<string>('ALL');
+
+  const getEndpointGroup = (ep: Endpoint): string => {
+    if (ep.groupId) return ep.groupId;
+    
+    const name = (ep.name || '').toUpperCase();
+    const location = (ep.location || '').toUpperCase();
+    
+    if (
+      name.includes('UBND') || 
+      name.includes('ỦY BAN NHÂN DÂN') || 
+      name.includes('HĐND') || 
+      name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+      name.includes('TỈNH ỦY') ||
+      name.includes('TỈNH UỶ') ||
+      name.includes('VĂN PHÒNG TỈNH')
+    ) {
+      return 'TINH';
+    }
+    
+    if (
+      name.startsWith('P. ') || 
+      name.startsWith('X. ') || 
+      name.startsWith('TT. ') || 
+      name.includes('PHƯỜNG') || 
+      name.includes('XÃ') || 
+      name.includes('THỊ TRẤN') ||
+      location.includes('PHƯỜNG') ||
+      location.includes('XÃ') ||
+      location.includes('THỊ TRẤN')
+    ) {
+      return 'XA_PHUONG';
+    }
+    
+    return 'SO_NGANH';
+  };
   const [status, setStatus] = useState<'SCHEDULED' | 'CANCELLED' | 'POSTPONED' | 'CHANGED_FORMAT'>('SCHEDULED');
   const [cancelReason, setCancelReason] = useState('');
 
@@ -436,22 +439,19 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
 
                 {/* Chọn lọc theo Nhóm */}
                 <div className="flex flex-wrap gap-1 bg-white dark:bg-slate-900/40 p-1 border border-gray-200/60 dark:border-slate-800 rounded-xl shadow-sm">
-                  {(['ALL', 'XA_PHUONG', 'SO_NGANH', 'UBND'] as const).map((group) => {
-                    const label = group === 'ALL' ? 'Tất cả' :
-                                  group === 'XA_PHUONG' ? 'Xã/phường' :
-                                  group === 'SO_NGANH' ? 'Sở/Ngành' : 'UBND';
+                  {[{ id: "ALL", name: "Tất cả" }, ...endpointGroups].map((group) => {
                     return (
                       <button
-                        key={group}
+                        key={group.id}
                         type="button"
-                        onClick={() => setSelectedGroup(group)}
+                        onClick={() => setSelectedGroup(group.id)}
                         className={`flex-1 min-w-[70px] py-1.5 rounded-lg text-[10px] font-black transition-all uppercase tracking-wider ${
-                          selectedGroup === group
-                            ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                          selectedGroup === group.id
+                            ? "bg-blue-600 dark:bg-blue-500 text-white shadow-sm"
+                            : "text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
                         }`}
                       >
-                        {label}
+                        {group.name}
                       </button>
                     );
                   })}

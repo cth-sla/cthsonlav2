@@ -244,7 +244,8 @@ switch ($action) {
                     "status" => $e['status'],
                     "lastConnected" => $e['last_connected'],
                     "ip1" => $e['ip_1'],
-                    "ip2" => $e['ip_2']
+                    "ip2" => $e['ip_2'],
+                    "groupId" => isset($e['group_id']) ? $e['group_id'] : null
                 ];
             }
             echo json_encode($formatted);
@@ -260,15 +261,16 @@ switch ($action) {
                 echo json_encode(["message" => "Thiếu mã điểm cầu"]);
                 break;
             }
-            $sql = "INSERT INTO endpoints (id, name, location, status, last_connected, ip_1, ip_2)
-                    VALUES (:id, :name, :location, :status, :last_connected, :ip1, :ip2)
+            $sql = "INSERT INTO endpoints (id, name, location, status, last_connected, ip_1, ip_2, group_id)
+                    VALUES (:id, :name, :location, :status, :last_connected, :ip1, :ip2, :groupId)
                     ON DUPLICATE KEY UPDATE
                       name = VALUES(name),
                       location = VALUES(location),
                       status = VALUES(status),
                       last_connected = VALUES(last_connected),
                       ip_1 = VALUES(ip_1),
-                      ip_2 = VALUES(ip_2)";
+                      ip_2 = VALUES(ip_2),
+                      group_id = VALUES(group_id)";
             
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
@@ -278,7 +280,8 @@ switch ($action) {
                 ':status' => isset($input['status']) ? $input['status'] : 'DISCONNECTED',
                 ':last_connected' => isset($input['lastConnected']) ? $input['lastConnected'] : null,
                 ':ip1' => isset($input['ip1']) ? $input['ip1'] : null,
-                ':ip2' => isset($input['ip2']) ? $input['ip2'] : null
+                ':ip2' => isset($input['ip2']) ? $input['ip2'] : null,
+                ':groupId' => isset($input['groupId']) ? $input['groupId'] : null
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu điểm cầu thành công"]);
         } else {
@@ -587,6 +590,60 @@ switch ($action) {
             $stmt = $pdo->prepare("DELETE FROM system_operators WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa cán bộ vận hành"]);
+        } else {
+            http_response_code(405);
+        }
+        break;
+
+    // ==========================================
+    // 9. NHÓM ĐIỂM CẦU (ENDPOINT GROUPS)
+    // ==========================================
+    case 'getEndpointGroups':
+        if ($method === 'GET') {
+            $stmt = $pdo->query("SELECT * FROM endpoint_groups ORDER BY name ASC");
+            $groups = $stmt->fetchAll();
+            echo json_encode($groups);
+        } else {
+            http_response_code(405);
+        }
+        break;
+
+    case 'upsertEndpointGroup':
+        if ($method === 'POST') {
+            if (!$input || !isset($input['id'])) {
+                http_response_code(400);
+                echo json_encode(["message" => "Thiếu mã nhóm điểm cầu"]);
+                break;
+            }
+            $sql = "INSERT INTO endpoint_groups (id, name, description)
+                    VALUES (:id, :name, :description)
+                    ON DUPLICATE KEY UPDATE
+                      name = VALUES(name),
+                      description = VALUES(description)";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':id' => $input['id'],
+                ':name' => $input['name'],
+                ':description' => isset($input['description']) ? $input['description'] : null
+            ]);
+            echo json_encode(["status" => "success", "message" => "Lưu nhóm điểm cầu thành công"]);
+        } else {
+            http_response_code(405);
+        }
+        break;
+
+    case 'deleteEndpointGroup':
+        if ($method === 'POST' || $method === 'DELETE') {
+            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(["message" => "Thiếu mã nhóm cần xóa"]);
+                break;
+            }
+            $stmt = $pdo->prepare("DELETE FROM endpoint_groups WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            echo json_encode(["status" => "success", "message" => "Đã xóa nhóm điểm cầu thành công"]);
         } else {
             http_response_code(405);
         }

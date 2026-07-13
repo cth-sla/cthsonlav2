@@ -1,54 +1,57 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Endpoint, EndpointStatus } from '../types';
+import { Endpoint, EndpointStatus, EndpointGroup } from '../types';
 import { Activity, Radio, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, MonitorPlay } from 'lucide-react';
 
 interface MonitoringGridProps {
   endpoints: Endpoint[];
+  endpointGroups: EndpointGroup[];
   onUpdateEndpoint?: (endpoint: Endpoint) => void;
 }
 
 const ITEMS_PER_PAGE = 12;
 
-const getEndpointGroup = (ep: { name: string; location?: string }): 'XA_PHUONG' | 'SO_NGANH' | 'UBND' => {
-  const name = (ep.name || '').toUpperCase();
-  const location = (ep.location || '').toUpperCase();
-  
-  if (
-    name.includes('UBND') || 
-    name.includes('ỦY BAN NHÂN DÂN') || 
-    name.includes('HĐND') || 
-    name.includes('HỘI ĐỒNG NHÂN DÂN') ||
-    name.includes('TỈNH ỦY') ||
-    name.includes('TỈNH UỶ') ||
-    name.includes('VĂN PHÒNG TỈNH')
-  ) {
-    return 'UBND';
-  }
-  
-  if (
-    name.startsWith('P. ') || 
-    name.startsWith('X. ') || 
-    name.startsWith('TT. ') || 
-    name.includes('PHƯỜNG') || 
-    name.includes('XÃ') || 
-    name.includes('THỊ TRẤN') ||
-    location.includes('PHƯỜNG') ||
-    location.includes('XÃ') ||
-    location.includes('THỊ TRẤN')
-  ) {
-    return 'XA_PHUONG';
-  }
-  
-  return 'SO_NGANH';
-};
-
-const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndpoint }) => {
+const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, endpointGroups = [], onUpdateEndpoint }) => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [locationFilter, setLocationFilter] = useState<string>('ALL');
   const [groupFilter, setGroupFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const getEndpointGroup = (ep: Endpoint): string => {
+    if (ep.groupId) return ep.groupId;
+    
+    const name = (ep.name || '').toUpperCase();
+    const location = (ep.location || '').toUpperCase();
+    
+    if (
+      name.includes('UBND') || 
+      name.includes('ỦY BAN NHÂN DÂN') || 
+      name.includes('HĐND') || 
+      name.includes('HỘI ĐỒNG NHÂN DÂN') ||
+      name.includes('TỈNH ỦY') ||
+      name.includes('TỈNH UỶ') ||
+      name.includes('VĂN PHÒNG TỈNH')
+    ) {
+      return 'TINH';
+    }
+    
+    if (
+      name.startsWith('P. ') || 
+      name.startsWith('X. ') || 
+      name.startsWith('TT. ') || 
+      name.includes('PHƯỜNG') || 
+      name.includes('XÃ') || 
+      name.includes('THỊ TRẤN') ||
+      location.includes('PHƯỜNG') ||
+      location.includes('XÃ') ||
+      location.includes('THỊ TRẤN')
+    ) {
+      return 'XA_PHUONG';
+    }
+    
+    return 'SO_NGANH';
+  };
 
   const locations = useMemo(() => {
     return Array.from(new Set(endpoints.map(e => e.location))).sort();
@@ -181,9 +184,9 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                 className="text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow cursor-pointer text-gray-900 dark:text-white"
             >
                 <option value="ALL">Tất cả</option>
-                <option value="XA_PHUONG">Xã/Phường</option>
-                <option value="SO_NGANH">Sở/Ngành</option>
-                <option value="UBND">UBND</option>
+                {endpointGroups.map(eg => (
+                  <option key={eg.id} value={eg.id}>{eg.name}</option>
+                ))}
             </select>
             </div>
 
@@ -255,13 +258,17 @@ const MonitoringGrid: React.FC<MonitoringGridProps> = ({ endpoints, onUpdateEndp
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       {(() => {
-                        const group = getEndpointGroup(ep);
-                        const badgeStyles = group === 'UBND'
-                          ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-400 border border-indigo-200/30'
-                          : group === 'XA_PHUONG'
-                          ? 'bg-teal-50 dark:bg-teal-950/30 text-teal-750 dark:text-teal-400 border border-teal-200/30'
-                          : 'bg-amber-50 dark:bg-amber-950/30 text-amber-750 dark:text-amber-400 border border-amber-200/30';
-                        const label = group === 'UBND' ? 'UBND' : group === 'XA_PHUONG' ? 'Xã/Phường' : 'Sở/Ngành';
+                        const groupId = getEndpointGroup(ep);
+                        const matchedGroup = endpointGroups.find(g => g.id === groupId);
+                        const label = matchedGroup ? matchedGroup.name : 'Khác';
+                        
+                        let badgeStyles = 'bg-amber-50 dark:bg-amber-950/30 text-amber-750 dark:text-amber-400 border border-amber-200/30';
+                        if (groupId === 'TINH' || groupId === 'UBND') {
+                          badgeStyles = 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-750 dark:text-indigo-400 border border-indigo-200/30';
+                        } else if (groupId === 'XA_PHUONG') {
+                          badgeStyles = 'bg-teal-50 dark:bg-teal-950/30 text-teal-750 dark:text-teal-400 border border-teal-200/30';
+                        }
+                        
                         return (
                           <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${badgeStyles}`}>
                             {label}

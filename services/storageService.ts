@@ -1,6 +1,6 @@
 
-import { Meeting, Unit, Staff, ParticipantGroup, User, Endpoint, SavedReportConfig, SystemSettings } from '../types';
-import { MOCK_MEETINGS, MOCK_UNITS, MOCK_STAFF, MOCK_PARTICIPANT_GROUPS, MOCK_USERS, MOCK_ENDPOINTS } from '../constants';
+import { Meeting, Unit, Staff, ParticipantGroup, User, Endpoint, SavedReportConfig, SystemSettings, EndpointGroup } from '../types';
+import { MOCK_MEETINGS, MOCK_UNITS, MOCK_STAFF, MOCK_PARTICIPANT_GROUPS, MOCK_USERS, MOCK_ENDPOINTS, MOCK_ENDPOINT_GROUPS } from '../constants';
 
 const DB_KEYS = {
   MEETINGS: 'cth_sla_meetings',
@@ -9,6 +9,7 @@ const DB_KEYS = {
   GROUPS: 'cth_sla_groups',
   USERS: 'cth_sla_users',
   ENDPOINTS: 'cth_sla_endpoints',
+  ENDPOINT_GROUPS: 'cth_sla_endpoint_groups',
   SAVED_REPORTS: 'cth_sla_saved_reports',
   SYSTEM_SETTINGS: 'cth_sla_system_settings'
 };
@@ -40,6 +41,9 @@ export const storageService = {
     }
     if (!localStorage.getItem(DB_KEYS.ENDPOINTS)) {
       localStorage.setItem(DB_KEYS.ENDPOINTS, JSON.stringify(MOCK_ENDPOINTS));
+    }
+    if (!localStorage.getItem(DB_KEYS.ENDPOINT_GROUPS)) {
+      localStorage.setItem(DB_KEYS.ENDPOINT_GROUPS, JSON.stringify(MOCK_ENDPOINT_GROUPS));
     }
     if (!localStorage.getItem(DB_KEYS.SAVED_REPORTS)) {
       localStorage.setItem(DB_KEYS.SAVED_REPORTS, JSON.stringify([]));
@@ -75,6 +79,9 @@ export const storageService = {
 
   getEndpoints(): Endpoint[] { return this.getData(DB_KEYS.ENDPOINTS, MOCK_ENDPOINTS); },
   saveEndpoints(data: Endpoint[]) { this.saveData(DB_KEYS.ENDPOINTS, data); },
+
+  getEndpointGroups(): EndpointGroup[] { return this.getData(DB_KEYS.ENDPOINT_GROUPS, MOCK_ENDPOINT_GROUPS); },
+  saveEndpointGroups(data: EndpointGroup[]) { this.saveData(DB_KEYS.ENDPOINT_GROUPS, data); },
 
   getSavedReports(): SavedReportConfig[] { return this.getData(DB_KEYS.SAVED_REPORTS, []); },
   saveSavedReports(data: SavedReportConfig[]) { this.saveData(DB_KEYS.SAVED_REPORTS, data); },

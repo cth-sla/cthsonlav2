@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight,
   Sun, Moon
 } from 'lucide-react';
-import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings, SystemOperator } from './types';
+import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings, SystemOperator, EndpointGroup } from './types';
 import StatCard from './components/StatCard';
 import MeetingList from './components/MeetingList';
 import MonitoringGrid from './components/MonitoringGrid';
@@ -49,6 +49,7 @@ const App: React.FC = () => {
   
   const [meetings, setMeetings] = useState<Meeting[]>(() => storageService.getMeetings());
   const [endpoints, setEndpoints] = useState<Endpoint[]>(() => storageService.getEndpoints());
+  const [endpointGroups, setEndpointGroups] = useState<EndpointGroup[]>(() => storageService.getEndpointGroups());
   const [units, setUnits] = useState<Unit[]>(() => storageService.getUnits());
   const [staff, setStaff] = useState<Staff[]>(() => storageService.getStaff());
   const [operators, setOperators] = useState<SystemOperator[]>(() => []);
@@ -194,8 +195,9 @@ const App: React.FC = () => {
         }
 
         // 2. Tải các bảng dữ liệu danh mục & quản trị (Sử dụng catch riêng để không chặn lẫn nhau)
-        const [cloudEndpoints, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudOperators] = await Promise.all([
+        const [cloudEndpoints, cloudEndpointGroups, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudOperators] = await Promise.all([
           supabaseService.getEndpoints().catch(err => { console.error("Lỗi tải endpoints:", err); return []; }),
+          supabaseService.getEndpointGroups().catch(err => { console.error("Lỗi tải endpoint groups:", err); return []; }),
           supabaseService.getUnits().catch(err => { console.error("Lỗi tải units:", err); return []; }),
           supabaseService.getStaff().catch(err => { console.error("Lỗi tải staff:", err); return []; }),
           supabaseService.getGroups().catch(err => { console.error("Lỗi tải groups:", err); return []; }),
@@ -206,6 +208,10 @@ const App: React.FC = () => {
         if (cloudEndpoints && cloudEndpoints.length > 0) {
           setEndpoints(cloudEndpoints);
           storageService.saveEndpoints(cloudEndpoints);
+        }
+        if (cloudEndpointGroups && cloudEndpointGroups.length > 0) {
+          setEndpointGroups(cloudEndpointGroups);
+          storageService.saveEndpointGroups(cloudEndpointGroups);
         }
         if (cloudUnits && cloudUnits.length > 0) {
           setUnits(cloudUnits);
@@ -848,7 +854,7 @@ const App: React.FC = () => {
               }}
             />
           )}
-          {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} onUpdateEndpoint={async (e) => {
+          {activeTab === 'monitoring' && isAdmin && <MonitoringGrid endpoints={endpoints} endpointGroups={endpointGroups} onUpdateEndpoint={async (e) => {
               if (supabaseService.isConfigured()) {
                 try { await supabaseService.upsertEndpoint(e); } catch (err) { console.error(err); }
               }
@@ -859,7 +865,38 @@ const App: React.FC = () => {
               });
           }} />}
           {activeTab === 'management' && <ManagementPage 
-              units={units} staff={staff} participantGroups={groups} endpoints={endpoints} systemSettings={systemSettings} 
+              units={units} staff={staff} participantGroups={groups} endpoints={endpoints} endpointGroups={endpointGroups} systemSettings={systemSettings} 
+              onAddEndpointGroup={async g => {
+                const newG = { ...g, id: `EG${Date.now()}` };
+                if (supabaseService.isConfigured()) {
+                  try { await supabaseService.upsertEndpointGroup(newG); } catch (err) { console.error(err); }
+                }
+                setEndpointGroups(prev => {
+                  const next = [...prev, newG];
+                  storageService.saveEndpointGroups(next);
+                  return next;
+                });
+              }}
+              onUpdateEndpointGroup={async g => {
+                if (supabaseService.isConfigured()) {
+                  try { await supabaseService.upsertEndpointGroup(g); } catch (err) { console.error(err); }
+                }
+                setEndpointGroups(prev => {
+                  const next = prev.map(item => item.id === g.id ? g : item);
+                  storageService.saveEndpointGroups(next);
+                  return next;
+                });
+              }}
+              onDeleteEndpointGroup={async id => {
+                if (supabaseService.isConfigured()) {
+                  try { await supabaseService.deleteEndpointGroup(id); } catch (err) { console.error(err); }
+                }
+                setEndpointGroups(prev => {
+                  const next = prev.filter(g => g.id !== id);
+                  storageService.saveEndpointGroups(next);
+                  return next;
+                });
+              }}
               onAddUnit={async u => { 
                 const newUnit = { ...u, id: `U${Date.now()}` };
                 if (supabaseService.isConfigured()) {
@@ -1041,8 +1078,8 @@ const App: React.FC = () => {
         />
       )}
 
-      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
-      {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={handleCreateMeeting} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} editingMeeting={editingMeeting} />}
+      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} endpointGroups={endpointGroups} onClose={() => setSelectedMeeting(null)} onUpdate={handleUpdateMeeting} />}
+      {isCreateModalOpen && <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingMeeting(null); }} onCreate={handleCreateMeeting} onUpdate={handleUpdateMeeting} units={units} staff={staff} availableEndpoints={endpoints} endpointGroups={endpointGroups} editingMeeting={editingMeeting} />}
       
       {isChangePasswordOpen && currentUser && (
         <ChangePasswordModal 

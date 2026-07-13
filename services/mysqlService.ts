@@ -1,4 +1,4 @@
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator } from '../types';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator, EndpointGroup } from '../types';
 
 /**
  * -----------------------------------------------------------------------------
@@ -252,10 +252,12 @@ const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string 
  * Đọc lỗi chi tiết từ PDO MySQL (nếu có) hoặc thông báo lỗi thông dịch PHP thân thiện khi chạy ở môi trường thử nghiệm.
  */
 const handleResponse = async (res: Response): Promise<any> => {
+  const text = await res.text();
+
   if (!res.ok) {
     let errorMsg = `HTTP Error: ${res.status}`;
     try {
-      const errorData = await res.json();
+      const errorData = JSON.parse(text);
       if (errorData) {
         if (errorData.details) {
           errorMsg = `${errorData.message || 'Lỗi kết nối CSDL'}: ${errorData.details}`;
@@ -265,27 +267,23 @@ const handleResponse = async (res: Response): Promise<any> => {
       }
     } catch (e) {
       // Không đọc được json (có thể do lỗi 500 html hoặc lỗi máy chủ tĩnh Node)
-      try {
-        const text = await res.clone().text();
-        if (text && (text.includes("<?php") || text.includes("<html") || text.includes("<!DOCTYPE") || text.includes("SyntaxError"))) {
-          errorMsg = `Máy chủ thử nghiệm (Node.js) hiện tại không hỗ trợ thông dịch mã nguồn PHP trực tiếp. Khi bạn đóng gói (build) ứng dụng và tải thư mục 'dist' cùng file 'api.php' lên Hostinger của bạn, kết nối MySQL sẽ hoạt động bình thường!`;
-        } else if (text) {
-          errorMsg = `Lỗi từ Server: ${text.substring(0, 150)}`;
-        }
-      } catch (_) {}
+      if (text && (text.includes("<?php") || text.includes("<html") || text.includes("<!DOCTYPE") || text.includes("SyntaxError"))) {
+        errorMsg = `Máy chủ thử nghiệm (Node.js) hiện tại không hỗ trợ thông dịch mã nguồn PHP trực tiếp. Khi bạn đóng gói (build) ứng dụng và tải thư mục 'dist' cùng file 'api.php' lên Hostinger của bạn, kết nối MySQL sẽ hoạt động bình thường!`;
+      } else if (text) {
+        errorMsg = `Lỗi từ Server: ${text.substring(0, 150)}`;
+      }
     }
     throw new Error(errorMsg);
   }
 
   try {
-    const data = await res.json();
+    const data = JSON.parse(text);
     if (data && data.status === 'error') {
       throw new Error(data.details || data.message || "MySQL Connection Error");
     }
     return data;
   } catch (err: any) {
     // Trường hợp trả về rỗng hoặc text không phải JSON
-    const text = await res.clone().text();
     if (text && (text.includes("<?php") || text.includes("<html"))) {
       throw new Error(`Máy chủ thử nghiệm (Node.js) hiện tại không hỗ trợ thông dịch mã nguồn PHP trực tiếp. Khi bạn đóng gói (build) ứng dụng và tải thư mục 'dist' cùng file 'api.php' lên Hostinger của bạn, kết nối MySQL sẽ hoạt động bình thường!`);
     }
@@ -372,7 +370,8 @@ export const mysqlClientService = {
       status: e.status,
       lastConnected: e.lastConnected || e.last_connected,
       ip1: e.ip1 || e.ip_1,
-      ip2: e.ip2 || e.ip_2
+      ip2: e.ip2 || e.ip_2,
+      groupId: e.groupId || e.group_id
     }));
   },
 
@@ -532,6 +531,30 @@ export const mysqlClientService = {
   async deleteOperator(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteOperator', `operators/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
+    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    await handleResponse(res);
+  },
+
+  async getEndpointGroups(): Promise<EndpointGroup[]> {
+    if (!this.isUsingRealAPI()) return [];
+    const res = await fetch(reqUrl('getEndpointGroups', 'endpoint_groups'));
+    const data = await handleResponse(res);
+    return Array.isArray(data) ? data : [];
+  },
+
+  async upsertEndpointGroup(g: EndpointGroup): Promise<void> {
+    if (!this.isUsingRealAPI()) return;
+    const res = await fetch(reqUrl('upsertEndpointGroup', 'endpoint_groups'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(g)
+    });
+    await handleResponse(res);
+  },
+
+  async deleteEndpointGroup(id: string): Promise<void> {
+    if (!this.isUsingRealAPI()) return;
+    const url = reqUrl('deleteEndpointGroup', `endpoint_groups/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
     const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
     await handleResponse(res);
   }
