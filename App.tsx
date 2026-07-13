@@ -5,7 +5,7 @@ import {
   AreaChart, Area, Legend
 } from 'recharts';
 import { 
-  LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, Share2, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell, Video,
+  LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell, Video,
   ChevronLeft, ChevronRight,
   Sun, Moon
 } from 'lucide-react';
@@ -23,7 +23,6 @@ import MeetingDetailModal from './components/MeetingDetailModal';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import UpcomingAlert from './components/UpcomingAlert';
 import NotificationToast from './components/NotificationToast';
-import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
 import { mysqlClientService } from './services/mysqlService';
@@ -35,7 +34,7 @@ storageService.init();
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showPublicView, setShowPublicView] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'deployment' | 'operators'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'operators'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -557,10 +556,6 @@ const App: React.FC = () => {
                  <Users size={20} /> 
                  {!isSidebarCollapsed && <span className="font-bold text-sm">Tài khoản</span>}
                </button>
-               <button onClick={() => handleTabChange('deployment')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'deployment' ? 'text-white shadow-lg' : 'text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`} style={activeTab === 'deployment' ? primaryBgStyle : {}} title="Triển khai">
-                 <Share2 size={20} /> 
-                 {!isSidebarCollapsed && <span className="font-bold text-sm">Triển khai</span>}
-               </button>
             </div>
           )}
         </nav>
@@ -1062,7 +1057,7 @@ const App: React.FC = () => {
                 return next;
               });
           }} />}
-          {activeTab === 'deployment' && <ExportPage />}
+
         </div>
       </main>
 
