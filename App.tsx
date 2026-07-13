@@ -26,6 +26,7 @@ import NotificationToast from './components/NotificationToast';
 import ExportPage from './components/ExportPage';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
+import { mysqlClientService } from './services/mysqlService';
 
 const VIBRANT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
@@ -68,6 +69,12 @@ const App: React.FC = () => {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
+  const [dbStatus, setDbStatus] = useState<{
+    status: 'connected' | 'error' | 'syncing';
+    message?: string;
+    details?: string;
+  }>({ status: 'syncing' });
+  const [showDbErrorModal, setShowDbErrorModal] = useState(false);
 
   const isAdmin = currentUser?.role === 'ADMIN';
   const isOperator = currentUser?.role === 'OPERATOR';
@@ -135,14 +142,30 @@ const App: React.FC = () => {
       if (!supabaseService.isConfigured()) return;
       
       setIsSyncing(true);
+      setDbStatus(prev => prev.status === 'error' ? prev : { status: 'syncing' });
+
       try {
-        console.log("Bắt đầu đồng bộ dữ liệu từ Supabase...");
+        console.log("Bắt đầu kiểm tra kết nối MySQL Hostinger...");
+        // Gọi trực tiếp mysqlClientService để kiểm tra kết nối thực tế tới API
+        await mysqlClientService.getSettings();
+        setDbStatus({ status: 'connected' });
+      } catch (err: any) {
+        console.error("Lỗi kết nối cơ sở dữ liệu MySQL:", err);
+        setDbStatus({
+          status: 'error',
+          message: err.message || "Lỗi kết nối cơ sở dữ liệu MySQL trên Hostinger",
+          details: err.toString()
+        });
+      }
+
+      try {
+        console.log("Đang đồng bộ dữ liệu...");
         
         // 1. Luôn ưu tiên lấy Cấu hình hệ thống và Lịch họp (Không để các bảng khác chặn đứng)
         const [cloudSettings, cloudMeetings] = await Promise.all([
           supabaseService.getSettings()
             .then(res => {
-              console.log("Đã tải cấu hình hệ thống từ Supabase:", res);
+              console.log("Đã tải cấu hình hệ thống:", res);
               return res;
             })
             .catch(err => {
@@ -151,7 +174,7 @@ const App: React.FC = () => {
             }),
           supabaseService.getMeetings()
             .then(res => {
-              console.log(`Đã tải ${res?.length || 0} cuộc họp từ Supabase`);
+              console.log(`Đã tải ${res?.length || 0} cuộc họp`);
               return res;
             })
             .catch(err => {
@@ -163,8 +186,6 @@ const App: React.FC = () => {
         if (cloudSettings) {
           setSystemSettings(cloudSettings);
           storageService.saveSystemSettings(cloudSettings);
-        } else {
-          console.warn("Không có cấu hình hệ thống trả về từ Supabase (có thể do lỗi RLS hoặc bảng trống)");
         }
 
         if (cloudMeetings && cloudMeetings.length > 0) {
@@ -209,7 +230,7 @@ const App: React.FC = () => {
         setLastRefreshed(new Date());
         setHasSyncedOnce(true);
       } catch (err) {
-        console.error("Lỗi trong quá trình đồng bộ dữ liệu:", err);
+        console.error("Lỗi đồng bộ chi tiết:", err);
       } finally {
         setIsSyncing(false);
       }
@@ -551,12 +572,41 @@ const App: React.FC = () => {
           <button onClick={toggleSidebar} className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><Menu size={24} /></button>
           
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full">
-                <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-500 animate-spin' : 'bg-emerald-500 animate-pulse'}`}></div>
-                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                  {isSyncing ? 'Đang đồng bộ...' : `Cloud Sync: ${lastRefreshed.toLocaleTimeString('vi-VN', { hour12: false })}`}
+             <button 
+                onClick={() => dbStatus.status === 'error' && setShowDbErrorModal(true)}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all text-left ${
+                  dbStatus.status === 'connected' 
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30' 
+                    : dbStatus.status === 'error'
+                      ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                }`}
+                title={dbStatus.status === 'error' ? "Nhấp vào để xem chi tiết lỗi kết nối MySQL" : "Trạng thái kết nối CSDL MySQL Hostinger"}
+             >
+                <div className={`w-2 h-2 rounded-full ${
+                  dbStatus.status === 'connected' 
+                    ? 'bg-emerald-500 animate-pulse' 
+                    : dbStatus.status === 'error'
+                      ? 'bg-red-500 animate-pulse'
+                      : 'bg-amber-500 animate-spin'
+                }`}></div>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${
+                  dbStatus.status === 'connected' 
+                    ? 'text-emerald-700 dark:text-emerald-400' 
+                    : dbStatus.status === 'error'
+                      ? 'text-red-700 dark:text-red-400 animate-pulse'
+                      : 'text-slate-500 dark:text-slate-400'
+                }`}>
+                  {dbStatus.status === 'connected' 
+                    ? 'MySQL: Đang kết nối' 
+                    : dbStatus.status === 'error'
+                      ? 'MySQL: Lỗi kết nối'
+                      : 'MySQL: Đang đồng bộ...'}
                 </span>
-             </div>
+                {dbStatus.status === 'error' && (
+                  <span className="text-[10px] bg-red-600 text-white font-black px-1.5 py-0.2 rounded animate-pulse">LỖI</span>
+                )}
+             </button>
           </div>
  
           <div className="flex items-center gap-2 md:gap-4">
@@ -1001,6 +1051,75 @@ const App: React.FC = () => {
           currentUser={currentUser} 
           onUpdate={handleSelfUpdatePassword}
         />
+      )}
+
+      {showDbErrorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900 rounded-[2.5rem] shadow-2xl p-6 md:p-8 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4 text-red-600 dark:text-red-400 mb-6">
+              <div className="p-3 bg-red-100 dark:bg-red-950/50 rounded-2xl shrink-0">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">Cảnh báo: Lỗi kết nối MySQL Hostinger</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hệ thống tự động phát hiện và chẩn đoán lỗi kết nối từ máy chủ Hostinger của bạn.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="p-4 bg-red-50 dark:bg-slate-950/60 rounded-2xl border border-red-100 dark:border-slate-800">
+                <h4 className="text-xs font-black text-red-800 dark:text-red-300 uppercase tracking-wider mb-2">Thông báo lỗi:</h4>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{dbStatus.message}</p>
+              </div>
+
+              {dbStatus.details && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                  <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Chi tiết kỹ thuật từ MySQL PDO:</h4>
+                  <pre className="text-xs font-mono text-red-600 dark:text-red-400 overflow-x-auto whitespace-pre-wrap break-all">{dbStatus.details}</pre>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Các bước chẩn đoán & khắc phục:</h4>
+                <ol className="list-decimal pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed">
+                  <li>
+                    <strong className="text-slate-900 dark:text-white">Kiểm tra thông tin mật khẩu:</strong> Mật khẩu Database User hiện tại được đặt trong file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> là <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-amber-600 dark:text-amber-400 font-bold">"Sonla2026"</code>. Hãy chắc chắn mật khẩu này trùng khớp 100% với mật khẩu bạn đã tạo cho User <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-600 dark:text-slate-400 font-bold">"u411714528_lichhop"</code> trong trang quản lý hosting của Hostinger (hPanel).
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 dark:text-white">Kiểm tra cơ sở dữ liệu mẫu:</strong> Đảm bảo bạn đã truy cập vào <strong className="text-slate-900 dark:text-white">phpMyAdmin</strong> trên Hostinger, chọn cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">u411714528_lichhop</code> và <strong className="text-slate-900 dark:text-white">Import (Nhập)</strong> file cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">mysql_backup.sql</code> hoặc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">schema.sql</code> đi kèm mã nguồn. Nếu cơ sở dữ liệu trống không có bảng, hệ thống sẽ báo lỗi không tìm thấy bảng.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 dark:text-white">Vị trí của file api.php:</strong> Hãy đảm bảo bạn đã tải file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> cùng với thư mục <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">dist</code> lên thư mục gốc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">public_html</code> trên Hostinger. File <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> bắt buộc phải nằm ở cùng thư mục với file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">index.html</code> của React.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 dark:text-white">Lưu ý về Môi trường thử nghiệm:</strong> Nếu bạn đang chạy ứng dụng trực tiếp trên công cụ xem trước (Vite Dev Server) của AI Studio, máy chủ Node.js không thể chạy mã nguồn PHP nên kết nối MySQL sẽ bị báo lỗi. Bạn vẫn có thể nhập/sửa dữ liệu bình thường thông qua bộ nhớ cục bộ (Local Storage) dự phòng để kiểm tra giao diện, và khi bạn biên dịch (build) rồi tải lên Hostinger, dữ liệu sẽ tự động đồng bộ sang MySQL thật!
+                  </li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-slate-800 shrink-0">
+              <button
+                onClick={async () => {
+                  setShowDbErrorModal(false);
+                  setDbStatus({ status: 'syncing' });
+                  window.location.reload();
+                }}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+              >
+                Thử kết nối lại
+              </button>
+              <button
+                onClick={() => setShowDbErrorModal(false)}
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
