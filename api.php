@@ -18,9 +18,9 @@
 // CẤU HÌNH KẾT NỐI DATABASE MYSQL (Thay đổi thông tin tương ứng trên Hostinger của bạn)
 define('DB_HOST', 'localhost');          // Thường là localhost trên Hostinger
 define('DB_PORT', '3306');               // Cổng mặc định của MySQL
-define('DB_USER', 'u411714528_lichhop');  // Username MySQL tạo trên Hostinger
+define('DB_USER', 'u295972519_lichhop');  // Username MySQL tạo trên Hostinger
 define('DB_PASS', 'Sonla2026'); // Mật khẩu của Database User
-define('DB_NAME', 'u411714528_lichhop');   // Tên Database tạo trên Hostinger
+define('DB_NAME', 'u295972519_lichhop');   // Tên Database tạo trên Hostinger
 
 // THIẾT LẬP CÁC HEADER CHO PHÉP TRUY CẬP (CORS & JSON RESPONSE)
 header("Access-Control-Allow-Origin: *");
