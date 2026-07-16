@@ -701,9 +701,9 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider">Hình ảnh đại diện</label>
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                        <div className="w-16 h-16 bg-transparent rounded-2xl border border-gray-255 dark:border-slate-800/80 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                           {b.image ? (
-                            <img src={b.image} alt="Banner" className="w-full h-full object-cover" />
+                            <img src={b.image} alt="Banner" className="w-full h-full object-contain p-1" />
                           ) : (
                             <ImageIcon className="text-gray-350 dark:text-slate-600 w-6 h-6" />
                           )}

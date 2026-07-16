@@ -436,12 +436,12 @@ const LoginView: React.FC<LoginViewProps> = ({
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
                     
                     {/* Main square image container */}
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-gray-200 dark:border-white/15 bg-white dark:bg-slate-950 shadow-md dark:shadow-lg flex items-center justify-center">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-gray-200/50 dark:border-white/10 bg-transparent shadow-sm flex items-center justify-center">
                       {b.image ? (
                         <img 
                           src={b.image} 
                           alt={b.title} 
-                          className="w-full h-full object-cover rounded-2xl transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-contain p-1 rounded-2xl transition-transform duration-500 group-hover:scale-110"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
@@ -506,9 +506,9 @@ const LoginView: React.FC<LoginViewProps> = ({
                   onClick={(e) => handleExternalLink(e, b.link)}
                   className="bg-white dark:bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-gray-200 dark:border-white/20 shadow-sm flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group"
                 >
-                  <div className="w-10 h-10 rounded-xl overflow-hidden relative bg-slate-950 shadow-sm shrink-0">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden relative bg-transparent shadow-sm shrink-0">
                     {b.image ? (
-                      <img src={b.image} alt={b.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
+                      <img src={b.image} alt={b.title} className="w-full h-full object-contain p-0.5 transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center text-[10px] font-black text-slate-400">
                         {b.title.substring(0, 2).toUpperCase()}
