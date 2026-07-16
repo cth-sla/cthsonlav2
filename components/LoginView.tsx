@@ -342,79 +342,109 @@ const LoginView: React.FC<LoginViewProps> = ({
  
           {/* Side-by-Side Wrapper to make Login Card & Links Column level */}
           <div className="flex flex-row items-stretch gap-4 w-full">
-            {/* Login Card */}
-            <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[1.75rem] p-5 lg:p-6 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/20 flex-1 flex flex-col relative overflow-hidden group">
-              <div className="mb-5 text-center">
-                 <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
-                  <p className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em]">ĐĂNG NHẬP HỆ THỐNG</p>
+            {/* Left Column containing Login Card and Support Box */}
+            <div className="flex flex-col gap-4 flex-1">
+              {/* Login Card */}
+              <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[1.75rem] p-5 lg:p-6 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/20 flex-1 flex flex-col relative overflow-hidden group">
+                <div className="mb-5 text-center">
+                   <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
+                    <p className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em]">ĐĂNG NHẬP HỆ THỐNG</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-white/40 text-[8px] font-black tracking-[0.3em] leading-relaxed mt-1.5">
+                      <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-slate-400 dark:text-white/40 text-[8px] font-black tracking-[0.3em] leading-relaxed mt-1.5">
-                    <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+                
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2.5 animate-shake text-red-600 dark:text-white">
+                      <XCircle className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0" />
+                      <p className="text-[9px] font-black uppercase tracking-wider leading-tight">{error}</p>
+                    </div>
+                  )}
+     
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Tên tài khoản</label>
+                    <div className="relative group">
+                      <input 
+                        type="text" 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
+                        placeholder="Tên đăng nhập..."
+                      />
+                      <UserIcon className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                    </div>
+                  </div>
+     
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Mật khẩu</label>
+                    <div className="relative group">
+                      <input 
+                        type="password" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
+                        placeholder="••••••••"
+                      />
+                      <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                    </div>
+                  </div>
+    
+                  <button 
+                    type="submit"
+                    disabled={isLoading}
+                    className={`w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-white shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 mt-3 ${
+                      isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/20'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <>
+                        <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Đang xác thực...
+                      </>
+                    ) : (
+                      <>
+                        ĐĂNG NHẬP
+                      </>
+                    )}
+                  </button>
+                </form>
+    
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 text-center">
+                  <p className="text-slate-400 dark:text-white/40 text-[8px] font-black uppercase tracking-[0.3em] leading-relaxed">
+                    <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
                   </p>
                 </div>
               </div>
-              
-              <form onSubmit={handleSubmit} className="space-y-3.5">
-                {error && (
-                  <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2.5 animate-shake text-red-600 dark:text-white">
-                    <XCircle className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0" />
-                    <p className="text-[9px] font-black uppercase tracking-wider leading-tight">{error}</p>
-                  </div>
-                )}
-   
-                <div className="space-y-1.5">
-                  <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Tên tài khoản</label>
-                  <div className="relative group">
-                    <input 
-                      type="text" 
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
-                      placeholder="Tên đăng nhập..."
-                    />
-                    <UserIcon className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+
+              {/* Support Information Box - aligned perfectly with Login Card */}
+              <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-2xl p-4 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-4 transition-all">
+                <div className="w-14 h-14 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
+                  <img 
+                    src={systemSettings.supportQrBase64 || FIXED_SUPPORT_QR} 
+                    alt="Support QR" 
+                    className="w-[50px] h-[50px] object-contain select-none rounded-lg" 
+                  />
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                    HỖ TRỢ KỸ THUẬT
+                  </p>
+                  <div className="space-y-0.5">
+                    <p className="text-[8px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
+                      Hotline liên hệ:
+                    </p>
+                    <a 
+                      href={`tel:${(systemSettings.supportPhone || FIXED_SUPPORT_PHONE).replace(/\./g, '')}`}
+                      className="block text-xl font-black text-slate-800 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer leading-tight font-sans"
+                    >
+                      {systemSettings.supportPhone || FIXED_SUPPORT_PHONE}
+                    </a>
                   </div>
                 </div>
-   
-                <div className="space-y-1.5">
-                  <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Mật khẩu</label>
-                  <div className="relative group">
-                    <input 
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
-                      placeholder="••••••••"
-                    />
-                    <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
-                  </div>
-                </div>
-  
-                <button 
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-white shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 mt-3 ${
-                    isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/20'
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                      Đang xác thực...
-                    </>
-                  ) : (
-                    <>
-                      ĐĂNG NHẬP
-                    </>
-                  )}
-                </button>
-              </form>
-  
-              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 text-center">
-                <p className="text-slate-400 dark:text-white/40 text-[8px] font-black uppercase tracking-[0.3em] leading-relaxed">
-                  <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
-                </p>
               </div>
             </div>
 
@@ -463,33 +493,6 @@ const LoginView: React.FC<LoginViewProps> = ({
                     </div>
                   </motion.div>
                 ))}
-              </div>
-            </div>
-          </div>
- 
-          {/* Support Information Box */}
-          <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full xl:max-w-[400px] flex items-center gap-5 transition-all">
-            <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
-              <img 
-                src={systemSettings.supportQrBase64 || FIXED_SUPPORT_QR} 
-                alt="Support QR" 
-                className="w-[80px] h-[80px] object-contain select-none rounded-lg" 
-              />
-            </div>
-            <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
-                HỖ TRỢ KỸ THUẬT
-              </p>
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-slate-400 dark:text-white/40 font-bold uppercase tracking-wider leading-none">
-                  Hotline liên hệ:
-                </p>
-                <a 
-                  href={`tel:${(systemSettings.supportPhone || FIXED_SUPPORT_PHONE).replace(/\./g, '')}`}
-                  className="block text-2xl font-black text-slate-800 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer leading-tight font-sans"
-                >
-                  {systemSettings.supportPhone || FIXED_SUPPORT_PHONE}
-                </a>
               </div>
             </div>
           </div>
