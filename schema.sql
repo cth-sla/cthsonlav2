@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
     CONSTRAINT one_row_only CHECK (id = 1)
 );
 
+-- 1.5 Bảng liên kết quảng cáo (ad_banners) bổ sung
+CREATE TABLE IF NOT EXISTS public.ad_banners (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    image TEXT,
+    link TEXT,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- 2. Bảng Danh mục Đơn vị
 CREATE TABLE IF NOT EXISTS public.units (
     id TEXT PRIMARY KEY,
@@ -112,6 +122,7 @@ ALTER TABLE public.endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.participant_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_operators ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_banners ENABLE ROW LEVEL SECURITY;
 
 -- Tạo chính sách cho phép truy cập công khai (Dành cho demo/triển khai nhanh)
 DO $$ 
@@ -139,11 +150,23 @@ BEGIN
 
     DROP POLICY IF EXISTS "Public Access All" ON public.system_operators;
     CREATE POLICY "Public Access All" ON public.system_operators FOR ALL USING (true) WITH CHECK (true);
+
+    DROP POLICY IF EXISTS "Public Access All" ON public.ad_banners;
+    CREATE POLICY "Public Access All" ON public.ad_banners FOR ALL USING (true) WITH CHECK (true);
 END $$;
 
 -- 10. Dữ liệu cấu hình mặc định ban đầu
 INSERT INTO public.system_settings (id, system_name, short_name, primary_color)
 VALUES (1, 'ỦY BAN NHÂN DÂN TỈNH SƠN LA', 'HỘI NGHỊ TRỰC TUYẾN SƠN LA', '#3B82F6')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.ad_banners (id, title, image, link, active) VALUES
+('ad1', 'Cổng Dịch vụ công Quốc gia', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=300&h=300', 'https://dichvucong.gov.vn', true),
+('ad2', 'Cổng TTĐT Tỉnh Sơn La', 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&q=80&w=300&h=300', 'https://sonla.gov.vn', true),
+('ad3', 'Trang Tin Đảng Cộng Sản', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=300&h=300', 'http://dangcongsan.vn', true),
+('ad4', 'Báo Sơn La Điện Tử', 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=300&h=300', 'https://baosonla.org.vn', true),
+('ad5', 'Hệ Thống Quản Lý Văn Bản', 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=300&h=300', 'https://qlvb.sonla.gov.vn', true),
+('ad6', 'Tổng Đài Hỗ Trợ Viettel', 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80&w=300&h=300', 'https://viettel.vn', true)
 ON CONFLICT (id) DO NOTHING;
 
 NOTIFY pgrst, 'reload schema';

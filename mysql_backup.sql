@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS `endpoints`;
 DROP TABLE IF EXISTS `endpoint_groups`;
 DROP TABLE IF EXISTS `participant_groups`;
 DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `ad_banners`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. Bảng Cấu hình hệ thống ( system_settings )
@@ -29,6 +30,16 @@ CREATE TABLE `system_settings` (
   `support_qr_base_64` LONGTEXT,
   `support_phone` VARCHAR(50),
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.2 Bảng liên kết quảng cáo ( ad_banners ) bổ sung
+CREATE TABLE `ad_banners` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `image` LONGTEXT,
+  `link` VARCHAR(255),
+  `active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 1.5 Bảng Nhóm điểm cầu ( endpoint_groups )
@@ -202,5 +213,14 @@ INSERT INTO `meetings` (`id`, `title`, `host_unit_name`, `host_unit_id`, `chair_
 '["Đội Kỹ thuật", "Đại diện Chi nhánh"]', 
 '[]', 
 'Hướng dẫn cài đặt và vận hành hệ thống mới.', 'Cần chuẩn bị tài liệu kỹ thuật', '{}', 'SCHEDULED', 'MS-TEAMS-111', 'TRUC_TUYEN');
+
+-- Bảng `ad_banners`
+INSERT INTO `ad_banners` (`id`, `title`, `image`, `link`, `active`) VALUES
+('ad1', 'Cổng Dịch vụ công Quốc gia', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=300&h=300', 'https://dichvucong.gov.vn', 1),
+('ad2', 'Cổng TTĐT Tỉnh Sơn La', 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&q=80&w=300&h=300', 'https://sonla.gov.vn', 1),
+('ad3', 'Trang Tin Đảng Cộng Sản', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=300&h=300', 'http://dangcongsan.vn', 1),
+('ad4', 'Báo Sơn La Điện Tử', 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=300&h=300', 'https://baosonla.org.vn', 1),
+('ad5', 'Hệ Thống Quản Lý Văn Bản', 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=300&h=300', 'https://qlvb.sonla.gov.vn', 1),
+('ad6', 'Tổng Đài Hỗ Trợ Viettel', 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80&w=300&h=300', 'https://viettel.vn', 1);
 
 COMMIT;

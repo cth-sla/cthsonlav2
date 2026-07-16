@@ -33,6 +33,13 @@
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
+        @keyframes shine-sweep {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shine-sweep {
+          animation: shine-sweep 0.8s ease-in-out;
+        }
     </style>
 <script type="importmap">
 {

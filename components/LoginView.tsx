@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { User, SystemSettings, Meeting } from '../types';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode } from 'lucide-react';
 
@@ -311,8 +312,9 @@ const LoginView: React.FC<LoginViewProps> = ({
           </div>
         </div>
 
-        {/* Right Section: Smaller & Compact Login Card */}
-        <div className="w-full lg:w-[400px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+        {/* Right Section: Smaller & Compact Login Card + Attached Links */}
+        <div className="w-full lg:w-[400px] xl:w-[510px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+          
           {/* Digital Clock Header - Single Line Layout */}
           <div className="mb-6 flex justify-center">
             <div className="px-6 py-2.5 bg-white dark:bg-white/5 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-full shadow-xl flex items-center gap-4 group">
@@ -338,83 +340,135 @@ const LoginView: React.FC<LoginViewProps> = ({
             </div>
           </div>
  
-          <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2.5rem] p-8 lg:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] dark:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/20 w-full flex flex-col relative overflow-hidden group">
-            <div className="mb-8 text-center">
-               <div className="inline-block px-4 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
-                <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
-            </div>
-            <div>
-            <p className="text-slate-400 dark:text-white/40 text-[9px] font-black tracking-[0.4em] leading-relaxed mt-2">
-                <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
-              </p>
-              </div>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-red-600 dark:text-white">
-                  <XCircle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
-                  <p className="text-[10px] font-black uppercase tracking-widest leading-tight">{error}</p>
+          {/* Side-by-Side Wrapper to make Login Card & Links Column level */}
+          <div className="flex flex-row items-stretch gap-5 w-full">
+            {/* Login Card */}
+            <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2.5rem] p-8 lg:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] dark:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/20 flex-1 flex flex-col relative overflow-hidden group">
+              <div className="mb-8 text-center">
+                 <div className="inline-block px-4 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
+                  <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.4em]">ĐĂNG NHẬP HỆ THỐNG</p>
                 </div>
-              )}
- 
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.3em] ml-2">Tên tài khoản</label>
-                <div className="relative group">
-                  <input 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-sm"
-                    placeholder="Tên đăng nhập..."
-                  />
-                  <UserIcon className="w-5 h-5 absolute left-4 top-4 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                <div>
+                  <p className="text-slate-400 dark:text-white/40 text-[9px] font-black tracking-[0.4em] leading-relaxed mt-2">
+                    <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+                  </p>
                 </div>
               </div>
- 
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.3em] ml-2">Mật khẩu</label>
-                <div className="relative group">
-                  <input 
-                    type="password" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-sm"
-                    placeholder="••••••••"
-                  />
-                  <Lock className="w-5 h-5 absolute left-4 top-4 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
-                </div>
-              </div>
-
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className={`w-full py-4 rounded-[1.25rem] font-black text-xs uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
-                  isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/30'
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                    Đang xác thực...
-                  </>
-                ) : (
-                  <>
-                    ĐĂNG NHẬP
-                  </>
+              
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake text-red-600 dark:text-white">
+                    <XCircle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-tight">{error}</p>
+                  </div>
                 )}
-              </button>
-            </form>
+   
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.3em] ml-2">Tên tài khoản</label>
+                  <div className="relative group">
+                    <input 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-sm"
+                      placeholder="Tên đăng nhập..."
+                    />
+                    <UserIcon className="w-5 h-5 absolute left-4 top-4 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                  </div>
+                </div>
+   
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.3em] ml-2">Mật khẩu</label>
+                  <div className="relative group">
+                    <input 
+                      type="password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[1.25rem] focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-sm"
+                      placeholder="••••••••"
+                    />
+                    <Lock className="w-5 h-5 absolute left-4 top-4 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                  </div>
+                </div>
+  
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full py-4 rounded-[1.25rem] font-black text-xs uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-[0.97] flex items-center justify-center gap-3 mt-4 ${
+                    isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/30'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      Đang xác thực...
+                    </>
+                  ) : (
+                    <>
+                      ĐĂNG NHẬP
+                    </>
+                  )}
+                </button>
+              </form>
+  
+              <div className="mt-10 pt-6 border-t border-gray-100 dark:border-white/5 text-center">
+                <p className="text-slate-400 dark:text-white/40 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
+                  <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
+                </p>
+              </div>
+            </div>
 
-            <div className="mt-10 pt-6 border-t border-gray-100 dark:border-white/5 text-center">
-              <p className="text-slate-400 dark:text-white/40 text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-                <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
-              </p>
+            {/* Desktop/Attached Links Column on the Right of Login Card */}
+            <div className="hidden xl:flex flex-col gap-3.5 bg-gradient-to-b from-[#0F172A]/90 to-[#1E293B]/95 backdrop-blur-xl p-4 rounded-xl border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.3)] w-[90px] items-center justify-start shrink-0 select-none">
+              <div className="text-[10px] font-black uppercase text-slate-300 dark:text-slate-200 tracking-[0.2em] text-center border-b border-white/10 pb-2.5 mb-1 w-full">
+                LIÊN KẾT
+              </div>
+              <div className="flex flex-col gap-3 justify-center flex-1">
+                {systemSettings.banners?.filter(b => b.active).slice(0, 6).map((b, idx) => (
+                  <motion.div
+                    key={b.id}
+                    className="group relative cursor-pointer"
+                    whileHover={{ scale: 1.15, rotate: idx % 2 === 0 ? 2 : -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleExternalLink(e, b.link)}
+                  >
+                    {/* Glossy border glow effect */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
+                    
+                    {/* Main square image container */}
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/15 bg-slate-950 shadow-lg flex items-center justify-center">
+                      {b.image ? (
+                        <img 
+                          src={b.image} 
+                          alt={b.title} 
+                          className="w-full h-full object-cover rounded-2xl transition-transform duration-500 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center text-xs font-black text-slate-400">
+                          {b.title.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      
+                      {/* Shine Sweep Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine-sweep"></div>
+                    </div>
+  
+                    {/* Hover Tooltip sliding to the left (avoiding right edge cut-off) */}
+                    <div className="absolute right-16 top-1/2 -translate-y-1/2 mr-3 pointer-events-none opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[100]">
+                      <div className="bg-slate-950/95 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xl border border-white/10 whitespace-nowrap flex items-center gap-2">
+                        <span>{b.title}</span>
+                        <ExternalLink size={10} className="text-blue-400 shrink-0" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
-
+ 
           {/* Support Information Box */}
-          <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-5 transition-all">
+          <div className="mt-6 bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[2rem] p-5 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full xl:max-w-[400px] flex items-center gap-5 transition-all">
             <div className="w-20 h-20 shrink-0 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-100 dark:border-white/5 flex items-center justify-center overflow-hidden shadow-sm">
               <img 
                 src={systemSettings.supportQrBase64 || FIXED_SUPPORT_QR} 
@@ -437,6 +491,35 @@ const LoginView: React.FC<LoginViewProps> = ({
                   {systemSettings.supportPhone || FIXED_SUPPORT_PHONE}
                 </a>
               </div>
+            </div>
+          </div>
+ 
+          {/* Quick Access Mobile Grid */}
+          <div className="mt-6 xl:hidden w-full space-y-3">
+            <h4 className="text-[10px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Liên kết nhanh</h4>
+            <div className="grid grid-cols-3 gap-3">
+              {systemSettings.banners?.filter(b => b.active).slice(0, 6).map((b, idx) => (
+                <motion.div
+                  key={b.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => handleExternalLink(e, b.link)}
+                  className="bg-white dark:bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-gray-200 dark:border-white/20 shadow-sm flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group"
+                >
+                  <div className="w-10 h-10 rounded-xl overflow-hidden relative bg-slate-950 shadow-sm shrink-0">
+                    {b.image ? (
+                      <img src={b.image} alt={b.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center text-[10px] font-black text-slate-400">
+                        {b.title.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight">
+                    {b.title}
+                  </span>
+                </motion.div>
+              ))}
             </div>
           </div>
         </div>

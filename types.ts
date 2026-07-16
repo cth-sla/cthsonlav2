@@ -89,6 +89,14 @@ export interface SavedReportConfig {
   selectedColumns: string[];
 }
 
+export interface AdBanner {
+  id: string; // 'ad1' to 'ad6'
+  title: string; // Tên quảng cáo / Liên kết
+  image: string; // Base64 hoặc URL ảnh
+  link: string; // Đường dẫn liên kết khi click
+  active: boolean; // Trạng thái hiển thị
+}
+
 export interface SystemSettings {
   systemName: string;
   shortName: string;
@@ -96,6 +104,7 @@ export interface SystemSettings {
   primaryColor: string;
   supportQrBase64?: string;
   supportPhone?: string;
+  banners?: AdBanner[]; // Danh sách 6 ô quảng cáo/banner liên kết
 }
 
 export interface SystemOperator {

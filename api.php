@@ -18,9 +18,9 @@
 // CẤU HÌNH KẾT NỐI DATABASE MYSQL (Thay đổi thông tin tương ứng trên Hostinger của bạn)
 define('DB_HOST', 'localhost');          // Thường là localhost trên Hostinger
 define('DB_PORT', '3306');               // Cổng mặc định của MySQL
-define('DB_USER', 'u295972519_lichhop');  // Username MySQL tạo trên Hostinger
+define('DB_USER', 'u411714528_lichhop');  // Username MySQL tạo trên Hostinger
 define('DB_PASS', 'Sonla2026'); // Mật khẩu của Database User
-define('DB_NAME', 'u295972519_lichhop');   // Tên Database tạo trên Hostinger
+define('DB_NAME', 'u411714528_lichhop');   // Tên Database tạo trên Hostinger
 
 // THIẾT LẬP CÁC HEADER CHO PHÉP TRUY CẬP (CORS & JSON RESPONSE)
 header("Access-Control-Allow-Origin: *");
@@ -53,6 +53,42 @@ try {
     exit();
 }
 
+/**
+ * Tự động tạo bảng ad_banners và chèn dữ liệu mẫu nếu chưa tồn tại
+ * Đảm bảo không ảnh hưởng đến bất kỳ dữ liệu hiện tại nào của khách hàng.
+ */
+function ensureAdBannersTable($pdo) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `ad_banners` (
+            `id` VARCHAR(50) PRIMARY KEY,
+            `title` VARCHAR(255) NOT NULL,
+            `image` LONGTEXT,
+            `link` VARCHAR(255),
+            `active` TINYINT(1) DEFAULT 1,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+        // Kiểm tra xem bảng có dữ liệu chưa, nếu rỗng thì chèn dữ liệu mặc định
+        $stmt = $pdo->query("SELECT COUNT(*) FROM `ad_banners`");
+        if ($stmt->fetchColumn() == 0) {
+            $defaults = [
+                ['ad1', 'Cổng Dịch vụ công Quốc gia', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=300&h=300', 'https://dichvucong.gov.vn', 1],
+                ['ad2', 'Cổng TTĐT Tỉnh Sơn La', 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&q=80&w=300&h=300', 'https://sonla.gov.vn', 1],
+                ['ad3', 'Trang Tin Đảng Cộng Sản', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=300&h=300', 'http://dangcongsan.vn', 1],
+                ['ad4', 'Báo Sơn La Điện Tử', 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=300&h=300', 'https://baosonla.org.vn', 1],
+                ['ad5', 'Hệ Thống Quản Lý Văn Bản', 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=300&h=300', 'https://qlvb.sonla.gov.vn', 1],
+                ['ad6', 'Tổng Đài Hỗ Trợ Viettel', 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80&w=300&h=300', 'https://viettel.vn', 1]
+            ];
+            $insertStmt = $pdo->prepare("INSERT INTO `ad_banners` (id, title, image, link, active) VALUES (?, ?, ?, ?, ?)");
+            foreach ($defaults as $row) {
+                $insertStmt->execute($row);
+            }
+        }
+    } catch (Exception $e) {
+        // Bỏ qua lỗi nếu có (để không làm gián đoạn API chính)
+    }
+}
+
 // LẤY HÀNH ĐỘNG CẦN THỰC HIỆN TỪ URL (ví dụ: api.php?action=getMeetings)
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -69,16 +105,36 @@ switch ($action) {
     // ==========================================
     case 'getSettings':
         if ($method === 'GET') {
+            ensureAdBannersTable($pdo);
             $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
             $settings = $stmt->fetch();
             if ($settings) {
+                // Lấy danh sách liên kết quảng cáo từ bảng ad_banners
+                $formattedBanners = [];
+                try {
+                    $bannerStmt = $pdo->query("SELECT * FROM ad_banners ORDER BY id ASC");
+                    $banners = $bannerStmt->fetchAll();
+                    foreach ($banners as $b) {
+                        $formattedBanners[] = [
+                            "id" => $b['id'],
+                            "title" => $b['title'],
+                            "image" => $b['image'],
+                            "link" => $b['link'],
+                            "active" => (bool)$b['active']
+                        ];
+                    }
+                } catch (Exception $e) {
+                    // Fallback rỗng nếu lỗi
+                }
+
                 echo json_encode([
                     "systemName" => $settings['system_name'],
                     "shortName" => $settings['short_name'],
                     "logoBase64" => $settings['logo_base_64'],
                     "primaryColor" => $settings['primary_color'],
                     "supportQrBase64" => $settings['support_qr_base_64'],
-                    "supportPhone" => $settings['support_phone']
+                    "supportPhone" => $settings['support_phone'],
+                    "banners" => $formattedBanners
                 ]);
             } else {
                 echo json_encode(null);
@@ -95,6 +151,7 @@ switch ($action) {
                 echo json_encode(["message" => "Dữ liệu cấu hình không hợp lệ"]);
                 break;
             }
+            ensureAdBannersTable($pdo);
             $sql = "INSERT INTO system_settings (id, system_name, short_name, logo_base_64, primary_color, support_qr_base_64, support_phone)
                     VALUES (1, :systemName, :shortName, :logoBase64, :primaryColor, :supportQrBase64, :supportPhone)
                     ON DUPLICATE KEY UPDATE 
@@ -114,6 +171,32 @@ switch ($action) {
                 ':supportQrBase64' => isset($input['supportQrBase64']) ? $input['supportQrBase64'] : null,
                 ':supportPhone' => isset($input['supportPhone']) ? $input['supportPhone'] : null
             ]);
+
+            // Cập nhật danh sách banners nếu được gửi lên
+            if (isset($input['banners']) && is_array($input['banners'])) {
+                try {
+                    $bannerSql = "INSERT INTO ad_banners (id, title, image, link, active)
+                                  VALUES (:id, :title, :image, :link, :active)
+                                  ON DUPLICATE KEY UPDATE
+                                    title = VALUES(title),
+                                    image = VALUES(image),
+                                    link = VALUES(link),
+                                    active = VALUES(active)";
+                    $bannerStmt = $pdo->prepare($bannerSql);
+                    foreach ($input['banners'] as $banner) {
+                        $bannerStmt->execute([
+                            ':id' => $banner['id'],
+                            ':title' => $banner['title'],
+                            ':image' => isset($banner['image']) ? $banner['image'] : null,
+                            ':link' => isset($banner['link']) ? $banner['link'] : '',
+                            ':active' => isset($banner['active']) && $banner['active'] ? 1 : 0
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    // Bỏ qua lỗi lưu banner
+                }
+            }
+
             echo json_encode(["status" => "success", "message" => "Đã cập nhật cấu hình hệ thống"]);
         } else {
             http_response_code(405);

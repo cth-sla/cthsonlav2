@@ -7,7 +7,7 @@ import {
 import { 
   LayoutDashboard, CalendarDays, MonitorPlay, FileText, Settings, Users, LogOut, Menu, X, Activity, BarChart3, Building2, User as UserIcon, Clock, Zap, Target, ShieldEllipsis, Bell, Video,
   ChevronLeft, ChevronRight,
-  Sun, Moon
+  Sun, Moon, Link2
 } from 'lucide-react';
 import { Meeting, Endpoint, EndpointStatus, Unit, Staff, ParticipantGroup, User, SystemSettings, SystemOperator, EndpointGroup } from './types';
 import StatCard from './components/StatCard';
@@ -34,7 +34,7 @@ storageService.init();
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showPublicView, setShowPublicView] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'operators'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'meetings' | 'monitoring' | 'management' | 'accounts' | 'reports' | 'operators' | 'ads'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -556,6 +556,10 @@ const App: React.FC = () => {
                  <Users size={20} /> 
                  {!isSidebarCollapsed && <span className="font-bold text-sm">Tài khoản</span>}
                </button>
+               <button onClick={() => handleTabChange('ads')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ads' ? 'text-white shadow-lg' : 'text-slate-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`} style={activeTab === 'ads' ? primaryBgStyle : {}} title="Quảng cáo">
+                 <Link2 size={20} /> 
+                 {!isSidebarCollapsed && <span className="font-bold text-sm">Quảng cáo</span>}
+               </button>
             </div>
           )}
         </nav>
@@ -859,7 +863,8 @@ const App: React.FC = () => {
                 return next;
               });
           }} />}
-          {activeTab === 'management' && <ManagementPage 
+          {(activeTab === 'management' || activeTab === 'ads') && <ManagementPage 
+              initialTab={activeTab === 'ads' ? 'ads' : 'units'}
               units={units} staff={staff} participantGroups={groups} endpoints={endpoints} endpointGroups={endpointGroups} systemSettings={systemSettings} 
               onAddEndpointGroup={async g => {
                 const newG = { ...g, id: `EG${Date.now()}` };

@@ -29,9 +29,9 @@ import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup,
 
 export const mysqlBackendConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'u295972519_lichhop',
+  user: process.env.MYSQL_USER || 'u411714528_lichhop',
   password: process.env.MYSQL_PASSWORD || 'Sonla2026',
-  database: process.env.MYSQL_DATABASE || 'u295972519_lichhop',
+  database: process.env.MYSQL_DATABASE || 'u411714528_lichhop',
   port: parseInt(process.env.MYSQL_PORT || '3306'),
   waitForConnections: true,
   connectionLimit: 10,
