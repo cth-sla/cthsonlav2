@@ -419,8 +419,8 @@ const LoginView: React.FC<LoginViewProps> = ({
             </div>
 
             {/* Desktop/Attached Links Column on the Right of Login Card */}
-            <div className="hidden xl:flex flex-col gap-3.5 bg-gradient-to-b from-[#0F172A]/90 to-[#1E293B]/95 backdrop-blur-xl p-4 rounded-xl border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.3)] w-[90px] items-center justify-start shrink-0 select-none">
-              <div className="text-[10px] font-black uppercase text-slate-300 dark:text-slate-200 tracking-[0.2em] text-center border-b border-white/10 pb-2.5 mb-1 w-full">
+            <div className="hidden xl:flex flex-col gap-3.5 bg-white/70 dark:bg-gradient-to-b dark:from-[#0F172A]/90 dark:to-[#1E293B]/95 backdrop-blur-xl p-4 rounded-xl border border-gray-200 dark:border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.3)] w-[90px] items-center justify-start shrink-0 select-none">
+              <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-300 tracking-[0.2em] text-center border-b border-gray-200/60 dark:border-white/10 pb-2.5 mb-1 w-full">
                 LIÊN KẾT
               </div>
               <div className="flex flex-col gap-3 justify-center flex-1">
@@ -436,7 +436,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
                     
                     {/* Main square image container */}
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/15 bg-slate-950 shadow-lg flex items-center justify-center">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-gray-200 dark:border-white/15 bg-white dark:bg-slate-950 shadow-md dark:shadow-lg flex items-center justify-center">
                       {b.image ? (
                         <img 
                           src={b.image} 
@@ -445,7 +445,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center text-xs font-black text-slate-400">
+                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-950 flex items-center justify-center text-xs font-black text-slate-500 dark:text-slate-400">
                           {b.title.substring(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -456,7 +456,7 @@ const LoginView: React.FC<LoginViewProps> = ({
   
                     {/* Hover Tooltip sliding to the left (avoiding right edge cut-off) */}
                     <div className="absolute right-16 top-1/2 -translate-y-1/2 mr-3 pointer-events-none opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-[100]">
-                      <div className="bg-slate-950/95 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xl border border-white/10 whitespace-nowrap flex items-center gap-2">
+                      <div className="bg-white dark:bg-slate-950/95 backdrop-blur-md text-slate-800 dark:text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xl border border-gray-200 dark:border-white/10 whitespace-nowrap flex items-center gap-2">
                         <span>{b.title}</span>
                         <ExternalLink size={10} className="text-blue-400 shrink-0" />
                       </div>
