@@ -415,17 +415,6 @@ const LoginView: React.FC<LoginViewProps> = ({
                           </div>
                         </div>
                       </div>
-
-                      {/* Magic Floating Key */}
-                      <div className="absolute -right-2 top-2 w-10 h-10 flex items-center justify-center animate-float [animation-delay:0.3s]">
-                        <motion.div 
-                          animate={{ rotate: [0, 360] }}
-                          transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
-                          className="p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-full shadow-lg border border-white/20"
-                        >
-                          <Lock size={14} className="text-slate-950 stroke-[3]" />
-                        </motion.div>
-                      </div>
                     </div>
 
                     {/* Play prompt */}
