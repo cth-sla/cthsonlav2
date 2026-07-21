@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { User, SystemSettings, Meeting } from '../types';
-import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode } from 'lucide-react';
+import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode, EyeOff, Eye, Smile } from 'lucide-react';
 
 const FIXED_SUPPORT_PHONE = '0328.007.999';
 const FIXED_SUPPORT_QR = 'data:image/png;base64,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';
@@ -34,6 +34,7 @@ const LoginView: React.FC<LoginViewProps> = ({
   const [error, setError] = useState('');
   const [selectedPublicMeeting, setSelectedPublicMeeting] = useState<Meeting | null>(null);
   const [now, setNow] = useState(new Date());
+  const [isLoginHidden, setIsLoginHidden] = useState(true);
 
   // Đồng hồ thời gian thực
   useEffect(() => {
@@ -313,7 +314,7 @@ const LoginView: React.FC<LoginViewProps> = ({
         </div>
 
         {/* Right Section: Smaller & Compact Login Card + Attached Links */}
-        <div className="w-full lg:w-[320px] xl:w-[430px] flex flex-col justify-center shrink-0 animate-in fade-in zoom-in duration-1000 delay-500">
+        <div className="w-full lg:w-[320px] xl:w-[430px] flex flex-col justify-center shrink-0 transition-all duration-500 ease-in-out relative">
           
           {/* Digital Clock Header - Single Line Layout */}
           <div className="mb-6 flex justify-center">
@@ -344,81 +345,190 @@ const LoginView: React.FC<LoginViewProps> = ({
           <div className="flex flex-row items-stretch gap-4 w-full">
             {/* Left Column containing Login Card and Support Box */}
             <div className="flex flex-col gap-4 flex-1">
-              {/* Login Card */}
-              <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[1.75rem] p-5 lg:p-6 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/20 flex-1 flex flex-col relative overflow-hidden group">
-                <div className="mb-5 text-center">
-                   <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
-                    <p className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em]">ĐĂNG NHẬP HỆ THỐNG</p>
+              
+              {isLoginHidden ? (
+                /* Mascot Body Substituting only the Login Card */
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  onClick={() => setIsLoginHidden(false)}
+                  className="bg-white/90 dark:bg-white/10 backdrop-blur-[30px] border-2 border-dashed border-blue-500/40 dark:border-blue-400/30 p-5 rounded-[1.75rem] shadow-[0_30px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center gap-5 cursor-pointer select-none group relative overflow-hidden min-h-[350px] transition-all duration-300"
+                >
+                  {/* Fun cartoon energy waves in background */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  {/* Spinning/floating particle core behind mascot */}
+                  <div className="absolute w-28 h-28 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all duration-500 animate-pulse"></div>
+
+                  {/* Speech bubble/hint for user */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-[10px] font-black px-3.5 py-1.5 rounded-xl shadow-lg whitespace-nowrap opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-0 pointer-events-none z-50">
+                    ✨ Làm vì đam mê, ai chê là mình... ✨
+                    <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-white rotate-45"></div>
                   </div>
-                  <div>
-                    <p className="text-slate-400 dark:text-white/40 text-[8px] font-black tracking-[0.3em] leading-relaxed mt-1.5">
-                      <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+
+                  {/* Mascot Body (CSS + SVG Animated Guardian Robot) */}
+                  <div className="relative w-20 h-24 flex items-center justify-center mt-4">
+                    {/* Floating Shadow */}
+                    <div className="absolute bottom-0 w-12 h-1.5 bg-slate-950/20 dark:bg-white/10 rounded-full animate-pulse-slow"></div>
+
+                    {/* Animated Body Container */}
+                    <div className="relative w-16 h-20 flex flex-col items-center animate-float">
+                      {/* Robot Head */}
+                      <div className="relative w-14 h-12 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-2xl border-2 border-white/20 dark:border-white/10 shadow-lg flex flex-col items-center justify-center gap-1.5 overflow-hidden">
+                        {/* Glowing Eyes Panel */}
+                        <div className="w-10 h-5 bg-slate-950 rounded-lg flex items-center justify-around p-0.5 relative">
+                          {/* Left Eye */}
+                          <span className="w-3.5 h-3.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee] relative flex items-center justify-center overflow-hidden animate-wink">
+                            <span className="absolute w-full h-[2px] bg-slate-950 top-1.5 origin-center scale-y-0 group-hover:scale-y-100 transition-transform"></span>
+                          </span>
+                          {/* Right Eye */}
+                          <span className="w-3.5 h-3.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee] relative flex items-center justify-center overflow-hidden animate-wink">
+                            <span className="absolute w-full h-[2px] bg-slate-950 top-1.5 origin-center scale-y-0 group-hover:scale-y-100 transition-transform"></span>
+                          </span>
+                        </div>
+
+                        {/* Cute blushing cheeks */}
+                        <div className="absolute bottom-1 w-11 flex justify-between px-1">
+                          <div className="w-2 h-1 bg-red-400/40 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-1 bg-red-400/40 rounded-full animate-pulse"></div>
+                        </div>
+                      </div>
+
+                      {/* Antenna w/ glowing bulb */}
+                      <div className="absolute -top-3 w-1 h-3 bg-slate-400 dark:bg-slate-500 flex flex-col items-center">
+                        <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-[0_0_6px_#facc15] animate-ping absolute -top-1.5"></div>
+                        <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-[0_0_6px_#facc15] absolute -top-1.5"></div>
+                      </div>
+
+                      {/* Robot Neck */}
+                      <div className="w-4 h-1 bg-slate-400 dark:bg-slate-600 z-10"></div>
+
+                      {/* Robot Body */}
+                      <div className="w-12 h-8 bg-slate-800 dark:bg-slate-700 rounded-b-xl rounded-t-sm relative border-b-2 border-slate-950/20">
+                        {/* Pulsing heart core */}
+                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444] flex items-center justify-center">
+                          <Smile size={8} className="text-white font-black" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Magic Floating Key */}
+                    <div className="absolute -right-2 top-2 w-10 h-10 flex items-center justify-center animate-float [animation-delay:0.3s]">
+                      <motion.div 
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
+                        className="p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-full shadow-lg border border-white/20"
+                      >
+                        <Lock size={14} className="text-slate-950 stroke-[3]" />
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* Play prompt */}
+                  <div className="flex flex-col justify-center items-center text-center px-2 mt-1">
+                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em] animate-pulse">
+                      CHÀO BẠN!
+                    </span>
+                    <span className="text-[9px] font-black text-slate-500 dark:text-white/40 uppercase tracking-widest mt-1.5">
+                      Chúc bạn một ngày tốt lành
+                    </span>
+                  </div>
+
+                  {/* Hint bottom icon */}
+                  <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <Eye size={14} className="animate-bounce" />
+                  </div>
+                </motion.div>
+              ) : (
+                /* Login Card */
+                <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-[1.75rem] p-5 lg:p-6 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-15px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/20 flex-1 flex flex-col relative overflow-hidden group min-h-[350px]">
+                  
+                  {/* Minimize button inside card */}
+                  <button
+                    type="button"
+                    onClick={() => setIsLoginHidden(true)}
+                    className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:text-white/30 dark:hover:text-white transition-all duration-300 flex items-center gap-1 group/btn"
+                    title="Tạm ẩn khung đăng nhập"
+                  >
+                    <span className="text-[8px] font-black tracking-wider uppercase opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300">Tạm ẩn</span>
+                    <EyeOff size={13} className="transition-transform group-hover/btn:scale-110" />
+                  </button>
+
+                  <div className="mb-5 text-center">
+                     <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-400/20 rounded-full">
+                      <p className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.3em]">ĐĂNG NHẬP HỆ THỐNG</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 dark:text-white/40 text-[8px] font-black tracking-[0.3em] leading-relaxed mt-1.5">
+                        <span className="opacity-100">Lưu ý: Chỉ dành cho quản trị hệ thống</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-3.5">
+                    {error && (
+                      <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2.5 animate-shake text-red-600 dark:text-white">
+                        <XCircle className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0" />
+                        <p className="text-[9px] font-black uppercase tracking-wider leading-tight">{error}</p>
+                      </div>
+                    )}
+       
+                    <div className="space-y-1.5">
+                      <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Tên tài khoản</label>
+                      <div className="relative group">
+                        <input 
+                          type="text" 
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
+                          placeholder="Tên đăng nhập..."
+                        />
+                        <UserIcon className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                      </div>
+                    </div>
+       
+                    <div className="space-y-1.5">
+                      <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Mật khẩu</label>
+                      <div className="relative group">
+                        <input 
+                          type="password" 
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
+                          placeholder="••••••••"
+                        />
+                        <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
+                      </div>
+                    </div>
+      
+                    <button 
+                      type="submit"
+                      disabled={isLoading}
+                      className={`w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-white shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 mt-3 ${
+                        isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/20'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                          Đang xác thực...
+                        </>
+                      ) : (
+                        <>
+                          ĐĂNG NHẬP
+                        </>
+                      )}
+                    </button>
+                  </form>
+      
+                  <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 text-center">
+                    <p className="text-slate-400 dark:text-white/40 text-[8px] font-black uppercase tracking-[0.3em] leading-relaxed">
+                      <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
                     </p>
                   </div>
                 </div>
-                
-                <form onSubmit={handleSubmit} className="space-y-3.5">
-                  {error && (
-                    <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2.5 animate-shake text-red-600 dark:text-white">
-                      <XCircle className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0" />
-                      <p className="text-[9px] font-black uppercase tracking-wider leading-tight">{error}</p>
-                    </div>
-                  )}
-     
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Tên tài khoản</label>
-                    <div className="relative group">
-                      <input 
-                        type="text" 
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
-                        placeholder="Tên đăng nhập..."
-                      />
-                      <UserIcon className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
-                    </div>
-                  </div>
-     
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 dark:text-white/30 uppercase tracking-[0.2em] ml-2">Mật khẩu</label>
-                    <div className="relative group">
-                      <input 
-                        type="password" 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 focus:bg-white dark:focus:bg-white/10 outline-none transition-all text-slate-900 dark:text-white font-bold placeholder:text-slate-300 dark:placeholder:text-white/20 text-xs"
-                        placeholder="••••••••"
-                      />
-                      <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-300 dark:text-white/20 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" />
-                    </div>
-                  </div>
-    
-                  <button 
-                    type="submit"
-                    disabled={isLoading}
-                    className={`w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-white shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 mt-3 ${
-                      isLoading ? 'bg-blue-600/50 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/20'
-                    }`}
-                  >
-                    {isLoading ? (
-                      <>
-                        <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        Đang xác thực...
-                      </>
-                    ) : (
-                      <>
-                        ĐĂNG NHẬP
-                      </>
-                    )}
-                  </button>
-                </form>
-    
-                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 text-center">
-                  <p className="text-slate-400 dark:text-white/40 text-[8px] font-black uppercase tracking-[0.3em] leading-relaxed">
-                    <span className="opacity-50">© 2026 • Trần Trà • VIETTEL SƠN LA</span>
-                  </p>
-                </div>
-              </div>
+              )}
 
               {/* Support Information Box - aligned perfectly with Login Card */}
               <div className="bg-white dark:bg-white/10 backdrop-blur-[30px] rounded-2xl p-4 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.3)] border border-gray-200 dark:border-white/20 w-full flex items-center gap-4 transition-all">
@@ -694,6 +804,31 @@ const LoginView: React.FC<LoginViewProps> = ({
         .animate-shake {
           animation: shake 0.3s ease-in-out infinite;
           animation-iteration-count: 2;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 0.2; }
+          50% { transform: scale(1.15); opacity: 0.4; }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        @keyframes wink {
+          0%, 94%, 100% { transform: scaleY(1); }
+          97% { transform: scaleY(0.1); }
+        }
+        .animate-wink {
+          animation: wink 4s ease-in-out infinite;
+        }
+        .vertical-text {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
         }
       `}</style>
     </div>
