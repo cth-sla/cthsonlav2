@@ -407,19 +407,29 @@ const App: React.FC = () => {
   };
 
   const handleUpdateMeeting = async (meeting: Meeting) => {
+    let finalMeeting = meeting;
     setMeetings(prev => {
-      const updated = prev.map(m => m.id === meeting.id ? meeting : m);
+      const existing = prev.find(m => m.id === meeting.id);
+      if (existing) {
+        finalMeeting = {
+          ...existing,
+          ...meeting,
+          endpointChecks: meeting.endpointChecks !== undefined ? meeting.endpointChecks : existing.endpointChecks,
+          notes: meeting.notes !== undefined ? meeting.notes : existing.notes
+        };
+      }
+      const updated = prev.map(m => m.id === meeting.id ? finalMeeting : m);
       storageService.saveMeetings(updated);
       return updated;
     });
 
     if (selectedMeeting && selectedMeeting.id === meeting.id) {
-        setSelectedMeeting(meeting);
+        setSelectedMeeting(finalMeeting);
     }
     
     if (supabaseService.isConfigured()) {
       try { 
-        await supabaseService.upsertMeeting(meeting); 
+        await supabaseService.upsertMeeting(finalMeeting); 
         console.log("Cập nhật Cloud thành công");
       } catch (err) { 
         console.error("Cập nhật Cloud thất bại:", err); 

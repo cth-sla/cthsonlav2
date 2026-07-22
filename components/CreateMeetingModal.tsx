@@ -226,7 +226,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
       cancelReason: (status === 'CANCELLED' || status === 'POSTPONED') ? cancelReason : undefined,
       meetingRoomId: formData.meetingFormat === 'TRUC_TUYEN' ? (formData.meetingRoomId.trim() || undefined) : undefined,
       invitationLink: formData.invitationLink.trim() || undefined,
-      meetingFormat: formData.meetingFormat
+      meetingFormat: formData.meetingFormat,
+      endpointChecks: editingMeeting?.endpointChecks,
+      notes: editingMeeting?.notes
     };
 
     if (editingMeeting && onUpdate) {
