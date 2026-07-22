@@ -18,6 +18,244 @@ interface LoginViewProps {
   onBackToAdmin?: () => void;
 }
 
+// Cute Modern AI Robot Component with Floating, Wandering, Waving, Blinking & Smiling
+const CuteAIRobot = ({ isParentHovered }: { isParentHovered?: boolean }) => {
+  const [internalHover, setInternalHover] = useState(false);
+  const isHovered = isParentHovered || internalHover;
+
+  return (
+    <div 
+      className="relative w-48 h-48 flex flex-col items-center justify-center select-none"
+      onMouseEnter={() => setInternalHover(true)}
+      onMouseLeave={() => setInternalHover(false)}
+    >
+      {/* Floor Shadow that shrinks/grows as robot floats */}
+      <motion.div 
+        className="absolute bottom-1 w-24 h-3 bg-slate-900/20 dark:bg-black/50 rounded-full blur-[3px]"
+        animate={{
+          scaleX: [1, 0.7, 0.95, 0.75, 1],
+          opacity: [0.35, 0.15, 0.3, 0.18, 0.35]
+        }}
+        transition={{
+          duration: 5.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+
+      {/* Floating & Wandering Main Robot Container */}
+      <motion.div
+        className="relative flex flex-col items-center"
+        animate={{
+          y: [0, -12, -4, -10, 0],
+          x: [0, 8, -8, 5, 0],
+          rotate: [0, 2.5, -2, 1.5, 0]
+        }}
+        transition={{
+          duration: 5.5,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      >
+        {/* Head Shell with Ears & Visor */}
+        <div className="relative flex items-center justify-center">
+          {/* Left Ear Ring */}
+          <div className="absolute -left-3.5 w-4 h-7 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full border-2 border-white shadow-md flex items-center justify-center z-0">
+            <div className="w-1.5 h-3 bg-cyan-300 rounded-full animate-pulse" />
+          </div>
+
+          {/* Right Ear Ring */}
+          <div className="absolute -right-3.5 w-4 h-7 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full border-2 border-white shadow-md flex items-center justify-center z-0">
+            <div className="w-1.5 h-3 bg-cyan-300 rounded-full animate-pulse" />
+          </div>
+
+          {/* Helmet Head Shell */}
+          <div className="relative w-32 h-24 bg-gradient-to-b from-white via-slate-100 to-slate-200 rounded-[2.2rem] border-[3px] border-white shadow-[0_12px_28px_-6px_rgba(0,0,0,0.2)] flex items-center justify-center p-2 z-10 overflow-hidden">
+            {/* Top Gloss Reflection */}
+            <div className="absolute top-1 left-3 right-3 h-3 bg-white/80 rounded-full blur-[1px]" />
+
+            {/* Dark Visor Screen */}
+            <div className="relative w-full h-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-[1.6rem] border-2 border-blue-400/40 shadow-inner flex flex-col items-center justify-center overflow-hidden p-2">
+              {/* Subtle Screen Glow */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-500/20 via-transparent to-transparent pointer-events-none" />
+
+              {/* Digital LED Face */}
+              <div className="flex flex-col items-center gap-1 z-10 w-full">
+                {/* Eyes Row */}
+                <div className="flex items-center justify-between w-16 px-1">
+                  {/* Left Eye */}
+                  <motion.div
+                    className="relative flex items-center justify-center"
+                    animate={isHovered ? { scaleY: 1 } : { scaleY: [1, 1, 0.1, 1, 1] }}
+                    transition={isHovered ? {} : { duration: 3.5, repeat: Infinity, times: [0, 0.9, 0.93, 0.96, 1] }}
+                  >
+                    {isHovered ? (
+                      /* Cheerful Arch Eye ^ */
+                      <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                        <path d="M2 12C2 12 6 2 10 2C14 2 18 12 18 12" stroke="#22d3ee" strokeWidth="3.5" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      /* Digital Pixel Eye */
+                      <div className="w-5 h-5 bg-cyan-400 rounded-full shadow-[0_0_12px_#22d3ee] flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full translate-x-[-1px] translate-y-[-1px]" />
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* Right Eye */}
+                  <motion.div
+                    className="relative flex items-center justify-center"
+                    animate={isHovered ? { scaleY: 1 } : { scaleY: [1, 1, 0.1, 1, 1] }}
+                    transition={isHovered ? {} : { duration: 3.5, repeat: Infinity, times: [0, 0.9, 0.93, 0.96, 1] }}
+                  >
+                    {isHovered ? (
+                      /* Cheerful Arch Eye ^ */
+                      <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                        <path d="M2 12C2 12 6 2 10 2C14 2 18 12 18 12" stroke="#22d3ee" strokeWidth="3.5" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      /* Digital Pixel Eye */
+                      <div className="w-5 h-5 bg-cyan-400 rounded-full shadow-[0_0_12px_#22d3ee] flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full translate-x-[-1px] translate-y-[-1px]" />
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* Glowing Smile Arc */}
+                <motion.div
+                  animate={{ scale: isHovered ? 1.2 : 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center justify-center mt-0.5"
+                >
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none">
+                    <path
+                      d={isHovered ? "M3 2C3 2 7 9 12 9C17 9 21 2 21 2" : "M5 3C5 3 8 8 12 8C16 8 19 3 19 3"}
+                      stroke="#22d3ee"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </motion.div>
+
+                {/* Cute Blushing Cheeks */}
+                <div className="flex justify-between w-20 px-1 -mt-1">
+                  <div className="w-3 h-1.5 bg-pink-400/60 rounded-full blur-[1px]" />
+                  <div className="w-3 h-1.5 bg-pink-400/60 rounded-full blur-[1px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Neck */}
+        <div className="w-7 h-2.5 bg-slate-700 rounded-sm shadow-inner -mt-0.5 z-0 flex items-center justify-center">
+          <div className="w-5 h-1 bg-blue-500 rounded-full" />
+        </div>
+
+        {/* Torso & Arms Container */}
+        <div className="relative flex items-center justify-center z-10 -mt-0.5">
+          {/* Left Arm (Resting at side) */}
+          <motion.div
+            className="absolute -left-6 top-1 z-0 pointer-events-none"
+            style={{ transformOrigin: "24px 10px" }}
+            animate={{ rotate: isHovered ? [-10, -2, -10] : [0, -3, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg width="32" height="56" viewBox="0 0 32 56" fill="none" className="drop-shadow-sm">
+              {/* Shoulder Joint */}
+              <circle cx="24" cy="10" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
+              {/* Arm Capsule */}
+              <rect x="19.5" y="12" width="9" height="22" rx="4.5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
+              <rect x="20.5" y="21" width="7" height="3" rx="1.5" fill="#3b82f6" />
+              {/* Wrist Joint */}
+              <circle cx="24" cy="37" r="4" fill="#1e293b" stroke="#3b82f6" strokeWidth="1" />
+              {/* Hand / Palm */}
+              <rect x="19" y="39" width="10" height="8" rx="2.5" fill="#1e293b" stroke="#3b82f6" strokeWidth="1" />
+              {/* Fingers */}
+              <rect x="28" y="40" width="3" height="2.2" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="26.5" y="47" width="2" height="5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="24" y="47" width="2" height="6.5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="21.5" y="47" width="2" height="5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="19.2" y="47" width="1.8" height="4" rx="0.9" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+            </svg>
+          </motion.div>
+
+          {/* Body Torso */}
+          <div className="relative w-22 h-18 bg-gradient-to-b from-white via-slate-100 to-slate-200 rounded-b-[1.6rem] rounded-t-lg border-2 border-white shadow-lg flex flex-col items-center justify-between p-1.5 overflow-hidden">
+            {/* Top Blue Accent */}
+            <div className="w-full h-1.5 bg-blue-500 rounded-full opacity-90" />
+
+            {/* Chest Logo: "AI" with glowing cyan indicator */}
+            <div className="flex flex-col items-center justify-center my-auto">
+              <span className="text-[12px] font-black text-blue-600 tracking-wider font-mono leading-none">
+                AI
+              </span>
+              <div className="w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee] animate-pulse mt-0.5" />
+            </div>
+
+            {/* Bottom Thruster / Waist */}
+            <div className="w-14 h-2.5 bg-blue-600 rounded-full flex items-center justify-center shadow-inner">
+              <div className="w-7 h-1 bg-cyan-300 rounded-full shadow-[0_0_8px_#67e8f9]" />
+            </div>
+          </div>
+
+          {/* Right Arm (Waving Hand beside Head when Hovered, Resting down at side when normal) */}
+          <motion.div
+            className="absolute -right-6 top-1 z-30 pointer-events-none"
+            style={{ transformOrigin: "8px 10px" }}
+            animate={
+              isHovered
+                ? {
+                    rotate: [-130, -155, -130],
+                    scale: 1.05
+                  }
+                : {
+                    rotate: [0, 4, 0],
+                    scale: 1
+                  }
+            }
+            transition={
+              isHovered
+                ? { duration: 0.7, repeat: Infinity, ease: "easeInOut" }
+                : { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            }
+          >
+            <svg width="32" height="56" viewBox="0 0 32 56" fill="none" className="drop-shadow-md">
+              {/* Shoulder Joint */}
+              <circle cx="8" cy="10" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
+
+              {/* Arm Capsule */}
+              <rect x="3.5" y="12" width="9" height="22" rx="4.5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
+              <rect x="4.5" y="21" width="7" height="3" rx="1.5" fill="#3b82f6" />
+
+              {/* Wrist Joint */}
+              <circle cx="8" cy="37" r="4" fill="#1e293b" stroke="#3b82f6" strokeWidth="1" />
+
+              {/* Palm / Hand */}
+              <rect x="3" y="39" width="10" height="8" rx="2.5" fill="#1e293b" stroke="#3b82f6" strokeWidth="1" />
+
+              {/* 4 Extended Waving Fingers + Thumb */}
+              <rect x="1" y="40" width="3" height="2.2" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="3.5" y="47" width="2" height="5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="6" y="47" width="2" height="6.5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="8.5" y="47" width="2" height="5" rx="1" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+              <rect x="11" y="47" width="1.8" height="4" rx="0.9" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.8" />
+            </svg>
+          </motion.div>
+        </div>
+
+        {/* Floating Light Thruster Jet Glow */}
+        <motion.div
+          className="w-10 h-3 bg-cyan-400/50 rounded-full blur-[3px] -mt-0.5"
+          animate={{ opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        />
+      </motion.div>
+    </div>
+  );
+};
+
 const LoginView: React.FC<LoginViewProps> = ({ 
   users, 
   meetings, 
@@ -370,52 +608,8 @@ const LoginView: React.FC<LoginViewProps> = ({
                       <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 dark:bg-white rotate-45"></div>
                     </div>
 
-                    {/* Mascot Body (CSS + SVG Animated Guardian Robot) */}
-                    <div className="relative w-20 h-24 flex items-center justify-center mt-4">
-                      {/* Floating Shadow */}
-                      <div className="absolute bottom-0 w-12 h-1.5 bg-slate-950/20 dark:bg-white/10 rounded-full animate-pulse-slow"></div>
-
-                      {/* Animated Body Container */}
-                      <div className="relative w-16 h-20 flex flex-col items-center animate-float">
-                        {/* Robot Head */}
-                        <div className="relative w-14 h-12 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-2xl border-2 border-white/20 dark:border-white/10 shadow-lg flex flex-col items-center justify-center gap-1.5 overflow-hidden">
-                          {/* Glowing Eyes Panel */}
-                          <div className="w-10 h-5 bg-slate-950 rounded-lg flex items-center justify-around p-0.5 relative">
-                            {/* Left Eye */}
-                            <span className="w-3.5 h-3.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee] relative flex items-center justify-center overflow-hidden animate-wink">
-                              <span className="absolute w-full h-[2px] bg-slate-950 top-1.5 origin-center scale-y-0 group-hover:scale-y-100 transition-transform"></span>
-                            </span>
-                            {/* Right Eye */}
-                            <span className="w-3.5 h-3.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#22d3ee] relative flex items-center justify-center overflow-hidden animate-wink">
-                              <span className="absolute w-full h-[2px] bg-slate-950 top-1.5 origin-center scale-y-0 group-hover:scale-y-100 transition-transform"></span>
-                            </span>
-                          </div>
-
-                          {/* Cute blushing cheeks */}
-                          <div className="absolute bottom-1 w-11 flex justify-between px-1">
-                            <div className="w-2 h-1 bg-red-400/40 rounded-full animate-pulse"></div>
-                            <div className="w-2 h-1 bg-red-400/40 rounded-full animate-pulse"></div>
-                          </div>
-                        </div>
-
-                        {/* Antenna w/ glowing bulb */}
-                        <div className="absolute -top-3 w-1 h-3 bg-slate-400 dark:bg-slate-500 flex flex-col items-center">
-                          <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-[0_0_6px_#facc15] animate-ping absolute -top-1.5"></div>
-                          <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-[0_0_6px_#facc15] absolute -top-1.5"></div>
-                        </div>
-
-                        {/* Robot Neck */}
-                        <div className="w-4 h-1 bg-slate-400 dark:bg-slate-600 z-10"></div>
-
-                        {/* Robot Body */}
-                        <div className="w-12 h-8 bg-slate-800 dark:bg-slate-700 rounded-b-xl rounded-t-sm relative border-b-2 border-slate-950/20">
-                          {/* Pulsing heart core */}
-                          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444] flex items-center justify-center">
-                            <Smile size={8} className="text-white font-black" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Cute Modern AI Robot with Waving Hand, Wandering Motion, Blinking Eyes & Smile */}
+                    <CuteAIRobot />
 
                     {/* Play prompt */}
                     <div className="flex flex-col justify-center items-center text-center px-2 mt-1">
