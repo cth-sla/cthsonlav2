@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, Search, Edit2, Trash2, FileUp, Download, UserPlus, Phone, Briefcase, Building2, X, Check, AlertCircle
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { SystemOperator, Endpoint } from '../types';
 
 interface OperatorManagementProps {
@@ -98,73 +98,110 @@ const OperatorManagement: React.FC<OperatorManagementProps> = ({
     }
   };
 
-  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws) as any[];
-
-        const importedOperators: Omit<SystemOperator, 'id'>[] = data.map(row => {
-          // Tìm endpointId dựa trên tên đơn vị trong Excel
-          const unitName = row['Đơn vị'] || row['Unit'] || '';
-          const endpoint = endpoints.find(ep => ep.name.toLowerCase().includes(unitName.toLowerCase()));
-          
-          return {
-            fullName: row['Họ và Tên'] || row['FullName'] || 'N/A',
-            position: row['Chức vụ'] || row['Position'] || 'Cán bộ',
-            endpointId: endpoint?.id || endpoints[0]?.id || '',
-            phone: String(row['Số điện thoại'] || row['Phone'] || '')
-          };
-        });
-
-        if (importedOperators.length > 0) {
-          await onImport(importedOperators);
-          alert(`Đã nhập thành công ${importedOperators.length} cán bộ.`);
-        }
-      } catch (error) {
-        console.error("Lỗi import Excel:", error);
-        alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng.");
-      } finally {
-        setIsImporting(false);
-        e.target.value = '';
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        alert("File Excel không chứa dữ liệu.");
+        return;
       }
-    };
-    reader.readAsBinaryString(file);
+
+      const importedOperators: Omit<SystemOperator, 'id'>[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Bỏ qua tiêu đề
+        const fullName = String(row.getCell(1).value || '').trim();
+        const position = String(row.getCell(2).value || 'Cán bộ').trim();
+        const unitName = String(row.getCell(3).value || '').trim();
+        const phone = String(row.getCell(4).value || '').trim();
+
+        if (fullName && fullName !== 'N/A') {
+          const endpoint = endpoints.find(ep => ep.name.toLowerCase().includes(unitName.toLowerCase()));
+          importedOperators.push({
+            fullName,
+            position: position || 'Cán bộ',
+            endpointId: endpoint?.id || endpoints[0]?.id || '',
+            phone
+          });
+        }
+      });
+
+      if (importedOperators.length > 0) {
+        await onImport(importedOperators);
+        alert(`Đã nhập thành công ${importedOperators.length} cán bộ.`);
+      } else {
+        alert("Không tìm thấy dữ liệu cán bộ hợp lệ trong file Excel.");
+      }
+    } catch (error) {
+      console.error("Lỗi import Excel:", error);
+      alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng.");
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
   };
 
-  const downloadTemplate = () => {
-    const template = [
-      { 'Họ và Tên': 'Nguyễn Văn A', 'Chức vụ': 'Cán bộ vận hành', 'Đơn vị': endpoints[0]?.name || 'Tên điểm cầu', 'Số điện thoại': '0912345678' }
+  const downloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Template');
+    worksheet.columns = [
+      { header: 'Họ và Tên', key: 'fullName', width: 25 },
+      { header: 'Chức vụ', key: 'position', width: 22 },
+      { header: 'Đơn vị', key: 'unit', width: 25 },
+      { header: 'Số điện thoại', key: 'phone', width: 18 }
     ];
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "Template_Danh_Ba_Can_Bo.xlsx");
+    worksheet.addRow({
+      fullName: 'Nguyễn Văn A',
+      position: 'Cán bộ vận hành',
+      unit: endpoints[0]?.name || 'Tên điểm cầu',
+      phone: '0912345678'
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Template_Danh_Ba_Can_Bo.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const exportToExcel = () => {
-    const exportData = filteredOperators.map(o => {
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Danh_Ba');
+    worksheet.columns = [
+      { header: 'Họ và Tên', key: 'fullName', width: 25 },
+      { header: 'Chức vụ', key: 'position', width: 22 },
+      { header: 'Đơn vị', key: 'unit', width: 25 },
+      { header: 'Số điện thoại', key: 'phone', width: 18 }
+    ];
+    filteredOperators.forEach(o => {
       const endpoint = endpoints.find(e => e.id === o.endpointId);
-      return {
-        'Họ và Tên': o.fullName,
-        'Chức vụ': o.position,
-        'Đơn vị': endpoint?.name || 'N/A',
-        'Số điện thoại': o.phone
-      };
+      worksheet.addRow({
+        fullName: o.fullName,
+        position: o.position,
+        unit: endpoint?.name || 'N/A',
+        phone: o.phone
+      });
     });
-    
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Danh_Ba");
-    XLSX.writeFile(wb, "Danh_Ba_Can_Bo.xlsx");
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Danh_Ba_Can_Bo.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (

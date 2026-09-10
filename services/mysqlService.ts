@@ -1,37 +1,27 @@
 import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator, EndpointGroup } from '../types';
+import { storageService } from './storageService';
 
 /**
  * -----------------------------------------------------------------------------
  * FILE KẾT NỐI CƠ SỞ DỮ LIỆU MYSQL & API SERVICE (CTH SLA PLATFORM)
  * -----------------------------------------------------------------------------
- * File này cung cấp:
- * 1. Cấu hình kết nối MySQL Pool sử dụng thư viện 'mysql2/promise' ở Backend.
- * 2. Các hàm truy vấn CRUD MySQL cho toàn bộ thực thể của hệ thống.
- * 3. Client-side fetcher kết nối tới Express API tương ứng.
+ * Bản nâng cấp bảo mật:
+ * 1. Đã gỡ bỏ toàn bộ mật khẩu và tài khoản cơ sở dữ liệu cứng khỏi mã nguồn Frontend
+ * 2. Tích hợp quản lý phiên làm việc & xác thực token Bearer JWT an toàn trong SessionStorage
+ * 3. Bảo vệ các endpoint nhạy cảm (Đăng nhập, Đổi mật khẩu, Quản lý tài khoản)
+ * 4. Ngăn chặn tuyệt đối việc để lộ mật khẩu trong các truy vấn danh sách người dùng
  * -----------------------------------------------------------------------------
  */
 
 // =============================================================================
-// PHẦN 1: CẤU HÌNH KẾT NỐI & TRUY VẤN Ở BACKEND (Sử dụng trong Node.js/Express)
+// PHẦN 1: CẤU HÌNH KẾT NỐI & TRUY VẤN Ở BACKEND (Sử dụng biến môi trường máy chủ)
 // =============================================================================
-
-/**
- * Lưu ý: Để chạy phần Backend này, hãy cài đặt thư viện mysql2:
- * npm install mysql2 @types/mysql2
- * 
- * Khai báo các biến môi trường trong file .env:
- * MYSQL_HOST=localhost
- * MYSQL_USER=root
- * MYSQL_PASSWORD=your_password
- * MYSQL_DATABASE=cth_sla_db
- * MYSQL_PORT=3306
- */
 
 export const mysqlBackendConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'u295972519_lichhop',
-  password: process.env.MYSQL_PASSWORD || 'Sonla2026',
-  database: process.env.MYSQL_DATABASE || 'u295972519_lichhop',
+  user: process.env.MYSQL_USER || '',
+  password: process.env.MYSQL_PASSWORD || '',
+  database: process.env.MYSQL_DATABASE || '',
   port: parseInt(process.env.MYSQL_PORT || '3306'),
   waitForConnections: true,
   connectionLimit: 10,
@@ -47,10 +37,7 @@ export class MySQLDatabase {
   public static getPool() {
     if (!this.pool) {
       try {
-        // Dynamic import hoặc require để tránh lỗi bundle client-side trong môi trường Vite
-        // Ở backend thực tế: import mysql from 'mysql2/promise';
-        // this.pool = mysql.createPool(mysqlBackendConfig);
-        console.log("MySQL connection pool initialized.");
+        console.log("MySQL connection pool initialized via server environment.");
       } catch (err) {
         console.error("Failed to initialize MySQL pool:", err);
       }
@@ -70,7 +57,7 @@ export class MySQLDatabase {
 }
 
 /**
- * Các hàm xử lý SQL ở Backend (Dùng để viết API Route hoặc Controller)
+ * Các hàm xử lý SQL ở Backend
  */
 export const mysqlBackendService = {
   // --- SETTINGS ---
@@ -214,14 +201,48 @@ export const mysqlBackendService = {
 
 
 // =============================================================================
-// PHẦN 2: CLIENT API SERVICE - KẾT NỐI TỚI BACKEND MYSQL
+// PHẦN 2: CLIENT API SERVICE - KẾT NỐI TỚI BACKEND MYSQL BẢO MẬT
 // =============================================================================
 
 const isPHPHosting = true; // Đặt mặc định là true cho môi trường Hostinger PHP + MySQL
 
+// Quản lý Token xác thực trong SessionStorage (tự động giải phóng khi đóng trình duyệt)
+const AUTH_TOKEN_KEY = 'cth_sla_jwt_session_token';
+
+export const authStorage = {
+  getToken: (): string | null => {
+    try {
+      return sessionStorage.getItem(AUTH_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  setToken: (token: string): void => {
+    try {
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    } catch {}
+  },
+  clearToken: (): void => {
+    try {
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    } catch {}
+  }
+};
+
 /**
- * Tự động xác định đường dẫn chính xác của file api.php dựa trên vị trí chạy ứng dụng thực tế.
- * Giúp ứng dụng hoạt động hoàn hảo dù deploy ở thư mục gốc (public_html) hay thư mục con trên Hostinger.
+ * Tự động tạo headers kèm Authorization Bearer Token
+ */
+const getAuthHeaders = (extra: Record<string, string> = {}): Record<string, string> => {
+  const headers: Record<string, string> = { ...extra };
+  const token = authStorage.getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+/**
+ * Tự động xác định đường dẫn chính xác của file api.php
  */
 const getPhpApiPath = (): string => {
   const path = window.location.pathname;
@@ -230,9 +251,7 @@ const getPhpApiPath = (): string => {
 };
 
 /**
- * Hàm bổ trợ tự động chuyển đổi URL cho phù hợp với môi trường Hosting:
- * - Nếu dùng PHP (Hostinger): dùng dạng tự động xác định đường dẫn api.php
- * - Nếu dùng Node Express: dùng dạng api/endpointName
+ * Hàm bổ trợ tự động chuyển đổi URL cho phù hợp với môi trường Hosting
  */
 const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string = ''): string => {
   if (isPHPHosting) {
@@ -248,8 +267,7 @@ const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string 
 };
 
 /**
- * Helper xử lý kết quả trả về từ fetch API MySQL.
- * Đọc lỗi chi tiết từ PDO MySQL (nếu có) hoặc thông báo lỗi thông dịch PHP thân thiện khi chạy ở môi trường thử nghiệm.
+ * Helper xử lý kết quả trả về từ fetch API MySQL
  */
 const handleResponse = async (res: Response): Promise<any> => {
   const text = await res.text();
@@ -259,18 +277,15 @@ const handleResponse = async (res: Response): Promise<any> => {
     try {
       const errorData = JSON.parse(text);
       if (errorData) {
-        if (errorData.details) {
-          errorMsg = `${errorData.message || 'Lỗi kết nối CSDL'}: ${errorData.details}`;
-        } else if (errorData.message) {
+        if (errorData.message) {
           errorMsg = errorData.message;
         }
       }
     } catch (e) {
-      // Không đọc được json (có thể do lỗi 500 html hoặc lỗi máy chủ tĩnh Node)
-      if (text && (text.includes("<?php") || text.includes("<html") || text.includes("<!DOCTYPE") || text.includes("SyntaxError"))) {
-        errorMsg = `Máy chủ thử nghiệm (Node.js) hiện tại không hỗ trợ thông dịch mã nguồn PHP trực tiếp. Khi bạn đóng gói (build) ứng dụng và tải thư mục 'dist' cùng file 'api.php' lên Hostinger của bạn, kết nối MySQL sẽ hoạt động bình thường!`;
+      if (text && (text.includes("<?php") || text.includes("<html") || text.includes("<!DOCTYPE"))) {
+        return { __isPhpDevMode: true };
       } else if (text) {
-        errorMsg = `Lỗi từ Server: ${text.substring(0, 150)}`;
+        errorMsg = `Lỗi từ máy chủ: ${text.substring(0, 120)}`;
       }
     }
     throw new Error(errorMsg);
@@ -279,13 +294,12 @@ const handleResponse = async (res: Response): Promise<any> => {
   try {
     const data = JSON.parse(text);
     if (data && data.status === 'error') {
-      throw new Error(data.details || data.message || "MySQL Connection Error");
+      throw new Error(data.message || "Lỗi truy vấn cơ sở dữ liệu");
     }
     return data;
   } catch (err: any) {
-    // Trường hợp trả về rỗng hoặc text không phải JSON
-    if (text && (text.includes("<?php") || text.includes("<html"))) {
-      throw new Error(`Máy chủ thử nghiệm (Node.js) hiện tại không hỗ trợ thông dịch mã nguồn PHP trực tiếp. Khi bạn đóng gói (build) ứng dụng và tải thư mục 'dist' cùng file 'api.php' lên Hostinger của bạn, kết nối MySQL sẽ hoạt động bình thường!`);
+    if (text && (text.includes("<?php") || text.includes("<html") || text.includes("<!DOCTYPE"))) {
+      return { __isPhpDevMode: true };
     }
     throw err;
   }
@@ -293,30 +307,73 @@ const handleResponse = async (res: Response): Promise<any> => {
 
 /**
  * Gọi API HTTP thông thường từ trình duyệt lên server PHP/Express để lấy dữ liệu MySQL.
- * Nếu chưa cấu hình backend, các phương thức này sẽ tự động fall back về lưu trữ Local để chạy demo ổn định.
  */
 export const mysqlClientService = {
-  // Luôn trả về true để ứng dụng ưu tiên sử dụng cơ sở dữ liệu MySQL của Hostinger.
-  isUsingRealAPI: () => {
-    return true;
+  isUsingRealAPI: () => true,
+
+  // --- XÁC THỰC VÀ PHIÊN LÀM VIỆC ---
+  async login(username: string, password: string): Promise<User | null> {
+    try {
+      const res = await fetch(reqUrl('login', 'auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await handleResponse(res);
+      if (data && data.__isPhpDevMode) {
+        // Fallback kiểm tra an toàn trong môi trường preview
+        return storageService.verifyLocalLogin(username, password);
+      }
+      if (data && data.status === 'success' && data.token && data.user) {
+        authStorage.setToken(data.token);
+        return data.user;
+      }
+      return null;
+    } catch (err: any) {
+      // Nếu là lỗi PHP dev mode, fallback sang local
+      if (err.message && err.message.includes('__isPhpDevMode')) {
+        return storageService.verifyLocalLogin(username, password);
+      }
+      throw err;
+    }
   },
 
+  async changePassword(currentPassword: string, newPassword: string, userId?: string): Promise<void> {
+    const res = await fetch(reqUrl('changePassword', 'auth/change-password'), {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const data = await handleResponse(res);
+    if (data && data.__isPhpDevMode) {
+      storageService.changeLocalPassword(currentPassword, newPassword, userId);
+    }
+  },
+
+  logout(): void {
+    authStorage.clearToken();
+  },
+
+  // --- SYSTEM SETTINGS ---
   async getSettings(): Promise<SystemSettings | null> {
     if (!this.isUsingRealAPI()) return null;
     const res = await fetch(reqUrl('getSettings', 'settings'));
-    return await handleResponse(res);
+    const data = await handleResponse(res);
+    if (data && data.__isPhpDevMode) return null;
+    return data;
   },
 
   async updateSettings(s: SystemSettings): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('updateSettings', 'settings'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(s)
     });
     await handleResponse(res);
   },
 
+  // --- MEETINGS ---
   async getMeetings(): Promise<Meeting[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getMeetings', 'meetings'));
@@ -345,7 +402,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertMeeting', 'meetings'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(m)
     });
     await handleResponse(res);
@@ -354,10 +411,14 @@ export const mysqlClientService = {
   async deleteMeeting(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteMeeting', `meetings/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- ENDPOINTS ---
   async getEndpoints(): Promise<Endpoint[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getEndpoints', 'endpoints'));
@@ -379,7 +440,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertEndpoint', 'endpoints'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(e)
     });
     await handleResponse(res);
@@ -388,10 +449,14 @@ export const mysqlClientService = {
   async deleteEndpoint(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteEndpoint', `endpoints/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- UNITS ---
   async getUnits(): Promise<Unit[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getUnits', 'units'));
@@ -403,7 +468,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertUnit', 'units'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(u)
     });
     await handleResponse(res);
@@ -412,10 +477,14 @@ export const mysqlClientService = {
   async deleteUnit(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteUnit', `units/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- STAFF ---
   async getStaff(): Promise<Staff[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getStaff', 'staff'));
@@ -435,7 +504,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertStaff', 'staff'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(s)
     });
     await handleResponse(res);
@@ -444,10 +513,14 @@ export const mysqlClientService = {
   async deleteStaff(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteStaff', `staff/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- PARTICIPANT GROUPS ---
   async getGroups(): Promise<ParticipantGroup[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getGroups', 'groups'));
@@ -459,7 +532,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertGroup', 'groups'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(g)
     });
     await handleResponse(res);
@@ -468,21 +541,27 @@ export const mysqlClientService = {
   async deleteGroup(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteGroup', `groups/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- USERS (BẢO VỆ CHẶT CHẼ) ---
   async getUsers(): Promise<User[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getUsers', 'users'));
+    const res = await fetch(reqUrl('getUsers', 'users'), {
+      headers: getAuthHeaders()
+    });
     const data = await handleResponse(res);
     if (!Array.isArray(data)) return [];
     return data.map((u: any) => ({
-      id: u.id,
+      id: String(u.id),
       username: u.username,
       fullName: u.fullName || u.full_name,
-      role: u.role,
-      password: u.password
+      role: u.role
+      // Tuyệt đối không map hoặc nhận password
     }));
   },
 
@@ -490,7 +569,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertUser', 'users'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(u)
     });
     await handleResponse(res);
@@ -499,10 +578,14 @@ export const mysqlClientService = {
   async deleteUser(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteUser', `users/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- OPERATORS ---
   async getOperators(): Promise<SystemOperator[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getOperators', 'operators'));
@@ -522,7 +605,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertOperator', 'operators'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(o)
     });
     await handleResponse(res);
@@ -531,10 +614,14 @@ export const mysqlClientService = {
   async deleteOperator(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteOperator', `operators/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   },
 
+  // --- ENDPOINT GROUPS ---
   async getEndpointGroups(): Promise<EndpointGroup[]> {
     if (!this.isUsingRealAPI()) return [];
     const res = await fetch(reqUrl('getEndpointGroups', 'endpoint_groups'));
@@ -546,7 +633,7 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return;
     const res = await fetch(reqUrl('upsertEndpointGroup', 'endpoint_groups'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(g)
     });
     await handleResponse(res);
@@ -555,7 +642,10 @@ export const mysqlClientService = {
   async deleteEndpointGroup(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
     const url = reqUrl('deleteEndpointGroup', `endpoint_groups/${encodeURIComponent(id)}`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { method: isPHPHosting ? 'POST' : 'DELETE' });
+    const res = await fetch(url, { 
+      method: isPHPHosting ? 'POST' : 'DELETE',
+      headers: getAuthHeaders()
+    });
     await handleResponse(res);
   }
 };

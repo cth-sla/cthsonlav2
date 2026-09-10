@@ -1,21 +1,22 @@
-
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Lock, Eye, EyeOff, ShieldCheck, X } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, X, CheckCircle2 } from 'lucide-react';
+import { supabaseService } from '../services/supabaseService';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
-  onUpdate: (updatedUser: User) => Promise<void>;
+  onUpdate?: (updatedUser: User) => Promise<void>;
 }
 
-const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose, currentUser, onUpdate }) => {
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose, currentUser }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -23,10 +24,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
 
-    // Kiểm tra mật khẩu cũ (giả định mật khẩu được lưu trong object user)
-    if (currentPassword !== currentUser.password) {
-      setError('Mật khẩu hiện tại không chính xác.');
+    if (!currentPassword) {
+      setError('Vui lòng nhập mật khẩu hiện tại.');
       return;
     }
 
@@ -47,14 +48,13 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
     setIsSaving(true);
     try {
-      await onUpdate({
-        ...currentUser,
-        password: newPassword
-      });
-      alert('Đổi mật khẩu thành công!');
-      onClose();
-    } catch (err) {
-      setError('Có lỗi xảy ra khi cập nhật mật khẩu.');
+      await supabaseService.changePassword(currentPassword, newPassword, currentUser.id);
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setError(err?.message || 'Có lỗi xảy ra hoặc mật khẩu hiện tại không chính xác.');
     } finally {
       setIsSaving(false);
     }
@@ -80,9 +80,16 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-2xl flex items-center gap-3 text-red-600 dark:text-red-400 text-[11px] font-bold animate-pulse">
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-2xl flex items-center gap-3 text-red-600 dark:text-red-400 text-[11px] font-bold">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl flex items-center gap-3 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+              <CheckCircle2 size={16} className="shrink-0" />
+              Đổi mật khẩu thành công! Đang lưu thông tin...
             </div>
           )}
 
@@ -96,6 +103,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu hiện tại"
                 />
                 <Lock className="w-4 h-4 absolute left-4 top-3.5 text-gray-300 dark:text-slate-600 group-focus-within:text-indigo-500" />
               </div>
@@ -110,15 +118,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Tối thiểu 4 ký tự"
                 />
                 <Lock className="w-4 h-4 absolute left-4 top-3.5 text-gray-300 dark:text-slate-600 group-focus-within:text-indigo-500" />
-                <button 
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-4 top-3.5 text-gray-300 dark:text-slate-600 hover:text-indigo-500 transition-colors"
-                >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
             </div>
 
@@ -131,26 +133,36 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
                 />
                 <Lock className="w-4 h-4 absolute left-4 top-3.5 text-gray-300 dark:text-slate-600 group-focus-within:text-indigo-500" />
               </div>
             </div>
+
+            <button 
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="flex items-center gap-2 text-[11px] font-black text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors uppercase tracking-widest ml-1"
+            >
+              {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+              {showPass ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+            </button>
           </div>
 
-          <div className="pt-4 flex gap-4">
+          <div className="pt-4 flex gap-3">
             <button 
               type="button" 
               onClick={onClose}
-              className="flex-1 py-3.5 border border-gray-200 dark:border-slate-700 rounded-2xl text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+              className="flex-1 py-3.5 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
             >
               Hủy
             </button>
             <button 
               type="submit"
-              disabled={isSaving}
-              className="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+              disabled={isSaving || success}
+              className="flex-[2] py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
             >
-              {isSaving ? 'Đang cập nhật...' : 'Xác nhận đổi'}
+              {isSaving ? 'Đang lưu...' : 'Lưu mật khẩu'}
             </button>
           </div>
         </form>

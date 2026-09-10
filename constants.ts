@@ -128,3 +128,4 @@ export const MOCK_ENDPOINT_GROUPS: EndpointGroup[] = [
   { id: 'SO_NGANH', name: 'Sở/Ngành', description: 'Các điểm cầu thuộc sở, ban, ngành cấp tỉnh' },
   { id: 'TINH', name: 'Tỉnh', description: 'Các điểm cầu thuộc UBND tỉnh, HĐND tỉnh, Tỉnh ủy' },
 ];
+

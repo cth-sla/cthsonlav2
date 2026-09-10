@@ -15,6 +15,18 @@ import { storageService } from './storageService';
 export const supabaseService = {
   isConfigured: () => true,
 
+  async login(username: string, pass: string): Promise<User | null> {
+    return await mysqlClientService.login(username, pass);
+  },
+
+  async changePassword(currentPass: string, newPass: string, userId?: string): Promise<void> {
+    return await mysqlClientService.changePassword(currentPass, newPass, userId);
+  },
+
+  logout(): void {
+    mysqlClientService.logout();
+  },
+
   async getMeetings(): Promise<Meeting[]> {
     try {
       const data = await mysqlClientService.getMeetings();

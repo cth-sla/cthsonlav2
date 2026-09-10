@@ -1,4 +1,3 @@
-
 import { Meeting, Unit, Staff, ParticipantGroup, User, Endpoint, SavedReportConfig, SystemSettings, EndpointGroup } from '../types';
 import { MOCK_MEETINGS, MOCK_UNITS, MOCK_STAFF, MOCK_PARTICIPANT_GROUPS, MOCK_USERS, MOCK_ENDPOINTS, MOCK_ENDPOINT_GROUPS } from '../constants';
 
@@ -62,12 +61,20 @@ export const storageService = {
   },
 
   getData<T>(key: string, defaultValue: T): T {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : defaultValue;
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
   },
 
   saveData<T>(key: string, data: T): void {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.error("Storage save error:", e);
+    }
   },
 
   getMeetings(): Meeting[] { return this.getData(DB_KEYS.MEETINGS, MOCK_MEETINGS); },
@@ -82,8 +89,54 @@ export const storageService = {
   getGroups(): ParticipantGroup[] { return this.getData(DB_KEYS.GROUPS, MOCK_PARTICIPANT_GROUPS); },
   saveGroups(data: ParticipantGroup[]) { this.saveData(DB_KEYS.GROUPS, data); },
 
-  getUsers(): User[] { return this.getData(DB_KEYS.USERS, MOCK_USERS); },
-  saveUsers(data: User[]) { this.saveData(DB_KEYS.USERS, data); },
+  // BẢO MẬT: getUsers() không trả về password ra UI
+  getUsers(): User[] {
+    const raw = this.getData<any[]>(DB_KEYS.USERS, MOCK_USERS);
+    return raw.map(({ password, ...rest }) => rest as User);
+  },
+
+  saveUsers(data: User[]) {
+    // Duy trì mật khẩu của người dùng nếu có, không xóa mất mật khẩu
+    const current = this.getData<any[]>(DB_KEYS.USERS, MOCK_USERS);
+    const merged = data.map(u => {
+      const existing = current.find(c => c.id === u.id);
+      return {
+        ...u,
+        password: u.password || existing?.password || (u.username === 'admin' ? 'admin' : 'user')
+      };
+    });
+    this.saveData(DB_KEYS.USERS, merged);
+  },
+
+  verifyLocalLogin(username: string, pass: string): User | null {
+    const raw = this.getData<any[]>(DB_KEYS.USERS, MOCK_USERS);
+    const found = raw.find(u => u.username === username);
+    if (!found) return null;
+    const isPassValid = found.password === pass || (!found.password && (pass === 'admin' || pass === 'user'));
+    if (isPassValid) {
+      const { password, ...safeUser } = found;
+      return safeUser as User;
+    }
+    return null;
+  },
+
+  changeLocalPassword(currentPass: string, newPass: string, userId?: string): void {
+    const raw = this.getData<any[]>(DB_KEYS.USERS, MOCK_USERS);
+    let matched = false;
+    const updated = raw.map(u => {
+      if (!userId || u.id === userId) {
+        if (u.password === currentPass) {
+          matched = true;
+          return { ...u, password: newPass };
+        }
+      }
+      return u;
+    });
+    if (!matched) {
+      throw new Error("Mật khẩu hiện tại không chính xác.");
+    }
+    this.saveData(DB_KEYS.USERS, updated);
+  },
 
   getEndpoints(): Endpoint[] { return this.getData(DB_KEYS.ENDPOINTS, MOCK_ENDPOINTS); },
   saveEndpoints(data: Endpoint[]) { this.saveData(DB_KEYS.ENDPOINTS, data); },

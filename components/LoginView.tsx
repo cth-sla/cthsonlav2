@@ -2,13 +2,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, SystemSettings, Meeting } from '../types';
+import { supabaseService } from '../services/supabaseService';
 import { ExternalLink, FileText, Lock, User as UserIcon, ArrowRight, Calendar, Clock, MapPin, Users as UsersIcon, CheckCircle2, AlertTriangle, XCircle, Activity, Video, Sun, Moon, MailOpen, LayoutDashboard, Phone, QrCode, EyeOff, Eye, Smile } from 'lucide-react';
+
 
 const FIXED_SUPPORT_PHONE = '0328.007.999';
 const FIXED_SUPPORT_QR = 'data:image/png;base64,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';
 
 interface LoginViewProps {
-  users: User[];
   meetings: Meeting[];
   onLoginSuccess: (user: User) => void;
   systemSettings: SystemSettings;
@@ -257,7 +258,6 @@ const CuteAIRobot = ({ isParentHovered }: { isParentHovered?: boolean }) => {
 };
 
 const LoginView: React.FC<LoginViewProps> = ({ 
-  users, 
   meetings, 
   onLoginSuccess, 
   systemSettings, 
@@ -273,6 +273,7 @@ const LoginView: React.FC<LoginViewProps> = ({
   const [selectedPublicMeeting, setSelectedPublicMeeting] = useState<Meeting | null>(null);
   const [now, setNow] = useState(new Date());
   const [isLoginHidden, setIsLoginHidden] = useState(true);
+
 
   // Đồng hồ thời gian thực
   useEffect(() => {
@@ -308,7 +309,7 @@ const LoginView: React.FC<LoginViewProps> = ({
     };
   }, [meetings]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
       setError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
@@ -316,15 +317,18 @@ const LoginView: React.FC<LoginViewProps> = ({
     }
     setIsLoading(true);
     setError('');
-    setTimeout(() => {
-      const foundUser = users.find(u => u.username === username && u.password === password);
-      if (foundUser) {
-        onLoginSuccess(foundUser);
+    try {
+      const authenticatedUser = await supabaseService.login(username.trim(), password);
+      if (authenticatedUser) {
+        onLoginSuccess(authenticatedUser);
       } else {
         setError('Tài khoản hoặc mật khẩu không chính xác.');
-        setIsLoading(false);
       }
-    }, 1200);
+    } catch (err: any) {
+      setError(err?.message || 'Tài khoản hoặc mật khẩu không chính xác.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -348,7 +352,12 @@ const LoginView: React.FC<LoginViewProps> = ({
   const handleExternalLink = (e: React.MouseEvent, link?: string) => {
     e.stopPropagation();
     if (link) {
-      window.open(link, '_blank', 'noopener,noreferrer');
+      const trimmed = link.trim();
+      if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) {
+        window.open(trimmed, '_blank', 'noopener,noreferrer');
+      } else if (!/^[a-z0-9+.-]+:/i.test(trimmed)) {
+        window.open(`https://${trimmed}`, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
@@ -752,11 +761,13 @@ const LoginView: React.FC<LoginViewProps> = ({
               </div>
             </div>
 
+
             {/* Desktop/Attached Links Column on the Right of Login Card */}
             <div className="hidden xl:flex flex-col gap-3 bg-white/70 dark:bg-gradient-to-b dark:from-[#0F172A]/90 dark:to-[#1E293B]/95 backdrop-blur-xl p-3 rounded-2xl border border-gray-200 dark:border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.03)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.25)] w-[84px] items-center justify-start shrink-0 select-none">
               <div className="text-[9px] font-black uppercase text-slate-500 dark:text-slate-300 tracking-[0.15em] text-center border-b border-gray-200/60 dark:border-white/10 pb-2 mb-1 w-full">
                 LIÊN KẾT
               </div>
+
               <div className="flex flex-col gap-3 justify-center flex-1">
                 {systemSettings.banners?.filter(b => b.active).slice(0, 6).map((b, idx) => (
                   <motion.div
@@ -970,7 +981,7 @@ const LoginView: React.FC<LoginViewProps> = ({
           </div>
         </div>
       )}
-      
+
       <style>{`
         @keyframes slow-zoom {
           0% { transform: scale(1.1); }

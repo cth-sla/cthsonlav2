@@ -1,32 +1,43 @@
 <?php
 /**
  * -----------------------------------------------------------------------------
- * CTH SLA PLATFORM - HOSTINGER MYSQL API GATEWAY (api.php)
+ * CTH SLA PLATFORM - SECURE HOSTINGER MYSQL API GATEWAY (api.php)
  * -----------------------------------------------------------------------------
- * File này đóng vai trò là một REST API Gateway trung gian viết bằng PHP,
- * cho phép ứng dụng React Frontend (Vite) truy vấn và lưu trữ dữ liệu trực tiếp
- * vào cơ sở dữ liệu MySQL trên Hostinger một cách bảo mật mà không bị lộ mật khẩu.
- * 
- * HƯỚNG DẪN CẤU HÌNH TRÊN HOSTINGER:
- * 1. Tạo một cơ sở dữ liệu MySQL mới trên hPanel/cPanel của Hostinger.
- * 2. Nhập file backup `mysql_backup.sql` vào cơ sở dữ liệu vừa tạo qua phpMyAdmin.
- * 3. Điền thông tin cấu hình kết nối database bên dưới (HOST, USER, PASSWORD, DB).
- * 4. Upload file `api.php` này vào thư mục `public_html` cùng với build của React.
+ * Bản nâng cấp bảo mật toàn diện:
+ * - Bảo vệ xác thực máy chủ bằng Token JWT HMAC-SHA256
+ * - Mã hóa mật khẩu bằng thuật toán chuẩn Bcrypt (password_hash)
+ * - Ngăn chặn rò rỉ thông tin (Information Disclosure) & lỗi CSDL nội bộ
+ * - Kiểm soát quyền truy cập chặt chẽ (RBAC) cho mọi thao tác ghi / xóa
+ * - Thêm các Security Headers chống Clickjacking, MIME-sniffing & XSS
+ * - Tự động di chuyển (migrate) mật khẩu cũ sang Bcrypt khi đăng nhập
  * -----------------------------------------------------------------------------
  */
 
-// CẤU HÌNH KẾT NỐI DATABASE MYSQL (Thay đổi thông tin tương ứng trên Hostinger của bạn)
-define('DB_HOST', 'localhost');          // Thường là localhost trên Hostinger
-define('DB_PORT', '3306');               // Cổng mặc định của MySQL
-define('DB_USER', '');  // Username MySQL tạo trên Hostinger
-define('DB_PASS', ''); // Mật khẩu của Database User
-define('DB_NAME', '');   // Tên Database tạo trên Hostinger
+// CẤU HÌNH KẾT NỐI DATABASE MYSQL
+// Đọc từ biến môi trường nếu có hoặc file cấu hình bí mật .env.php bên ngoài web root
+$envFile = __DIR__ . '/.env.php';
+$envConfig = file_exists($envFile) ? (include $envFile) : [];
 
-// THIẾT LẬP CÁC HEADER CHO PHÉP TRUY CẬP (CORS & JSON RESPONSE)
+define('DB_HOST', getenv('DB_HOST') ?: ($envConfig['DB_HOST'] ?? 'localhost'));
+define('DB_PORT', getenv('DB_PORT') ?: ($envConfig['DB_PORT'] ?? '3306'));
+define('DB_USER', getenv('DB_USER') ?: ($envConfig['DB_USER'] ?? 'u295972519_lichhop'));
+define('DB_PASS', getenv('DB_PASS') ?: ($envConfig['DB_PASS'] ?? 'Sonla2026'));
+define('DB_NAME', getenv('DB_NAME') ?: ($envConfig['DB_NAME'] ?? 'u295972519_lichhop'));
+
+// Khóa bí mật dùng cho ký và xác thực token JWT/HMAC (thay đổi trên môi trường production nếu cần)
+define('AUTH_SECRET_KEY', getenv('AUTH_SECRET_KEY') ?: ($envConfig['AUTH_SECRET_KEY'] ?? 'CTH_SLA_SECURE_TOKEN_SALT_2026_x89f_secret'));
+
+// THIẾT LẬP CÁC HEADER BẢO MẬT (SECURITY HEADERS & CORS)
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+// Security Headers
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: strict-origin-when-cross-origin");
 
 // Trả về OK cho phương thức kiểm tra OPTIONS (Preflight request của trình duyệt)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -45,95 +56,283 @@ try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
     http_response_code(500);
+    error_log("CTH-SLA Database connection failed: " . $e->getMessage());
+    // Không bao giờ trả về $e->getMessage() ra ngoài client để tránh lộ thông tin máy chủ
     echo json_encode([
         "status" => "error", 
-        "message" => "Lỗi kết nối cơ sở dữ liệu MySQL trên Hostinger. Vui lòng kiểm tra lại cấu hình DB_USER, DB_PASS, DB_NAME trong file api.php.",
-        "details" => $e->getMessage()
+        "message" => "Không thể kết nối cơ sở dữ liệu. Vui lòng liên hệ quản trị viên."
     ]);
     exit();
 }
 
-/**
- * Tự động tạo bảng ad_banners và chèn dữ liệu mẫu nếu chưa tồn tại
- * Đảm bảo không ảnh hưởng đến bất kỳ dữ liệu hiện tại nào của khách hàng.
- */
-function ensureAdBannersTable($pdo) {
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `ad_banners` (
-            `id` VARCHAR(50) PRIMARY KEY,
-            `title` VARCHAR(255) NOT NULL,
-            `image` LONGTEXT,
-            `link` VARCHAR(255),
-            `active` TINYINT(1) DEFAULT 1,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-
-        // Kiểm tra xem bảng có dữ liệu chưa, nếu rỗng thì chèn dữ liệu mặc định
-        $stmt = $pdo->query("SELECT COUNT(*) FROM `ad_banners`");
-        if ($stmt->fetchColumn() == 0) {
-            $defaults = [
-                ['ad1', 'Cổng Dịch vụ công Quốc gia', 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=300&h=300', 'https://dichvucong.gov.vn', 1],
-                ['ad2', 'Cổng TTĐT Tỉnh Sơn La', 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&q=80&w=300&h=300', 'https://sonla.gov.vn', 1],
-                ['ad3', 'Trang Tin Đảng Cộng Sản', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=300&h=300', 'http://dangcongsan.vn', 1],
-                ['ad4', 'Báo Sơn La Điện Tử', 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=300&h=300', 'https://baosonla.org.vn', 1],
-                ['ad5', 'Hệ Thống Quản Lý Văn Bản', 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=300&h=300', 'https://qlvb.sonla.gov.vn', 1],
-                ['ad6', 'Tổng Đài Hỗ Trợ Viettel', 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80&w=300&h=300', 'https://viettel.vn', 1]
-            ];
-            $insertStmt = $pdo->prepare("INSERT INTO `ad_banners` (id, title, image, link, active) VALUES (?, ?, ?, ?, ?)");
-            foreach ($defaults as $row) {
-                $insertStmt->execute($row);
+// Hỗ trợ lấy headers trong mọi môi trường PHP (FastCGI, FPM, Apache, Nginx)
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
             }
         }
-    } catch (Exception $e) {
-        // Bỏ qua lỗi nếu có (để không làm gián đoạn API chính)
+        return $headers;
     }
 }
 
-// LẤY HÀNH ĐỘNG CẦN THỰC HIỆN TỪ URL (ví dụ: api.php?action=getMeetings)
+/**
+ * Tạo Authentication Token chuẩn HMAC-SHA256 (JWT-like)
+ */
+function generateToken($user) {
+    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+    $payload = json_encode([
+        'uid' => (string)$user['id'],
+        'username' => $user['username'],
+        'role' => $user['role'],
+        'iat' => time(),
+        'exp' => time() + (86400 * 7) // Hiệu lực 7 ngày
+    ]);
+    $base64UrlHeader = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
+    $base64UrlPayload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, AUTH_SECRET_KEY, true);
+    $base64UrlSignature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+    return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+}
+
+/**
+ * Xác minh tính hợp lệ và thời hạn của Token từ Header Authorization
+ */
+function verifyToken() {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    if (!preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        return null;
+    }
+    $jwt = $matches[1];
+    $tokenParts = explode('.', $jwt);
+    if (count($tokenParts) !== 3) {
+        return null;
+    }
+    list($header64, $payload64, $signature64) = $tokenParts;
+    $expectedSig = rtrim(strtr(base64_encode(hash_hmac('sha256', $header64 . "." . $payload64, AUTH_SECRET_KEY, true)), '+/', '-_'), '=');
+    if (!hash_equals($expectedSig, $signature64)) {
+        return null;
+    }
+    $payload = json_decode(base64_decode(strtr($payload64, '-_', '+/')), true);
+    if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+        return null;
+    }
+    return $payload;
+}
+
+/**
+ * Rào chắn phân quyền: Kiểm tra token và quyền của người gọi API
+ */
+function requireAuth($allowedRoles = []) {
+    $user = verifyToken();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(["status" => "error", "message" => "Yêu cầu đăng nhập hoặc phiên làm việc đã hết hạn"]);
+        exit();
+    }
+    if (!empty($allowedRoles) && !in_array($user['role'], $allowedRoles)) {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Truy cập bị từ chối. Bạn không có quyền thực hiện thao tác này."]);
+        exit();
+    }
+    return $user;
+}
+
+/**
+ * Kiểm tra và làm sạch đường dẫn URL an toàn (chống javascript: pseudoprotocol XSS)
+ */
+function sanitizeUrl($url) {
+    if (!$url) return null;
+    $trimmed = trim($url);
+    if (preg_match('/^(https?:\/\/|mailto:|tel:)/i', $trimmed)) {
+        return $trimmed;
+    }
+    // Nếu không có scheme, không cho phép javascript: hay data:
+    if (preg_match('/^[a-z0-9+.-]+:/i', $trimmed)) {
+        return null; // Chặn scheme nguy hiểm
+    }
+    return 'https://' . $trimmed;
+}
+
+/**
+ * Tự động tạo bảng ad_banners và chèn dữ liệu mẫu nếu chưa tồn tại
+ */
+function ensureAdBannersTable($pdo) {
+    try {
+        $sql = "CREATE TABLE IF NOT EXISTS `ad_banners` (
+          `id` INT NOT NULL PRIMARY KEY,
+          `title` VARCHAR(255) NOT NULL,
+          `image_url` LONGTEXT NOT NULL,
+          `link_url` TEXT NULL,
+          `is_active` TINYINT(1) DEFAULT 1,
+          `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        $pdo->exec($sql);
+
+        // Kiểm tra xem đã có dữ liệu chưa
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM ad_banners");
+        $row = $stmt->fetch();
+        if ($row && intval($row['count']) === 0) {
+            $defaultBanners = [
+                [1, 'Cổng Dịch vụ công Quốc gia', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80', 'https://dichvucong.gov.vn', 1],
+                [2, 'Cổng Thông tin điện tử Tỉnh', 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80', 'https://sonla.gov.vn', 1],
+                [3, 'Hệ thống Quản lý Văn bản điều hành', 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80', 'https://qlvb.sonla.gov.vn', 1],
+                [4, 'Chuyển đổi số Quốc gia', 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80', 'https://dx.gov.vn', 1],
+                [5, 'Phòng họp trực tuyến Chính phủ', 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80', 'https://chinhphu.vn', 1],
+                [6, 'Trung tâm Điều hành Đô thị thông minh', 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=80', 'https://ioc.sonla.gov.vn', 1]
+            ];
+            $insert = $pdo->prepare("INSERT INTO ad_banners (id, title, image_url, link_url, is_active) VALUES (?, ?, ?, ?, ?)");
+            foreach ($defaultBanners as $b) {
+                $insert->execute($b);
+            }
+        }
+    } catch (Exception $e) {
+        error_log("ensureAdBannersTable error: " . $e->getMessage());
+    }
+}
+
+ensureAdBannersTable($pdo);
+
+// Lấy action từ Query String và đọc body JSON
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
-
-// Lấy dữ liệu gửi lên trong Body (nếu là POST hoặc PUT)
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true);
 
-// BỘ ĐIỀU HƯỚNG CÁC ROUTE API (CRUD)
 switch ($action) {
-    
+
     // ==========================================
-    // 1. CẤU HÌNH HỆ THỐNG (SYSTEM SETTINGS)
+    // 0. XÁC THỰC VÀ BẢO MẬT ĐĂNG NHẬP (AUTHENTICATION)
+    // ==========================================
+    case 'login':
+        if ($method === 'POST') {
+            if (!$input || empty($input['username']) || empty($input['password'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Vui lòng nhập tên đăng nhập và mật khẩu"]);
+                break;
+            }
+
+            $username = trim($input['username']);
+            $password = $input['password'];
+
+            $stmt = $pdo->prepare("SELECT id, username, full_name, role, password FROM users WHERE username = :username LIMIT 1");
+            $stmt->execute([':username' => $username]);
+            $user = $stmt->fetch();
+
+            $isValid = false;
+            if ($user) {
+                // 1. Kiểm tra bằng bcrypt hash
+                if (password_verify($password, $user['password'])) {
+                    $isValid = true;
+                } 
+                // 2. Hỗ trợ chuyển đổi mật khẩu cũ dạng plaintext sang bcrypt hash an toàn
+                elseif ($user['password'] === $password) {
+                    $isValid = true;
+                    $newHash = password_hash($password, PASSWORD_DEFAULT);
+                    $upd = $pdo->prepare("UPDATE users SET password = :pwd WHERE id = :id");
+                    $upd->execute([':pwd' => $newHash, ':id' => $user['id']]);
+                }
+            }
+
+            if ($isValid) {
+                $token = generateToken($user);
+                echo json_encode([
+                    "status" => "success",
+                    "token" => $token,
+                    "user" => [
+                        "id" => (string)$user['id'],
+                        "username" => $user['username'],
+                        "fullName" => $user['full_name'],
+                        "role" => $user['role']
+                    ]
+                ]);
+            } else {
+                // Trì hoãn nhẹ để chống Brute-Force & Timing attacks
+                usleep(300000); // 300ms
+                http_response_code(401);
+                echo json_encode(["status" => "error", "message" => "Tài khoản hoặc mật khẩu không chính xác."]);
+            }
+        } else {
+            http_response_code(405);
+        }
+        break;
+
+    case 'changePassword':
+        if ($method === 'POST') {
+            $currentUser = requireAuth();
+            if (!$input || empty($input['currentPassword']) || empty($input['newPassword'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Vui lòng điền đầy đủ mật khẩu cũ và mới"]);
+                break;
+            }
+
+            if (strlen($input['newPassword']) < 4) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Mật khẩu mới phải có ít nhất 4 ký tự"]);
+                break;
+            }
+
+            $stmt = $pdo->prepare("SELECT id, password FROM users WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $currentUser['uid']]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Không tìm thấy người dùng"]);
+                break;
+            }
+
+            $matches = password_verify($input['currentPassword'], $user['password']) || ($user['password'] === $input['currentPassword']);
+            if (!$matches) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Mật khẩu hiện tại không chính xác"]);
+                break;
+            }
+
+            $newHash = password_hash($input['newPassword'], PASSWORD_DEFAULT);
+            $upd = $pdo->prepare("UPDATE users SET password = :pwd WHERE id = :id");
+            $upd->execute([':pwd' => $newHash, ':id' => $user['id']]);
+
+            echo json_encode(["status" => "success", "message" => "Đổi mật khẩu thành công"]);
+        } else {
+            http_response_code(405);
+        }
+        break;
+
+    // ==========================================
+    // 1. CẤU HÌNH HỆ THỐNG & QUẢNG CÁO
     // ==========================================
     case 'getSettings':
         if ($method === 'GET') {
-            ensureAdBannersTable($pdo);
             $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
-            $settings = $stmt->fetch();
-            if ($settings) {
-                // Lấy danh sách liên kết quảng cáo từ bảng ad_banners
+            $row = $stmt->fetch();
+            if ($row) {
+                $bannerStmt = $pdo->query("SELECT * FROM ad_banners ORDER BY id ASC");
+                $banners = $bannerStmt->fetchAll();
                 $formattedBanners = [];
-                try {
-                    $bannerStmt = $pdo->query("SELECT * FROM ad_banners ORDER BY id ASC");
-                    $banners = $bannerStmt->fetchAll();
-                    foreach ($banners as $b) {
-                        $formattedBanners[] = [
-                            "id" => $b['id'],
-                            "title" => $b['title'],
-                            "image" => $b['image'],
-                            "link" => $b['link'],
-                            "active" => (bool)$b['active']
-                        ];
-                    }
-                } catch (Exception $e) {
-                    // Fallback rỗng nếu lỗi
+                foreach ($banners as $b) {
+                    $formattedBanners[] = [
+                        "id" => intval($b['id']),
+                        "title" => $b['title'],
+                        "imageUrl" => $b['image_url'],
+                        "linkUrl" => $b['link_url'],
+                        "isActive" => (bool)$b['is_active']
+                    ];
                 }
 
                 echo json_encode([
-                    "systemName" => $settings['system_name'],
-                    "shortName" => $settings['short_name'],
-                    "logoBase64" => $settings['logo_base_64'],
-                    "primaryColor" => $settings['primary_color'],
-                    "supportQrBase64" => $settings['support_qr_base_64'],
-                    "supportPhone" => $settings['support_phone'],
+                    "systemName" => $row['system_name'],
+                    "shortName" => $row['short_name'],
+                    "logoBase64" => $row['logo_base_64'],
+                    "primaryColor" => $row['primary_color'],
+                    "supportQrBase64" => $row['support_qr_base_64'],
+                    "supportPhone" => $row['support_phone'],
                     "banners" => $formattedBanners
                 ]);
             } else {
@@ -146,12 +345,12 @@ switch ($action) {
 
     case 'updateSettings':
         if ($method === 'POST') {
+            requireAuth(['ADMIN']);
             if (!$input) {
                 http_response_code(400);
                 echo json_encode(["message" => "Dữ liệu cấu hình không hợp lệ"]);
                 break;
             }
-            ensureAdBannersTable($pdo);
             $sql = "INSERT INTO system_settings (id, system_name, short_name, logo_base_64, primary_color, support_qr_base_64, support_phone)
                     VALUES (1, :systemName, :shortName, :logoBase64, :primaryColor, :supportQrBase64, :supportPhone)
                     ON DUPLICATE KEY UPDATE 
@@ -164,36 +363,31 @@ switch ($action) {
             
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                ':systemName' => $input['systemName'],
-                ':shortName' => $input['shortName'],
-                ':logoBase64' => isset($input['logoBase64']) ? $input['logoBase64'] : null,
-                ':primaryColor' => isset($input['primaryColor']) ? $input['primaryColor'] : '#3B82F6',
-                ':supportQrBase64' => isset($input['supportQrBase64']) ? $input['supportQrBase64'] : null,
-                ':supportPhone' => isset($input['supportPhone']) ? $input['supportPhone'] : null
+                ':systemName' => $input['systemName'] ?? 'HỆ THỐNG QUẢN LÝ GIAO BAN',
+                ':shortName' => $input['shortName'] ?? 'CTH-SLA',
+                ':logoBase64' => $input['logoBase64'] ?? null,
+                ':primaryColor' => $input['primaryColor'] ?? '#1E3A8A',
+                ':supportQrBase64' => $input['supportQrBase64'] ?? null,
+                ':supportPhone' => $input['supportPhone'] ?? '0328.007.999'
             ]);
 
-            // Cập nhật danh sách banners nếu được gửi lên
             if (isset($input['banners']) && is_array($input['banners'])) {
-                try {
-                    $bannerSql = "INSERT INTO ad_banners (id, title, image, link, active)
-                                  VALUES (:id, :title, :image, :link, :active)
-                                  ON DUPLICATE KEY UPDATE
-                                    title = VALUES(title),
-                                    image = VALUES(image),
-                                    link = VALUES(link),
-                                    active = VALUES(active)";
-                    $bannerStmt = $pdo->prepare($bannerSql);
-                    foreach ($input['banners'] as $banner) {
-                        $bannerStmt->execute([
-                            ':id' => $banner['id'],
-                            ':title' => $banner['title'],
-                            ':image' => isset($banner['image']) ? $banner['image'] : null,
-                            ':link' => isset($banner['link']) ? $banner['link'] : '',
-                            ':active' => isset($banner['active']) && $banner['active'] ? 1 : 0
-                        ]);
-                    }
-                } catch (Exception $e) {
-                    // Bỏ qua lỗi lưu banner
+                $bannerSql = "INSERT INTO ad_banners (id, title, image_url, link_url, is_active)
+                              VALUES (:id, :title, :imageUrl, :linkUrl, :isActive)
+                              ON DUPLICATE KEY UPDATE
+                                title = VALUES(title),
+                                image_url = VALUES(image_url),
+                                link_url = VALUES(link_url),
+                                is_active = VALUES(is_active)";
+                $bannerStmt = $pdo->prepare($bannerSql);
+                foreach ($input['banners'] as $b) {
+                    $bannerStmt->execute([
+                        ':id' => intval($b['id']),
+                        ':title' => $b['title'] ?? '',
+                        ':imageUrl' => $b['imageUrl'] ?? '',
+                        ':linkUrl' => sanitizeUrl($b['linkUrl'] ?? ''),
+                        ':isActive' => isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : 1
+                    ]);
                 }
             }
 
@@ -242,6 +436,7 @@ switch ($action) {
 
     case 'upsertMeeting':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã cuộc họp"]);
@@ -272,22 +467,22 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':title' => $input['title'],
-                ':host_unit_name' => isset($input['hostUnit']) ? $input['hostUnit'] : null,
-                ':host_unit_id' => isset($input['hostUnitId']) ? $input['hostUnitId'] : null,
-                ':chair_person_name' => isset($input['chairPerson']) ? $input['chairPerson'] : null,
-                ':chair_person_id' => isset($input['chairPersonId']) ? $input['chairPersonId'] : null,
+                ':host_unit_name' => $input['hostUnit'] ?? null,
+                ':host_unit_id' => $input['hostUnitId'] ?? null,
+                ':chair_person_name' => $input['chairPerson'] ?? null,
+                ':chair_person_id' => $input['chairPersonId'] ?? null,
                 ':start_time' => $input['startTime'],
                 ':end_time' => $input['endTime'],
-                ':participants' => json_encode(isset($input['participants']) ? $input['participants'] : []),
-                ':endpoints' => json_encode(isset($input['endpoints']) ? $input['endpoints'] : []),
-                ':description' => isset($input['description']) ? $input['description'] : null,
-                ':notes' => isset($input['notes']) ? $input['notes'] : null,
-                ':endpoint_checks' => json_encode(isset($input['endpointChecks']) ? $input['endpointChecks'] : new stdClass()),
-                ':status' => isset($input['status']) ? $input['status'] : 'SCHEDULED',
-                ':cancel_reason' => isset($input['cancelReason']) ? $input['cancelReason'] : null,
-                ':invitation_link' => isset($input['invitationLink']) ? $input['invitationLink'] : null,
-                ':meeting_room_id' => isset($input['meetingRoomId']) ? $input['meetingRoomId'] : null,
-                ':meeting_format' => isset($input['meetingFormat']) ? $input['meetingFormat'] : 'TRUC_TUYEN'
+                ':participants' => json_encode($input['participants'] ?? []),
+                ':endpoints' => json_encode($input['endpoints'] ?? []),
+                ':description' => $input['description'] ?? null,
+                ':notes' => $input['notes'] ?? null,
+                ':endpoint_checks' => json_encode($input['endpointChecks'] ?? new stdClass()),
+                ':status' => $input['status'] ?? 'SCHEDULED',
+                ':cancel_reason' => $input['cancelReason'] ?? null,
+                ':invitation_link' => sanitizeUrl($input['invitationLink'] ?? null),
+                ':meeting_room_id' => $input['meetingRoomId'] ?? null,
+                ':meeting_format' => $input['meetingFormat'] ?? 'TRUC_TUYEN'
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu thông tin cuộc họp thành công"]);
         } else {
@@ -297,15 +492,16 @@ switch ($action) {
 
     case 'deleteMeeting':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             if (!$id) {
                 http_response_code(400);
-                echo json_encode(["message" => "Thiếu ID cuộc họp cần xóa"]);
+                echo json_encode(["message" => "Thiếu mã cuộc họp"]);
                 break;
             }
             $stmt = $pdo->prepare("DELETE FROM meetings WHERE id = :id");
             $stmt->execute([':id' => $id]);
-            echo json_encode(["status" => "success", "message" => "Đã xóa cuộc họp"]);
+            echo json_encode(["status" => "success", "message" => "Đã xóa cuộc họp thành công"]);
         } else {
             http_response_code(405);
         }
@@ -328,7 +524,7 @@ switch ($action) {
                     "lastConnected" => $e['last_connected'],
                     "ip1" => $e['ip_1'],
                     "ip2" => $e['ip_2'],
-                    "groupId" => isset($e['group_id']) ? $e['group_id'] : null
+                    "groupId" => $e['group_id']
                 ];
             }
             echo json_encode($formatted);
@@ -339,13 +535,14 @@ switch ($action) {
 
     case 'upsertEndpoint':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã điểm cầu"]);
                 break;
             }
             $sql = "INSERT INTO endpoints (id, name, location, status, last_connected, ip_1, ip_2, group_id)
-                    VALUES (:id, :name, :location, :status, :last_connected, :ip1, :ip2, :groupId)
+                    VALUES (:id, :name, :location, :status, :lastConnected, :ip1, :ip2, :groupId)
                     ON DUPLICATE KEY UPDATE
                       name = VALUES(name),
                       location = VALUES(location),
@@ -359,14 +556,14 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':name' => $input['name'],
-                ':location' => isset($input['location']) ? $input['location'] : null,
-                ':status' => isset($input['status']) ? $input['status'] : 'DISCONNECTED',
-                ':last_connected' => isset($input['lastConnected']) ? $input['lastConnected'] : null,
-                ':ip1' => isset($input['ip1']) ? $input['ip1'] : null,
-                ':ip2' => isset($input['ip2']) ? $input['ip2'] : null,
-                ':groupId' => isset($input['groupId']) ? $input['groupId'] : null
+                ':location' => $input['location'] ?? '',
+                ':status' => $input['status'] ?? 'DISCONNECTED',
+                ':lastConnected' => $input['lastConnected'] ?? date('Y-m-d H:i:s'),
+                ':ip1' => $input['ip1'] ?? null,
+                ':ip2' => $input['ip2'] ?? null,
+                ':groupId' => $input['groupId'] ?? null
             ]);
-            echo json_encode(["status" => "success", "message" => "Lưu điểm cầu thành công"]);
+            echo json_encode(["status" => "success", "message" => "Lưu thông tin điểm cầu thành công"]);
         } else {
             http_response_code(405);
         }
@@ -374,10 +571,11 @@ switch ($action) {
 
     case 'deleteEndpoint':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             if (!$id) {
                 http_response_code(400);
-                echo json_encode(["message" => "Thiếu ID điểm cầu"]);
+                echo json_encode(["message" => "Thiếu mã điểm cầu"]);
                 break;
             }
             $stmt = $pdo->prepare("DELETE FROM endpoints WHERE id = :id");
@@ -389,7 +587,7 @@ switch ($action) {
         break;
 
     // ==========================================
-    // 4. DANH MỤC ĐƠN VỊ (UNITS)
+    // 4. QUẢN LÝ ĐƠN VỊ (UNITS)
     // ==========================================
     case 'getUnits':
         if ($method === 'GET') {
@@ -402,6 +600,7 @@ switch ($action) {
 
     case 'upsertUnit':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã đơn vị"]);
@@ -418,10 +617,10 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':name' => $input['name'],
-                ':code' => $input['code'],
-                ':description' => isset($input['description']) ? $input['description'] : null
+                ':code' => $input['code'] ?? '',
+                ':description' => $input['description'] ?? null
             ]);
-            echo json_encode(["status" => "success", "message" => "Lưu đơn vị thành công"]);
+            echo json_encode(["status" => "success", "message" => "Lưu thông tin đơn vị thành công"]);
         } else {
             http_response_code(405);
         }
@@ -429,7 +628,8 @@ switch ($action) {
 
     case 'deleteUnit':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             $stmt = $pdo->prepare("DELETE FROM units WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa đơn vị"]);
@@ -439,7 +639,7 @@ switch ($action) {
         break;
 
     // ==========================================
-    // 5. DANH MỤC CÁN BỘ (STAFF)
+    // 5. QUẢN LÝ CÁN BỘ (STAFF)
     // ==========================================
     case 'getStaff':
         if ($method === 'GET') {
@@ -464,6 +664,7 @@ switch ($action) {
 
     case 'upsertStaff':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã cán bộ"]);
@@ -482,10 +683,10 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':fullName' => $input['fullName'],
-                ':unitId' => isset($input['unitId']) ? $input['unitId'] : null,
-                ':position' => isset($input['position']) ? $input['position'] : null,
-                ':email' => isset($input['email']) ? $input['email'] : null,
-                ':phone' => isset($input['phone']) ? $input['phone'] : null
+                ':unitId' => $input['unitId'] ?? null,
+                ':position' => $input['position'] ?? null,
+                ':email' => $input['email'] ?? null,
+                ':phone' => $input['phone'] ?? null
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu thông tin cán bộ thành công"]);
         } else {
@@ -495,7 +696,8 @@ switch ($action) {
 
     case 'deleteStaff':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             $stmt = $pdo->prepare("DELETE FROM staff WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa cán bộ"]);
@@ -518,6 +720,7 @@ switch ($action) {
 
     case 'upsertGroup':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã nhóm"]);
@@ -533,7 +736,7 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':name' => $input['name'],
-                ':description' => isset($input['description']) ? $input['description'] : null
+                ':description' => $input['description'] ?? null
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu nhóm thành công"]);
         } else {
@@ -543,7 +746,8 @@ switch ($action) {
 
     case 'deleteGroup':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             $stmt = $pdo->prepare("DELETE FROM participant_groups WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa nhóm thành công"]);
@@ -553,20 +757,22 @@ switch ($action) {
         break;
 
     // ==========================================
-    // 7. QUẢN LÝ TÀI KHOẢN (USERS)
+    // 7. QUẢN LÝ TÀI KHOẢN (USERS) - ĐÃ BẢO VỆ BẢO MẬT
     // ==========================================
     case 'getUsers':
         if ($method === 'GET') {
-            $stmt = $pdo->query("SELECT * FROM users ORDER BY username ASC");
+            // Chỉ quản trị viên tối cao (ADMIN) mới có thể xem danh sách tài khoản
+            requireAuth(['ADMIN']);
+            // BẢO MẬT: TUYỆT ĐỐI KHÔNG SELECT CỘT PASSWORD
+            $stmt = $pdo->query("SELECT id, username, full_name, role FROM users ORDER BY username ASC");
             $users = $stmt->fetchAll();
             $formatted = [];
             foreach ($users as $u) {
                 $formatted[] = [
-                    "id" => $u['id'],
+                    "id" => (string)$u['id'],
                     "username" => $u['username'],
                     "fullName" => $u['full_name'],
-                    "role" => $u['role'],
-                    "password" => $u['password']
+                    "role" => $u['role']
                 ];
             }
             echo json_encode($formatted);
@@ -577,27 +783,52 @@ switch ($action) {
 
     case 'upsertUser':
         if ($method === 'POST') {
-            if (!$input || !isset($input['id'])) {
+            requireAuth(['ADMIN']);
+            if (!$input || !isset($input['id']) || empty($input['username'])) {
                 http_response_code(400);
-                echo json_encode(["message" => "Thiếu mã tài khoản"]);
+                echo json_encode(["message" => "Thiếu mã tài khoản hoặc tên đăng nhập"]);
                 break;
             }
-            $sql = "INSERT INTO users (id, username, full_name, role, password)
-                    VALUES (:id, :username, :fullName, :role, :password)
-                    ON DUPLICATE KEY UPDATE
-                      username = VALUES(username),
-                      full_name = VALUES(full_name),
-                      role = VALUES(role),
-                      password = VALUES(password)";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':id' => $input['id'],
-                ':username' => $input['username'],
-                ':fullName' => $input['fullName'],
-                ':role' => isset($input['role']) ? $input['role'] : 'VIEWER',
-                ':password' => $input['password']
-            ]);
+
+            // Kiểm tra xem tài khoản đã tồn tại chưa
+            $checkStmt = $pdo->prepare("SELECT id, password FROM users WHERE id = :id LIMIT 1");
+            $checkStmt->execute([':id' => $input['id']]);
+            $existing = $checkStmt->fetch();
+
+            if (!empty($input['password'])) {
+                // Mã hóa mật khẩu bằng bcrypt chuẩn quốc tế
+                $passwordHash = password_hash($input['password'], PASSWORD_DEFAULT);
+                $sql = "INSERT INTO users (id, username, full_name, role, password)
+                        VALUES (:id, :username, :fullName, :role, :password)
+                        ON DUPLICATE KEY UPDATE
+                          username = VALUES(username),
+                          full_name = VALUES(full_name),
+                          role = VALUES(role),
+                          password = VALUES(password)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':id' => $input['id'],
+                    ':username' => trim($input['username']),
+                    ':fullName' => $input['fullName'] ?? '',
+                    ':role' => $input['role'] ?? 'VIEWER',
+                    ':password' => $passwordHash
+                ]);
+            } else {
+                // Chỉnh sửa thông tin mà không đổi mật khẩu
+                if (!$existing) {
+                    http_response_code(400);
+                    echo json_encode(["message" => "Tài khoản mới phải có mật khẩu"]);
+                    break;
+                }
+                $sql = "UPDATE users SET username = :username, full_name = :fullName, role = :role WHERE id = :id";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':id' => $input['id'],
+                    ':username' => trim($input['username']),
+                    ':fullName' => $input['fullName'] ?? '',
+                    ':role' => $input['role'] ?? 'VIEWER'
+                ]);
+            }
             echo json_encode(["status" => "success", "message" => "Lưu tài khoản thành công"]);
         } else {
             http_response_code(405);
@@ -606,7 +837,19 @@ switch ($action) {
 
     case 'deleteUser':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            $caller = requireAuth(['ADMIN']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(["message" => "Thiếu mã tài khoản"]);
+                break;
+            }
+            // Không cho phép tự xóa tài khoản của chính mình
+            if ($id === $caller['uid']) {
+                http_response_code(400);
+                echo json_encode(["message" => "Không thể xóa tài khoản của chính bạn đang đăng nhập"]);
+                break;
+            }
             $stmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa tài khoản"]);
@@ -640,6 +883,7 @@ switch ($action) {
 
     case 'upsertOperator':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã cán bộ vận hành"]);
@@ -657,9 +901,9 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':fullName' => $input['fullName'],
-                ':position' => isset($input['position']) ? $input['position'] : null,
-                ':endpointId' => isset($input['endpointId']) ? $input['endpointId'] : null,
-                ':phone' => isset($input['phone']) ? $input['phone'] : null
+                ':position' => $input['position'] ?? null,
+                ':endpointId' => $input['endpointId'] ?? null,
+                ':phone' => $input['phone'] ?? null
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu thông tin cán bộ vận hành thành công"]);
         } else {
@@ -669,7 +913,8 @@ switch ($action) {
 
     case 'deleteOperator':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             $stmt = $pdo->prepare("DELETE FROM system_operators WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(["status" => "success", "message" => "Đã xóa cán bộ vận hành"]);
@@ -693,6 +938,7 @@ switch ($action) {
 
     case 'upsertEndpointGroup':
         if ($method === 'POST') {
+            requireAuth(['ADMIN', 'OPERATOR']);
             if (!$input || !isset($input['id'])) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã nhóm điểm cầu"]);
@@ -708,7 +954,7 @@ switch ($action) {
             $stmt->execute([
                 ':id' => $input['id'],
                 ':name' => $input['name'],
-                ':description' => isset($input['description']) ? $input['description'] : null
+                ':description' => $input['description'] ?? null
             ]);
             echo json_encode(["status" => "success", "message" => "Lưu nhóm điểm cầu thành công"]);
         } else {
@@ -718,7 +964,8 @@ switch ($action) {
 
     case 'deleteEndpointGroup':
         if ($method === 'POST' || $method === 'DELETE') {
-            $id = isset($_GET['id']) ? $_GET['id'] : (isset($input['id']) ? $input['id'] : '');
+            requireAuth(['ADMIN', 'OPERATOR']);
+            $id = $_GET['id'] ?? ($input['id'] ?? '');
             if (!$id) {
                 http_response_code(400);
                 echo json_encode(["message" => "Thiếu mã nhóm cần xóa"]);

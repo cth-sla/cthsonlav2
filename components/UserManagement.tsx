@@ -75,7 +75,10 @@ const UserManagement: React.FC<UserManagementProps> = ({
       }
     }
 
-    const payload = { ...formData, password: passwordForm.pass || formData.password };
+    const payload: any = { ...formData };
+    if (passwordForm.pass) {
+      payload.password = passwordForm.pass;
+    }
 
     if (editingUser) {
       onUpdateUser(payload as User);

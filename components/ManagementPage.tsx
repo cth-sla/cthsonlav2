@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings, EndpointGroup } from '../types';
-import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode } from 'lucide-react';
+import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode, Plus, Edit3, Mail, User, Save, RefreshCw, RotateCcw, ShieldCheck, Database, HardDrive, Cpu, CheckCircle2 } from 'lucide-react';
+import { storageService } from '../services/storageService';
+import { getCacheDiagnostics, clearBrowserCache, AUTO_PURGE_KEY, CacheDiagnostics, APP_VERSION } from '../services/cacheService';
+
 
 interface ManagementPageProps {
   units: Unit[];
@@ -71,9 +74,48 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrInputRef = useRef<HTMLInputElement>(null);
 
+  // Cache Diagnostics State
+  const [cacheDiag, setCacheDiag] = useState<CacheDiagnostics | null>(null);
+  const [isClearingCache, setIsClearingCache] = useState(false);
+  const [cacheClearedSuccess, setCacheClearedSuccess] = useState(false);
+  const [autoPurgeSetting, setAutoPurgeSetting] = useState(true);
+
   useEffect(() => {
     setSettingsForm(systemSettings);
   }, [systemSettings]);
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      getCacheDiagnostics().then(d => {
+        setCacheDiag(d);
+        setAutoPurgeSetting(d.autoPurgeEnabled);
+      });
+    }
+  }, [activeTab]);
+
+  const handleToggleAutoPurge = (enabled: boolean) => {
+    setAutoPurgeSetting(enabled);
+    localStorage.setItem(AUTO_PURGE_KEY, enabled ? 'true' : 'false');
+  };
+
+  const handleManualClearCache = async () => {
+    setIsClearingCache(true);
+    try {
+      await clearBrowserCache({ hardReload: false, preserveAuth: true });
+      setCacheClearedSuccess(true);
+      const d = await getCacheDiagnostics();
+      setCacheDiag(d);
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_v', Date.now().toString());
+        window.location.replace(url.toString());
+      }, 1200);
+    } catch (e) {
+      console.error('Lỗi xoá cache:', e);
+      setIsClearingCache(false);
+    }
+  };
+
 
   const handleBannerImageUpload = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,6 +238,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     setIsModalOpen(true);
   };
 
+
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingItem(null);
@@ -217,6 +260,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     }
     closeModal();
   };
+
 
   const handleSaveSettings = () => {
     onUpdateSettings(settingsForm);
@@ -266,6 +310,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
               </button>
             ))}
           </div>
+
 
           {activeTab !== 'settings' && activeTab !== 'ads' && (
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -670,6 +715,117 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* CƠ CHẾ TỰ ĐỘNG XOÁ & QUẢN LÝ CACHE TRÌNH DUYỆT */}
+            <div className="p-6 bg-gradient-to-br from-blue-50/60 via-slate-50 to-indigo-50/40 dark:from-slate-850 dark:via-slate-900 dark:to-blue-950/20 rounded-3xl border border-blue-200/80 dark:border-blue-900/50 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-100 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <RotateCcw size={20} className={isClearingCache ? 'animate-spin' : ''} />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                      Cơ Chế Tự Động Xoá & Quản Lý Cache Trình Duyệt
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Tự động phát hiện và làm sạch bộ nhớ đệm (HTML, JS, CSS, Service Worker) khi hệ thống phát hành bản mới.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Tự động dọn cache:</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={autoPurgeSetting} 
+                      onChange={e => handleToggleAutoPurge(e.target.checked)} 
+                      className="sr-only peer" 
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Cache Diagnostics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <Cpu size={12} className="text-blue-500" />
+                    <span>Phiên Bản App</span>
+                  </div>
+                  <div className="text-sm font-black text-blue-600 dark:text-blue-400 font-mono">
+                    v{cacheDiag?.appVersion || APP_VERSION}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <HardDrive size={12} className="text-emerald-500" />
+                    <span>Service Worker</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {cacheDiag?.serviceWorkerActive ? 'Đang chạy' : 'Đã dọn sạch'}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <Database size={12} className="text-purple-500" />
+                    <span>Cache Storage</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {cacheDiag ? `${cacheDiag.cacheStorageCount} phân vùng` : '0 phân vùng'}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <ShieldCheck size={12} className="text-amber-500" />
+                    <span>Bộ Nhớ Máy</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {cacheDiag ? `${cacheDiag.localStorageSizeKB} KB` : '0 KB'}
+                  </div>
+                </div>
+              </div>
+
+              {cacheClearedSuccess && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-in fade-in">
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+                  <span>Đã dọn sạch 100% Cache Storage & Service Worker! Đang tải lại ứng dụng...</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {cacheDiag?.lastPurgedAt ? (
+                    <>Lần dọn sạch gần nhất: <strong className="text-slate-700 dark:text-slate-300">{new Date(cacheDiag.lastPurgedAt).toLocaleString('vi-VN')}</strong></>
+                  ) : (
+                    <>Cơ chế tự động dọn dẹp đang ở trạng thái sẵn sàng.</>
+                  )}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleManualClearCache}
+                  disabled={isClearingCache}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {isClearingCache ? (
+                    <>
+                      <RotateCcw size={14} className="animate-spin" />
+                      <span>Đang dọn cache & tải lại...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      <span>Xoá Toàn Bộ Cache & Làm Mới Ngay</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
             
             <button 
               onClick={handleSaveSettings}
@@ -828,6 +984,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </div>
             
             <form onSubmit={handleSave} className="space-y-4">
+
                 {activeTab === 'units' && (
                   <>
                     <input required className="w-full px-5 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white" placeholder="Tên đơn vị" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
@@ -877,6 +1034,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     </div>
                   </>
                 )}
+
 
                 <div className="flex gap-4 pt-4">
                   <button type="button" onClick={closeModal} className="flex-1 py-3 border border-gray-200 dark:border-slate-700 rounded-2xl font-bold uppercase text-xs tracking-widest text-gray-500 dark:text-slate-400">Hủy</button>

@@ -53,7 +53,7 @@ const App: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>(() => storageService.getStaff());
   const [operators, setOperators] = useState<SystemOperator[]>(() => []);
   const [groups, setGroups] = useState<ParticipantGroup[]>(() => storageService.getGroups());
-  const [users, setUsers] = useState<User[]>(() => storageService.getUsers());
+  const [users, setUsers] = useState<User[]>([]);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => storageService.getSystemSettings());
   
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -194,13 +194,12 @@ const App: React.FC = () => {
         }
 
         // 2. Tải các bảng dữ liệu danh mục & quản trị (Sử dụng catch riêng để không chặn lẫn nhau)
-        const [cloudEndpoints, cloudEndpointGroups, cloudUnits, cloudStaff, cloudGroups, cloudUsers, cloudOperators] = await Promise.all([
+        const [cloudEndpoints, cloudEndpointGroups, cloudUnits, cloudStaff, cloudGroups, cloudOperators] = await Promise.all([
           supabaseService.getEndpoints().catch(err => { console.error("Lỗi tải endpoints:", err); return []; }),
           supabaseService.getEndpointGroups().catch(err => { console.error("Lỗi tải endpoint groups:", err); return []; }),
           supabaseService.getUnits().catch(err => { console.error("Lỗi tải units:", err); return []; }),
           supabaseService.getStaff().catch(err => { console.error("Lỗi tải staff:", err); return []; }),
           supabaseService.getGroups().catch(err => { console.error("Lỗi tải groups:", err); return []; }),
-          supabaseService.getUsers().catch(err => { console.error("Lỗi tải users:", err); return []; }),
           supabaseService.getOperators().catch(err => { console.error("Lỗi tải operators:", err); return []; })
         ]);
 
@@ -223,10 +222,6 @@ const App: React.FC = () => {
         if (cloudGroups && cloudGroups.length > 0) {
           setGroups(cloudGroups);
           storageService.saveGroups(cloudGroups);
-        }
-        if (cloudUsers && cloudUsers.length > 0) {
-          setUsers(cloudUsers);
-          storageService.saveUsers(cloudUsers);
         }
         if (cloudOperators && cloudOperators.length > 0) {
           setOperators(cloudOperators);
@@ -376,7 +371,27 @@ const App: React.FC = () => {
     };
   }, [meetings, endpoints]);
 
-  const handleLogout = () => { setCurrentUser(null); setShowPublicView(false); setActiveTab('dashboard'); };
+  const handleLogout = () => { 
+    supabaseService.logout();
+    setCurrentUser(null); 
+    setShowPublicView(false); 
+    setActiveTab('dashboard'); 
+    setUsers([]);
+  };
+
+  useEffect(() => {
+    if (currentUser?.role === 'ADMIN') {
+      supabaseService.getUsers().then(res => {
+        if (Array.isArray(res) && res.length > 0) {
+          setUsers(res);
+        }
+      }).catch(err => {
+        console.warn("Chưa thể tải danh sách tài khoản:", err);
+      });
+    } else {
+      setUsers([]);
+    }
+  }, [currentUser]);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
   const handleTabChange = (tab: typeof activeTab) => {
@@ -411,10 +426,16 @@ const App: React.FC = () => {
     setMeetings(prev => {
       const existing = prev.find(m => m.id === meeting.id);
       if (existing) {
+        // Hợp nhất dữ liệu kiểm tra kỹ thuật cũ và mới để giữ nguyên danh sách điểm cầu đã tích Đã kiểm tra
+        const mergedChecks = {
+          ...(existing.endpointChecks || {}),
+          ...(meeting.endpointChecks || {})
+        };
+
         finalMeeting = {
           ...existing,
           ...meeting,
-          endpointChecks: meeting.endpointChecks !== undefined ? meeting.endpointChecks : existing.endpointChecks,
+          endpointChecks: mergedChecks,
           notes: meeting.notes !== undefined ? meeting.notes : existing.notes
         };
       }
@@ -422,6 +443,7 @@ const App: React.FC = () => {
       storageService.saveMeetings(updated);
       return updated;
     });
+
 
     if (selectedMeeting && selectedMeeting.id === meeting.id) {
         setSelectedMeeting(finalMeeting);
@@ -469,7 +491,6 @@ const App: React.FC = () => {
   if (!currentUser || showPublicView) return (
     <>
       <LoginView 
-        users={users} 
         meetings={meetings} 
         onLoginSuccess={(user) => {
           setCurrentUser(user);
