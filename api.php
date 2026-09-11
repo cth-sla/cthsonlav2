@@ -367,27 +367,40 @@ switch ($action) {
         if ($method === 'GET') {
             $stmt = $pdo->query("SELECT * FROM system_settings WHERE id = 1");
             $row = $stmt->fetch();
-            if ($row) {
+            $formattedBanners = [];
+            try {
                 $bannerStmt = $pdo->query("SELECT * FROM ad_banners ORDER BY id ASC");
                 $banners = $bannerStmt->fetchAll();
-                $formattedBanners = [];
-                foreach ($banners as $b) {
+                foreach ($banners as $idx => $b) {
+                    $bId = (string)($b['id'] ?? ('ad' . ($idx + 1)));
+                    $bTitle = $b['title'] ?? '';
+                    $bImage = $b['image'] ?? $b['image_url'] ?? '';
+                    $bLink = $b['link'] ?? $b['link_url'] ?? '';
+                    $bActive = isset($b['active']) ? (bool)$b['active'] : (isset($b['is_active']) ? (bool)$b['is_active'] : true);
+
                     $formattedBanners[] = [
-                        "id" => intval($b['id']),
-                        "title" => $b['title'],
-                        "imageUrl" => $b['image_url'],
-                        "linkUrl" => $b['link_url'],
-                        "isActive" => (bool)$b['is_active']
+                        "id" => $bId,
+                        "title" => $bTitle,
+                        "image" => $bImage,
+                        "imageUrl" => $bImage,
+                        "link" => $bLink,
+                        "linkUrl" => $bLink,
+                        "active" => $bActive,
+                        "isActive" => $bActive
                     ];
                 }
+            } catch (Exception $e) {
+                // Table might be missing or empty
+            }
 
+            if ($row || count($formattedBanners) > 0) {
                 echo json_encode([
-                    "systemName" => $row['system_name'],
-                    "shortName" => $row['short_name'],
-                    "logoBase64" => $row['logo_base_64'],
-                    "primaryColor" => $row['primary_color'],
-                    "supportQrBase64" => $row['support_qr_base_64'],
-                    "supportPhone" => $row['support_phone'],
+                    "systemName" => $row['system_name'] ?? 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+                    "shortName" => $row['short_name'] ?? 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+                    "logoBase64" => $row['logo_base_64'] ?? '',
+                    "primaryColor" => $row['primary_color'] ?? '#3B82F6',
+                    "supportQrBase64" => $row['support_qr_base_64'] ?? '',
+                    "supportPhone" => $row['support_phone'] ?? '0328.007.999',
                     "banners" => $formattedBanners
                 ]);
             } else {
@@ -427,22 +440,50 @@ switch ($action) {
             ]);
 
             if (isset($input['banners']) && is_array($input['banners'])) {
-                $bannerSql = "INSERT INTO ad_banners (id, title, image_url, link_url, is_active)
-                              VALUES (:id, :title, :imageUrl, :linkUrl, :isActive)
-                              ON DUPLICATE KEY UPDATE
-                                title = VALUES(title),
-                                image_url = VALUES(image_url),
-                                link_url = VALUES(link_url),
-                                is_active = VALUES(is_active)";
-                $bannerStmt = $pdo->prepare($bannerSql);
-                foreach ($input['banners'] as $b) {
-                    $bannerStmt->execute([
-                        ':id' => intval($b['id']),
-                        ':title' => $b['title'] ?? '',
-                        ':imageUrl' => $b['imageUrl'] ?? '',
-                        ':linkUrl' => sanitizeUrl($b['linkUrl'] ?? ''),
-                        ':isActive' => isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : 1
-                    ]);
+                foreach ($input['banners'] as $idx => $b) {
+                    $bId = (string)($b['id'] ?? ('ad' . ($idx + 1)));
+                    $bTitle = $b['title'] ?? '';
+                    $bImage = $b['image'] ?? $b['imageUrl'] ?? null;
+                    $bLink = $b['link'] ?? $b['linkUrl'] ?? '';
+                    $bActive = isset($b['active']) ? ($b['active'] ? 1 : 0) : (isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : 1);
+
+                    try {
+                        $bannerSql = "INSERT INTO ad_banners (id, title, image, link, active)
+                                      VALUES (:id, :title, :image, :link, :active)
+                                      ON DUPLICATE KEY UPDATE
+                                        title = VALUES(title),
+                                        image = VALUES(image),
+                                        link = VALUES(link),
+                                        active = VALUES(active)";
+                        $bannerStmt = $pdo->prepare($bannerSql);
+                        $bannerStmt->execute([
+                            ':id' => $bId,
+                            ':title' => $bTitle,
+                            ':image' => $bImage,
+                            ':link' => $bLink,
+                            ':active' => $bActive
+                        ]);
+                    } catch (Exception $e1) {
+                        try {
+                            $bannerSql2 = "INSERT INTO ad_banners (id, title, image_url, link_url, is_active)
+                                           VALUES (:id, :title, :image_url, :link_url, :is_active)
+                                           ON DUPLICATE KEY UPDATE
+                                             title = VALUES(title),
+                                             image_url = VALUES(image_url),
+                                             link_url = VALUES(link_url),
+                                             is_active = VALUES(is_active)";
+                            $bannerStmt2 = $pdo->prepare($bannerSql2);
+                            $bannerStmt2->execute([
+                                ':id' => $bId,
+                                ':title' => $bTitle,
+                                ':image_url' => $bImage,
+                                ':link_url' => $bLink,
+                                ':is_active' => $bActive
+                            ]);
+                        } catch (Exception $e2) {
+                            error_log("Lỗi cập nhật ad_banner: " . $e2->getMessage());
+                        }
+                    }
                 }
             }
 

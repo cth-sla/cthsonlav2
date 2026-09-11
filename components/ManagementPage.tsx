@@ -73,23 +73,39 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
+
+  const normalizeBannersList = (list?: AdBanner[]): AdBanner[] => {
+    if (!list || list.length === 0) {
+      return DEFAULT_BANNERS.map((b, i) => ({
+        id: b.id || `ad${i + 1}`,
+        title: b.title || '',
+        image: b.image || '',
+        link: b.link || '',
+        active: b.active !== false
+      }));
+    }
+    return list.map((b, i) => ({
+      id: b.id ? String(b.id) : `ad${i + 1}`,
+      title: b.title || '',
+      image: b.image || (b as any).imageUrl || (b as any).image_url || '',
+      link: b.link || (b as any).linkUrl || (b as any).link_url || '',
+      active: b.active !== false && (b as any).isActive !== false
+    }));
+  };
+
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(() => {
     return {
       ...systemSettings,
-      banners: (systemSettings.banners && systemSettings.banners.length > 0)
-        ? systemSettings.banners
-        : DEFAULT_BANNERS
+      banners: normalizeBannersList(systemSettings?.banners)
     };
   });
 
   useEffect(() => {
     if (systemSettings) {
-      setSettingsForm(prev => ({
+      setSettingsForm({
         ...systemSettings,
-        banners: (systemSettings.banners && systemSettings.banners.length > 0)
-          ? systemSettings.banners
-          : (prev.banners && prev.banners.length > 0 ? prev.banners : DEFAULT_BANNERS)
-      }));
+        banners: normalizeBannersList(systemSettings.banners)
+      });
     }
   }, [systemSettings]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,10 +148,6 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   };
 
   useEffect(() => {
-    setSettingsForm(systemSettings);
-  }, [systemSettings]);
-
-  useEffect(() => {
     if (activeTab === 'settings') {
       getCacheDiagnostics().then(d => {
         setCacheDiag(d);
@@ -167,8 +179,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
     }
   };
 
-
-  const handleBannerImageUpload = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) { // Giới hạn 1MB
@@ -177,20 +188,22 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        const updatedBanners = settingsForm.banners?.map(b => 
-          b.id === id ? { ...b, image: reader.result as string } : b
-        ) || [];
-        setSettingsForm({ ...settingsForm, banners: updatedBanners });
+        const currentList = normalizeBannersList(settingsForm.banners);
+        const updatedBanners = currentList.map((b, i) => 
+          i === index ? { ...b, image: reader.result as string } : b
+        );
+        setSettingsForm(prev => ({ ...prev, banners: updatedBanners }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const removeBannerImage = (id: string) => {
-    const updatedBanners = settingsForm.banners?.map(b => 
-      b.id === id ? { ...b, image: '' } : b
-    ) || [];
-    setSettingsForm({ ...settingsForm, banners: updatedBanners });
+  const removeBannerImage = (index: number) => {
+    const currentList = normalizeBannersList(settingsForm.banners);
+    const updatedBanners = currentList.map((b, i) => 
+      i === index ? { ...b, image: '' } : b
+    );
+    setSettingsForm(prev => ({ ...prev, banners: updatedBanners }));
   };
 
   const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1030,16 +1043,16 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const nextId = `ad_${Date.now()}`;
+                    const currentList = normalizeBannersList(settingsForm.banners);
                     const newBanner: AdBanner = {
-                      id: nextId,
+                      id: `ad${currentList.length + 1}`,
                       title: 'Liên kết mới',
                       image: '',
                       link: 'https://',
                       active: true
                     };
-                    const updated = [...(settingsForm.banners || []), newBanner];
-                    setSettingsForm({ ...settingsForm, banners: updated });
+                    const updated = [...currentList, newBanner];
+                    setSettingsForm(prev => ({ ...prev, banners: updated }));
                   }}
                   className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
                 >
@@ -1058,8 +1071,8 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS).map((b, idx) => (
-                <div key={b.id || idx} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-3xl space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-blue-400 dark:hover:border-blue-500/50 transition-all">
+              {normalizeBannersList(settingsForm.banners).map((b, idx) => (
+                <div key={b.id || `banner-slot-${idx}`} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-3xl space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-blue-400 dark:hover:border-blue-500/50 transition-all">
                   {/* Slot Number Badge & Delete Action */}
                   <div className="flex items-center justify-between">
                     <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-100 dark:border-blue-900/50">
@@ -1082,8 +1095,9 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            const updated = (settingsForm.banners || []).filter(item => item.id !== b.id);
-                            setSettingsForm({ ...settingsForm, banners: updated });
+                            const currentList = normalizeBannersList(settingsForm.banners);
+                            const updated = currentList.filter((_, i) => i !== idx);
+                            setSettingsForm(prev => ({ ...prev, banners: updated }));
                           }}
                           className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
                           title="Xóa ô liên kết này"
@@ -1109,14 +1123,14 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                         <div className="space-y-1 flex-1">
                           <input 
                             type="file" 
-                            id={`banner-file-${b.id || idx}`}
+                            id={`banner-file-${idx}`}
                             className="hidden" 
                             accept="image/*"
-                            onChange={(e) => handleBannerImageUpload(b.id, e)}
+                            onChange={(e) => handleBannerImageUpload(idx, e)}
                           />
                           <div className="flex gap-2">
                             <label 
-                              htmlFor={`banner-file-${b.id || idx}`}
+                              htmlFor={`banner-file-${idx}`}
                               className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-50 dark:hover:bg-slate-750 transition-all flex items-center gap-1 cursor-pointer shadow-xs select-none"
                             >
                               <Upload size={11} />
@@ -1125,7 +1139,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                             {b.image && (
                               <button 
                                 type="button"
-                                onClick={() => removeBannerImage(b.id)}
+                                onClick={() => removeBannerImage(idx)}
                                 className="px-2 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-900/50 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center"
                                 title="Xóa ảnh"
                               >
@@ -1150,11 +1164,11 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                         className="w-full px-3.5 py-2.5 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 outline-none font-bold text-gray-900 dark:text-white transition-all"
                         value={b.title || ''}
                         onChange={(e) => {
-                          const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
-                          const updated = currentList.map(item => 
-                            item.id === b.id ? { ...item, title: e.target.value } : item
+                          const currentList = normalizeBannersList(settingsForm.banners);
+                          const updated = currentList.map((item, i) => 
+                            i === idx ? { ...item, title: e.target.value } : item
                           );
-                          setSettingsForm({ ...settingsForm, banners: updated });
+                          setSettingsForm(prev => ({ ...prev, banners: updated }));
                         }}
                       />
                     </div>
@@ -1172,11 +1186,11 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                           className="w-full pl-8 pr-3.5 py-2.5 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 outline-none font-mono text-gray-900 dark:text-white transition-all"
                           value={b.link || ''}
                           onChange={(e) => {
-                            const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
-                            const updated = currentList.map(item => 
-                              item.id === b.id ? { ...item, link: e.target.value } : item
+                            const currentList = normalizeBannersList(settingsForm.banners);
+                            const updated = currentList.map((item, i) => 
+                              i === idx ? { ...item, link: e.target.value } : item
                             );
-                            setSettingsForm({ ...settingsForm, banners: updated });
+                            setSettingsForm(prev => ({ ...prev, banners: updated }));
                           }}
                         />
                         <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none">
@@ -1198,11 +1212,11 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                           className="sr-only peer"
                           checked={Boolean(b.active)}
                           onChange={(e) => {
-                            const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
-                            const updated = currentList.map(item => 
-                              item.id === b.id ? { ...item, active: e.target.checked } : item
+                            const currentList = normalizeBannersList(settingsForm.banners);
+                            const updated = currentList.map((item, i) => 
+                              i === idx ? { ...item, active: e.target.checked } : item
                             );
-                            setSettingsForm({ ...settingsForm, banners: updated });
+                            setSettingsForm(prev => ({ ...prev, banners: updated }));
                           }}
                         />
                         <div className="w-10 h-5 bg-gray-200 dark:bg-slate-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>

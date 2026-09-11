@@ -242,12 +242,12 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
         let bannerList: any[] = [];
         try {
           const [bannerRows]: any = await db.query('SELECT * FROM ad_banners ORDER BY id ASC');
-          bannerList = (bannerRows || []).map((b: any) => ({
-            id: String(b.id),
+          bannerList = (bannerRows || []).map((b: any, idx: number) => ({
+            id: String(b.id || `ad${idx + 1}`),
             title: b.title || '',
-            image: b.image || '',
-            link: b.link || '',
-            active: b.active === 1 || b.active === true || b.active === '1'
+            image: b.image || b.image_url || '',
+            link: b.link || b.link_url || '',
+            active: b.active === 1 || b.active === true || b.active === '1' || b.is_active === 1 || b.is_active === true
           }));
         } catch {}
 
@@ -288,7 +288,13 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
         `, [s.systemName || '', s.shortName || '', s.logoBase64 || null, s.primaryColor || '#3B82F6', s.supportQrBase64 || null, s.supportPhone || null]);
 
         if (Array.isArray(s.banners)) {
-          for (const b of s.banners) {
+          for (let i = 0; i < s.banners.length; i++) {
+            const b = s.banners[i];
+            const bannerId = String(b.id || `ad${i + 1}`);
+            const title = b.title || '';
+            const image = b.image || b.imageUrl || null;
+            const link = b.link || b.linkUrl || '';
+            const active = (b.active === true || b.active === 1 || b.active === '1' || b.isActive === true) ? 1 : 0;
             try {
               await db.query(`
                 INSERT INTO ad_banners (id, title, image, link, active)
@@ -298,9 +304,21 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
                   image = VALUES(image),
                   link = VALUES(link),
                   active = VALUES(active)
-              `, [String(b.id), b.title || '', b.image || null, b.link || '', (b.active === true || b.active === 1 || b.active === '1') ? 1 : 0]);
-            } catch (bannerErr) {
-              console.error("Lỗi cập nhật banner:", bannerErr);
+              `, [bannerId, title, image, link, active]);
+            } catch (err1) {
+              try {
+                await db.query(`
+                  INSERT INTO ad_banners (id, title, image_url, link_url, is_active)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    title = VALUES(title),
+                    image_url = VALUES(image_url),
+                    link_url = VALUES(link_url),
+                    is_active = VALUES(is_active)
+                `, [bannerId, title, image, link, active]);
+              } catch (err2) {
+                console.error("Lỗi cập nhật banner:", err2);
+              }
             }
           }
         }

@@ -1,4 +1,4 @@
-import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator, EndpointGroup } from '../types';
+import { Meeting, Unit, Staff, Endpoint, User, SystemSettings, ParticipantGroup, SystemOperator, EndpointGroup, AdBanner } from '../types';
 import { storageService } from './storageService';
 
 /**
@@ -420,15 +420,49 @@ export const mysqlClientService = {
     if (!this.isUsingRealAPI()) return null;
     const raw = await fetchSmartApi('getSettings', 'settings');
     const data = extractData(raw);
-    return data;
+    if (!data) return null;
+
+    let bannerList: AdBanner[] = [];
+    if (Array.isArray(data.banners)) {
+      bannerList = data.banners.map((b: any, idx: number) => ({
+        id: String(b.id || `ad${idx + 1}`),
+        title: b.title || '',
+        image: b.image || b.imageUrl || b.image_url || '',
+        link: b.link || b.linkUrl || b.link_url || '',
+        active: b.active === true || b.active === 1 || b.active === '1' || b.isActive === true || b.is_active === 1 || b.active === undefined
+      }));
+    }
+
+    return {
+      systemName: data.systemName || data.system_name || 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+      shortName: data.shortName || data.short_name || 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+      logoBase64: data.logoBase64 || data.logo_base_64 || '',
+      primaryColor: data.primaryColor || data.primary_color || '#3B82F6',
+      supportQrBase64: data.supportQrBase64 || data.support_qr_base_64 || '',
+      supportPhone: data.supportPhone || data.support_phone || '0328.007.999',
+      banners: bannerList
+    };
   },
 
   async updateSettings(s: SystemSettings): Promise<void> {
     if (!this.isUsingRealAPI()) return;
+    const payload = {
+      ...s,
+      banners: (s.banners || []).map((b, idx) => ({
+        id: String(b.id || `ad${idx + 1}`),
+        title: b.title || '',
+        image: b.image || '',
+        imageUrl: b.image || '',
+        link: b.link || '',
+        linkUrl: b.link || '',
+        active: b.active !== false,
+        isActive: b.active !== false
+      }))
+    };
     await fetchSmartApi('updateSettings', 'settings', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(s)
+      body: JSON.stringify(payload)
     });
   },
 

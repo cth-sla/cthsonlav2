@@ -385,23 +385,39 @@ async function handleApiAction(action: string, req: Request, res: Response) {
       // Settings
       case 'getSettings': {
         const [rows]: any = await db.query('SELECT * FROM system_settings WHERE id = 1');
-        if (!rows || rows.length === 0) {
+        let bannerList: any[] = [];
+        try {
+          const [bannerRows]: any = await db.query('SELECT * FROM ad_banners ORDER BY id ASC');
+          bannerList = (bannerRows || []).map((b: any, idx: number) => ({
+            id: String(b.id || `ad${idx + 1}`),
+            title: b.title || '',
+            image: b.image || b.image_url || '',
+            link: b.link || b.link_url || '',
+            active: b.active === 1 || b.active === true || b.active === '1' || b.is_active === 1 || b.is_active === true
+          }));
+        } catch (e) {
+          console.error("Lỗi lấy ad_banners:", e);
+        }
+
+        if ((!rows || rows.length === 0) && bannerList.length === 0) {
           return res.json({ status: 'success', data: null });
         }
-        const r = rows[0];
+        const r = rows && rows.length > 0 ? rows[0] : {};
         return res.json({
           status: 'success',
           data: {
-            systemName: r.system_name,
-            shortName: r.short_name,
-            logoBase64: r.logo_base_64,
-            primaryColor: r.primary_color,
-            supportQrBase64: r.support_qr_base_64,
-            supportPhone: r.support_phone
+            systemName: r.system_name || 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+            shortName: r.short_name || 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+            logoBase64: r.logo_base_64 || '',
+            primaryColor: r.primary_color || '#3B82F6',
+            supportQrBase64: r.support_qr_base_64 || '',
+            supportPhone: r.support_phone || '0328.007.999',
+            banners: bannerList
           }
         });
       }
 
+      case 'updateSettings':
       case 'saveSettings': {
         const s = body;
         await db.query(`
@@ -414,7 +430,44 @@ async function handleApiAction(action: string, req: Request, res: Response) {
             primary_color = VALUES(primary_color),
             support_qr_base_64 = VALUES(support_qr_base_64),
             support_phone = VALUES(support_phone)
-        `, [s.systemName, s.shortName, s.logoBase64 || null, s.primaryColor, s.supportQrBase64 || null, s.supportPhone || null]);
+        `, [s.systemName || '', s.shortName || '', s.logoBase64 || null, s.primaryColor || '#3B82F6', s.supportQrBase64 || null, s.supportPhone || null]);
+
+        if (Array.isArray(s.banners)) {
+          for (let i = 0; i < s.banners.length; i++) {
+            const b = s.banners[i];
+            const bannerId = String(b.id || `ad${i + 1}`);
+            const title = b.title || '';
+            const image = b.image || b.imageUrl || null;
+            const link = b.link || b.linkUrl || '';
+            const active = (b.active === true || b.active === 1 || b.active === '1' || b.isActive === true) ? 1 : 0;
+            try {
+              await db.query(`
+                INSERT INTO ad_banners (id, title, image, link, active)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                  title = VALUES(title),
+                  image = VALUES(image),
+                  link = VALUES(link),
+                  active = VALUES(active)
+              `, [bannerId, title, image, link, active]);
+            } catch (err1) {
+              try {
+                await db.query(`
+                  INSERT INTO ad_banners (id, title, image_url, link_url, is_active)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    title = VALUES(title),
+                    image_url = VALUES(image_url),
+                    link_url = VALUES(link_url),
+                    is_active = VALUES(is_active)
+                `, [bannerId, title, image, link, active]);
+              } catch (err2) {
+                console.error("Lỗi cập nhật banner:", err2);
+              }
+            }
+          }
+        }
+
         return res.json({ status: 'success', message: 'Lưu cấu hình thành công' });
       }
 

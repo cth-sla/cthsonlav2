@@ -771,7 +771,7 @@ const LoginView: React.FC<LoginViewProps> = ({
               <div className="flex flex-col gap-3 justify-center flex-1">
                 {systemSettings.banners?.filter(b => b.active).slice(0, 6).map((b, idx) => (
                   <motion.div
-                    key={b.id}
+                    key={b.id || `banner-desk-${idx}`}
                     className="group relative cursor-pointer"
                     whileHover={{ scale: 1.15, rotate: idx % 2 === 0 ? 2 : -2 }}
                     whileTap={{ scale: 0.95 }}
@@ -818,7 +818,7 @@ const LoginView: React.FC<LoginViewProps> = ({
             <div className="grid grid-cols-3 gap-3">
               {systemSettings.banners?.filter(b => b.active).slice(0, 6).map((b, idx) => (
                 <motion.div
-                  key={b.id}
+                  key={b.id || `banner-mob-${idx}`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={(e) => handleExternalLink(e, b.link)}
