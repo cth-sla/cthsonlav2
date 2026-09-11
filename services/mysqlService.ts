@@ -418,15 +418,14 @@ export const mysqlClientService = {
   }> {
     const startTime = performance.now();
     try {
-      const res = await fetch(reqUrl('testConnection', 'testConnection'));
+      const data = await fetchSmartApi('testConnection', 'testConnection');
       const latencyMs = Math.round(performance.now() - startTime);
-      const data = await handleResponse(res);
       return {
         status: data.status === 'error' ? 'error' : 'success',
         message: data.message || 'Kết nối CSDL MySQL Hostinger thành công',
         host: data.host || 'srv1415.hstgr.io:3306',
-        database: data.database || 'u295972519_lichhop',
-        user: data.user || 'u295972519_lichhop',
+        database: data.database || 'u411714528_lichhop',
+        user: data.user || 'u411714528_lichhop',
         timestamp: data.timestamp || new Date().toISOString(),
         tables: data.tables || {},
         latencyMs: data.latencyMs || latencyMs
@@ -444,27 +443,24 @@ export const mysqlClientService = {
   // --- SYSTEM SETTINGS ---
   async getSettings(): Promise<SystemSettings | null> {
     if (!this.isUsingRealAPI()) return null;
-    const res = await fetch(reqUrl('getSettings', 'settings'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getSettings', 'settings');
     const data = extractData(raw);
     return data;
   },
 
   async updateSettings(s: SystemSettings): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('updateSettings', 'settings'), {
+    await fetchSmartApi('updateSettings', 'settings', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(s)
     });
-    await handleResponse(res);
   },
 
   // --- MEETINGS ---
   async getMeetings(): Promise<Meeting[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getMeetings', 'meetings'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getMeetings', 'meetings');
     const data = extractData(raw);
     if (!Array.isArray(data)) return [];
     return data.map((m: any) => ({
@@ -488,29 +484,25 @@ export const mysqlClientService = {
 
   async upsertMeeting(m: Meeting): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('upsertMeeting', 'meetings'), {
+    await fetchSmartApi('upsertMeeting', 'meetings', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(m)
     });
-    await handleResponse(res);
   },
 
   async deleteMeeting(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteMeeting', `meetings`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteMeeting', 'meetings', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- ENDPOINTS ---
   async getEndpoints(): Promise<Endpoint[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getEndpoints', 'endpoints'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getEndpoints', 'endpoints');
     const data = extractData(raw);
     if (!Array.isArray(data)) return [];
     return data.map((e: any) => ({
@@ -527,58 +519,50 @@ export const mysqlClientService = {
 
   async upsertEndpoint(e: Endpoint): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('upsertEndpoint', 'endpoints'), {
+    await fetchSmartApi('upsertEndpoint', 'endpoints', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(e)
     });
-    await handleResponse(res);
   },
 
   async deleteEndpoint(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteEndpoint', `endpoints`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteEndpoint', 'endpoints', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- UNITS ---
   async getUnits(): Promise<Unit[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getUnits', 'units'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getUnits', 'units');
     const data = extractData(raw);
     return Array.isArray(data) ? data : [];
   },
 
   async upsertUnit(u: Unit): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('upsertUnit', 'units'), {
+    await fetchSmartApi('upsertUnit', 'units', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(u)
     });
-    await handleResponse(res);
   },
 
   async deleteUnit(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteUnit', `units`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteUnit', 'units', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- STAFF ---
   async getStaff(): Promise<Staff[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getStaff', 'staff'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getStaff', 'staff');
     const data = extractData(raw);
     if (!Array.isArray(data)) return [];
     return data.map((s: any) => ({
@@ -593,60 +577,52 @@ export const mysqlClientService = {
 
   async upsertStaff(s: Staff): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('upsertStaff', 'staff'), {
+    await fetchSmartApi('upsertStaff', 'staff', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(s)
     });
-    await handleResponse(res);
   },
 
   async deleteStaff(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteStaff', `staff`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteStaff', 'staff', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- PARTICIPANT GROUPS ---
   async getGroups(): Promise<ParticipantGroup[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getGroups', 'participant-groups'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getGroups', 'participant-groups');
     const data = extractData(raw);
     return Array.isArray(data) ? data : [];
   },
 
   async upsertGroup(g: ParticipantGroup): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('upsertGroup', 'participant-groups'), {
+    await fetchSmartApi('upsertGroup', 'participant-groups', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(g)
     });
-    await handleResponse(res);
   },
 
   async deleteGroup(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteGroup', `participant-groups`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteGroup', 'participant-groups', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- USERS (BẢO VỆ CHẶT CHẼ) ---
   async getUsers(): Promise<User[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getUsers', 'users'), {
+    const raw = await fetchSmartApi('getUsers', 'users', {
       headers: getAuthHeaders()
     });
-    const raw = await handleResponse(res);
     const data = extractData(raw);
     if (!Array.isArray(data)) return [];
     return data.map((u: any) => ({
@@ -662,29 +638,25 @@ export const mysqlClientService = {
 
   async upsertUser(u: User): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('saveUser', 'users'), {
+    await fetchSmartApi('upsertUser', 'users', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(u)
     });
-    await handleResponse(res);
   },
 
   async deleteUser(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteUser', `users`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteUser', 'users', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- OPERATORS ---
   async getOperators(): Promise<SystemOperator[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getOperators', 'operators'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getOperators', 'operators');
     const data = extractData(raw);
     if (!Array.isArray(data)) return [];
     return data.map((o: any) => ({
@@ -699,50 +671,43 @@ export const mysqlClientService = {
 
   async upsertOperator(o: SystemOperator): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('saveOperator', 'operators'), {
+    await fetchSmartApi('upsertOperator', 'operators', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(o)
     });
-    await handleResponse(res);
   },
 
   async deleteOperator(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteOperator', `operators`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteOperator', 'operators', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   },
 
   // --- ENDPOINT GROUPS ---
   async getEndpointGroups(): Promise<EndpointGroup[]> {
     if (!this.isUsingRealAPI()) return [];
-    const res = await fetch(reqUrl('getEndpointGroups', 'endpoint-groups'));
-    const raw = await handleResponse(res);
+    const raw = await fetchSmartApi('getEndpointGroups', 'endpoint-groups');
     const data = extractData(raw);
     return Array.isArray(data) ? data : [];
   },
 
   async upsertEndpointGroup(g: EndpointGroup): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const res = await fetch(reqUrl('saveEndpointGroup', 'endpoint-groups'), {
+    await fetchSmartApi('upsertEndpointGroup', 'endpoint-groups', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(g)
     });
-    await handleResponse(res);
   },
 
   async deleteEndpointGroup(id: string): Promise<void> {
     if (!this.isUsingRealAPI()) return;
-    const url = reqUrl('deleteEndpointGroup', `endpoint-groups`, `id=${encodeURIComponent(id)}`);
-    const res = await fetch(url, { 
+    await fetchSmartApi('deleteEndpointGroup', 'endpoint-groups', { 
       method: 'DELETE',
       headers: getAuthHeaders()
-    });
-    await handleResponse(res);
+    }, `id=${encodeURIComponent(id)}`);
   }
 };

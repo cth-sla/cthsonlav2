@@ -369,6 +369,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertMeeting':
       case 'saveMeeting': {
         const m = body;
         await db.query(`
@@ -423,6 +424,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertEndpoint':
       case 'saveEndpoint': {
         const e = body;
         await db.query(`
@@ -460,6 +462,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertStaff':
       case 'saveStaff': {
         const s = body;
         await db.query(`
@@ -493,6 +496,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertUnit':
       case 'saveUnit': {
         const u = body;
         await db.query(`
@@ -527,6 +531,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertUser':
       case 'saveUser': {
         const u = body;
         if (u.password) {
@@ -610,6 +615,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: formatted });
       }
 
+      case 'upsertOperator':
       case 'saveOperator': {
         const o = body;
         await db.query(`
@@ -631,11 +637,13 @@ async function handleApiAction(action: string, req: Request, res: Response) {
       }
 
       // Participant Groups
+      case 'getGroups':
       case 'getParticipantGroups': {
         const [rows]: any = await db.query('SELECT * FROM participant_groups ORDER BY name ASC');
         return res.json({ status: 'success', data: rows });
       }
 
+      case 'upsertGroup':
       case 'saveParticipantGroup': {
         const g = body;
         await db.query(`
@@ -648,6 +656,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', message: 'Lưu nhóm thành phần thành công' });
       }
 
+      case 'deleteGroup':
       case 'deleteParticipantGroup': {
         const id = req.query.id || body.id;
         await db.query('DELETE FROM participant_groups WHERE id = ?', [id]);
@@ -660,6 +669,7 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.json({ status: 'success', data: rows });
       }
 
+      case 'upsertEndpointGroup':
       case 'saveEndpointGroup': {
         const g = body;
         await db.query(`
