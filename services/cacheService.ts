@@ -64,7 +64,8 @@ export const getCacheDiagnostics = async (): Promise<CacheDiagnostics> => {
     // ignore
   }
 
-  const autoPurgeEnabled = localStorage.getItem(AUTO_PURGE_KEY) !== 'false';
+  // Mặc định tạm dừng tự động dọn cache (false) để tránh tải liên tục tới Hostinger MySQL
+  const autoPurgeEnabled = localStorage.getItem(AUTO_PURGE_KEY) === 'true';
   const installedVersion = localStorage.getItem(CACHE_VERSION_KEY);
   const lastPurgedAt = localStorage.getItem(LAST_PURGE_KEY);
 
@@ -142,47 +143,20 @@ export const clearBrowserCache = async (options: { hardReload?: boolean; preserv
 export const initAutoCachePurge = async () => {
   if (typeof window === 'undefined') return;
 
-  const autoPurgeEnabled = localStorage.getItem(AUTO_PURGE_KEY) !== 'false';
-  if (!autoPurgeEnabled) return;
+  // Tạm dừng cơ chế tự động xoá cache ngầm theo cấu hình mặc định (chỉ chạy khi quản trị viên bật chủ động)
+  const autoPurgeEnabled = localStorage.getItem(AUTO_PURGE_KEY) === 'true';
+  if (!autoPurgeEnabled) {
+    // Chỉ cập nhật phiên bản cài đặt hiện tại mà không xoá cache hay gọi request nền
+    localStorage.setItem(CACHE_VERSION_KEY, APP_VERSION);
+    return;
+  }
 
   const installedVersion = localStorage.getItem(CACHE_VERSION_KEY);
 
   // Nếu phiên bản đã lưu trong máy người dùng khác phiên bản hiện tại (hoặc chưa từng lưu)
   if (installedVersion !== APP_VERSION) {
-    console.info(`[CacheService] Phát hiện phiên bản mới: ${APP_VERSION} (Trước đó: ${installedVersion || 'chưa có'}). Đang tự động làm sạch cache...`);
-    
-    // Xoá cache trong nền không cần reload ngay lập tức để tránh vòng lặp
+    console.info(`[CacheService] Tự động làm sạch cache theo cấu hình người dùng...`);
     await clearBrowserCache({ hardReload: false, preserveAuth: true });
     localStorage.setItem(CACHE_VERSION_KEY, APP_VERSION);
   }
-
-  // Lắng nghe sự kiện người dùng mở lại tab hoặc trở lại ứng dụng sau khi thu nhỏ
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-      const lastCheck = sessionStorage.getItem('cth_last_cache_check');
-      const now = Date.now();
-      // Kiểm tra tối đa 1 lần mỗi 10 phút
-      if (!lastCheck || now - parseInt(lastCheck, 10) > 10 * 60 * 1000) {
-        sessionStorage.setItem('cth_last_cache_check', now.toString());
-        try {
-          // Gửi request kiểm tra xem server có bản cập nhật index.html mới không
-          const res = await fetch(`/?_chk=${now}`, {
-            method: 'HEAD',
-            cache: 'no-store'
-          });
-          const etag = res.headers.get('etag') || res.headers.get('last-modified');
-          const prevEtag = localStorage.getItem('cth_last_etag');
-          if (etag && prevEtag && etag !== prevEtag) {
-            console.log('[CacheService] Máy chủ đã cập nhật tệp mới. Đang tự động cập nhật cache...');
-            localStorage.setItem('cth_last_etag', etag);
-            await clearBrowserCache({ hardReload: true, preserveAuth: true });
-          } else if (etag) {
-            localStorage.setItem('cth_last_etag', etag);
-          }
-        } catch (e) {
-          // Bỏ qua lỗi mạng nền
-        }
-      }
-    }
-  });
 };

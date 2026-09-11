@@ -115,7 +115,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [cacheDiag, setCacheDiag] = useState<CacheDiagnostics | null>(null);
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [cacheClearedSuccess, setCacheClearedSuccess] = useState(false);
-  const [autoPurgeSetting, setAutoPurgeSetting] = useState(true);
+  const [autoPurgeSetting, setAutoPurgeSetting] = useState(false);
 
   // Database Connection Test State
   const [isTestingDb, setIsTestingDb] = useState(false);
@@ -904,10 +904,10 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   </div>
                   <div>
                     <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                      Cơ Chế Tự Động Xoá & Quản Lý Cache Trình Duyệt
+                      Quản Lý Bộ Nhớ Đệm & Tối Ưu Kết Nối Database
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Tự động phát hiện và làm sạch bộ nhớ đệm (HTML, JS, CSS, Service Worker) khi hệ thống phát hành bản mới.
+                      Cơ chế tự động dọn cache đã được tạm dừng để giảm tải kết nối tới MySQL Hostinger. Quản trị viên có thể chủ động xoá cache thủ công bên dưới khi cần làm mới dữ liệu.
                     </p>
                   </div>
                 </div>
