@@ -60,9 +60,9 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
-// Cache bộ nhớ tạm với TTL cao (15 phút) và cập nhật tại chỗ (In-place Mutation) để giảm thiểu triệt để số lượng kết nối tới MySQL Hostinger
+// Cache bộ nhớ tạm với TTL cao (30 phút) và cập nhật tại chỗ (In-place Mutation) để giảm thiểu triệt để số lượng kết nối tới MySQL Hostinger
 const queryCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_TTL_MS = 900000; // 15 phút (900.000ms)
+const CACHE_TTL_MS = 1800000; // 30 phút (1.800.000ms)
 
 function getCached(key: string): any {
   const item = queryCache.get(key);

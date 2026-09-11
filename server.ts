@@ -234,9 +234,9 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
-// In-Memory Cache for server requests with 15-min TTL & In-place Mutation
+// In-Memory Cache for server requests with 30-min TTL & In-place Mutation
 const queryCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_TTL_MS = 900000; // 15 phút
+const CACHE_TTL_MS = 1800000; // 30 phút (1.800.000ms)
 
 function getCached(key: string): any {
   const item = queryCache.get(key);
