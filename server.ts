@@ -234,18 +234,41 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
-// In-Memory Cache for server requests
+// In-Memory Cache for server requests with 15-min TTL & In-place Mutation
 const queryCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_TTL_MS = 20000;
+const CACHE_TTL_MS = 900000; // 15 phút
 
 function getCached(key: string): any {
   const item = queryCache.get(key);
   if (item && Date.now() < item.expiresAt) return item.data;
-  return null;
+  return item ? item.data : null;
 }
 
 function setCached(key: string, data: any, ttlMs: number = CACHE_TTL_MS): void {
   queryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+function updateCachedArray(key: string, item: any, idKey: string = 'id'): void {
+  const cached = getCached(key);
+  if (Array.isArray(cached)) {
+    const idx = cached.findIndex(i => String(i[idKey] || i.id) === String(item[idKey] || item.id));
+    if (idx >= 0) {
+      cached[idx] = { ...cached[idx], ...item };
+    } else {
+      cached.unshift(item);
+    }
+    setCached(key, cached);
+  } else {
+    setCached(key, [item]);
+  }
+}
+
+function removeFromCachedArray(key: string, id: any, idKey: string = 'id'): void {
+  const cached = getCached(key);
+  if (Array.isArray(cached)) {
+    const updated = cached.filter(i => String(i[idKey] || i.id) !== String(id));
+    setCached(key, updated);
+  }
 }
 
 function clearCache(prefix?: string): void {
@@ -265,28 +288,25 @@ setCached('getSettings', {
   supportQrBase64: '',
   supportPhone: '0328.007.999',
   banners: []
-}, 60000);
-setCached('getMeetings', [], 60000);
-setCached('getEndpoints', [], 60000);
-setCached('getUnits', [], 60000);
-setCached('getStaff', [], 60000);
-setCached('getParticipantGroups', [], 60000);
-setCached('getOperators', [], 60000);
-setCached('getEndpointGroups', [], 60000);
+}, CACHE_TTL_MS);
+setCached('getMeetings', [], CACHE_TTL_MS);
+setCached('getEndpoints', [], CACHE_TTL_MS);
+setCached('getUnits', [], CACHE_TTL_MS);
+setCached('getStaff', [], CACHE_TTL_MS);
+setCached('getParticipantGroups', [], CACHE_TTL_MS);
+setCached('getOperators', [], CACHE_TTL_MS);
+setCached('getEndpointGroups', [], CACHE_TTL_MS);
+setCached('getUsers', [], CACHE_TTL_MS);
+setCached('getAdBanners', [], CACHE_TTL_MS);
 
 // Unified Handler for PHP API actions & Express REST
 async function handleApiAction(action: string, req: Request, res: Response) {
   // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu
   if (action.startsWith('get') || action === 'testConnection' || action === 'ping') {
     const cached = getCached(action);
-    if (cached !== null) {
+    if (cached !== null && (Array.isArray(cached) ? cached.length > 0 : true)) {
       return res.json(action === 'testConnection' ? cached : { status: 'success', data: cached });
     }
-  }
-
-  // 2. Xóa cache khi có thao tác ghi/cập nhật/xóa
-  if (action.startsWith('save') || action.startsWith('update') || action.startsWith('delete') || action.startsWith('upsert')) {
-    clearCache();
   }
 
   try {

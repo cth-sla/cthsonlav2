@@ -60,20 +60,43 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
-// Cache bộ nhớ tạm để giảm thiểu tối đa số lượng kết nối tới MySQL Hostinger
+// Cache bộ nhớ tạm với TTL cao (15 phút) và cập nhật tại chỗ (In-place Mutation) để giảm thiểu triệt để số lượng kết nối tới MySQL Hostinger
 const queryCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_TTL_MS = 20000; // 20s
+const CACHE_TTL_MS = 900000; // 15 phút (900.000ms)
 
 function getCached(key: string): any {
   const item = queryCache.get(key);
   if (item && Date.now() < item.expiresAt) {
     return item.data;
   }
-  return null;
+  return item ? item.data : null; // Luôn trả về stale data nếu có để tránh gián đoạn
 }
 
 function setCached(key: string, data: any, ttlMs: number = CACHE_TTL_MS): void {
   queryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+function updateCachedArray(key: string, item: any, idKey: string = 'id'): void {
+  const cached = getCached(key);
+  if (Array.isArray(cached)) {
+    const idx = cached.findIndex(i => String(i[idKey] || i.id) === String(item[idKey] || item.id));
+    if (idx >= 0) {
+      cached[idx] = { ...cached[idx], ...item };
+    } else {
+      cached.unshift(item);
+    }
+    setCached(key, cached);
+  } else {
+    setCached(key, [item]);
+  }
+}
+
+function removeFromCachedArray(key: string, id: any, idKey: string = 'id'): void {
+  const cached = getCached(key);
+  if (Array.isArray(cached)) {
+    const updated = cached.filter(i => String(i[idKey] || i.id) !== String(id));
+    setCached(key, updated);
+  }
 }
 
 function clearCache(prefix?: string): void {
@@ -95,27 +118,24 @@ setCached('getSettings', {
   supportQrBase64: '',
   supportPhone: '0328.007.999',
   banners: []
-}, 60000);
-setCached('getMeetings', [], 60000);
-setCached('getEndpoints', [], 60000);
-setCached('getUnits', [], 60000);
-setCached('getStaff', [], 60000);
-setCached('getParticipantGroups', [], 60000);
-setCached('getOperators', [], 60000);
-setCached('getEndpointGroups', [], 60000);
+}, CACHE_TTL_MS);
+setCached('getMeetings', [], CACHE_TTL_MS);
+setCached('getEndpoints', [], CACHE_TTL_MS);
+setCached('getUnits', [], CACHE_TTL_MS);
+setCached('getStaff', [], CACHE_TTL_MS);
+setCached('getParticipantGroups', [], CACHE_TTL_MS);
+setCached('getOperators', [], CACHE_TTL_MS);
+setCached('getEndpointGroups', [], CACHE_TTL_MS);
+setCached('getUsers', [], CACHE_TTL_MS);
+setCached('getAdBanners', [], CACHE_TTL_MS);
 
 async function handleApi(action: string, body: any, query: any): Promise<{ status: number; data: any }> {
   // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu
   if (action.startsWith('get') || action === 'testConnection' || action === 'ping') {
     const cached = getCached(action);
-    if (cached !== null) {
+    if (cached !== null && Array.isArray(cached) ? cached.length > 0 : true) {
       return { status: 200, data: action === 'testConnection' ? cached : { status: 'success', data: cached } };
     }
-  }
-
-  // 2. Xóa cache khi có thao tác thêm/sửa/xóa
-  if (action.startsWith('save') || action.startsWith('update') || action.startsWith('delete') || action.startsWith('upsert')) {
-    clearCache();
   }
 
   try {

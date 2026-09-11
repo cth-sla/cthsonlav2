@@ -6,6 +6,7 @@ import { storageService } from '../services/storageService';
 import { DEFAULT_BANNERS } from '../constants';
 import { getCacheDiagnostics, clearBrowserCache, AUTO_PURGE_KEY, CacheDiagnostics, APP_VERSION } from '../services/cacheService';
 import { mysqlClientService } from '../services/mysqlService';
+import { HostingerDbModal } from './HostingerDbModal';
 
 
 interface ManagementPageProps {
@@ -102,6 +103,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
   // Database Connection Test State
   const [isTestingDb, setIsTestingDb] = useState(false);
+  const [isHostingerModalOpen, setIsHostingerModalOpen] = useState(false);
   const [dbTestResult, setDbTestResult] = useState<{
     status: 'success' | 'error' | 'local_preview';
     message: string;
@@ -782,15 +784,26 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleTestDb}
-                  disabled={isTestingDb}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                >
-                  <RefreshCw size={14} className={isTestingDb ? 'animate-spin' : ''} />
-                  <span>{isTestingDb ? 'Đang kiểm tra kết nối...' : 'Kiểm tra kết nối MySQL ngay'}</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsHostingerModalOpen(true)}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <ShieldCheck size={14} className="text-amber-400" />
+                    <span>Hướng dẫn & Thông số Remote MySQL</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTestDb}
+                    disabled={isTestingDb}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={isTestingDb ? 'animate-spin' : ''} />
+                    <span>{isTestingDb ? 'Đang kiểm tra kết nối...' : 'Kiểm tra kết nối MySQL ngay'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Database Parameter Badges */}
@@ -1293,6 +1306,15 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
           </div>
         </div>
       )}
+
+      <HostingerDbModal
+        isOpen={isHostingerModalOpen}
+        onClose={() => setIsHostingerModalOpen(false)}
+        dbStatus={{
+          status: dbTestResult?.status === 'success' ? 'connected' : (dbTestResult?.status === 'error' ? 'error' : 'connected'),
+          message: dbTestResult?.message
+        }}
+      />
     </div>
   );
 };

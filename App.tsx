@@ -23,6 +23,7 @@ import MeetingDetailModal from './components/MeetingDetailModal';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import UpcomingAlert from './components/UpcomingAlert';
 import NotificationToast from './components/NotificationToast';
+import { HostingerDbModal } from './components/HostingerDbModal';
 import { storageService } from './services/storageService';
 import { supabaseService } from './services/supabaseService';
 import { mysqlClientService } from './services/mysqlService';
@@ -137,107 +138,106 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [meetings, notifiedMeetingIds, systemSettings.logoBase64]);
 
-  useEffect(() => {
-    const syncData = async () => {
-      if (!supabaseService.isConfigured()) return;
+  const syncData = async () => {
+    if (!supabaseService.isConfigured()) return;
+    
+    setIsSyncing(true);
+    setDbStatus(prev => prev.status === 'error' ? prev : { status: 'syncing' });
+
+    try {
+      const connRes = await mysqlClientService.testConnection();
+      if (connRes.status === 'success') {
+        setDbStatus({ status: 'connected' });
+      }
+    } catch (err: any) {
+      console.warn("Kiểm tra kết nối MySQL ban đầu:", err);
+    }
+
+    try {
+      console.log("Đang đồng bộ dữ liệu...");
       
-      setIsSyncing(true);
-      setDbStatus(prev => prev.status === 'error' ? prev : { status: 'syncing' });
+      // 1. Luôn ưu tiên lấy Cấu hình hệ thống và Lịch họp (Không để các bảng khác chặn đứng)
+      const [cloudSettings, cloudMeetings] = await Promise.all([
+        supabaseService.getSettings()
+          .then(res => {
+            console.log("Đã tải cấu hình hệ thống:", res);
+            return res;
+          })
+          .catch(err => {
+            console.error("Lỗi tải cấu hình hệ thống:", err);
+            return null;
+          }),
+        supabaseService.getMeetings()
+          .then(res => {
+            console.log(`Đã tải ${res?.length || 0} cuộc họp`);
+            return res;
+          })
+          .catch(err => {
+            console.error("Lỗi tải lịch họp:", err);
+            return [];
+          })
+      ]);
 
-      try {
-        const connRes = await mysqlClientService.testConnection();
-        if (connRes.status === 'success') {
-          setDbStatus({ status: 'connected' });
-        }
-      } catch (err: any) {
-        console.warn("Kiểm tra kết nối MySQL ban đầu:", err);
+      if (cloudSettings) {
+        setSystemSettings(cloudSettings);
+        storageService.saveSystemSettings(cloudSettings);
       }
 
-      try {
-        console.log("Đang đồng bộ dữ liệu...");
-        
-        // 1. Luôn ưu tiên lấy Cấu hình hệ thống và Lịch họp (Không để các bảng khác chặn đứng)
-        const [cloudSettings, cloudMeetings] = await Promise.all([
-          supabaseService.getSettings()
-            .then(res => {
-              console.log("Đã tải cấu hình hệ thống:", res);
-              return res;
-            })
-            .catch(err => {
-              console.error("Lỗi tải cấu hình hệ thống:", err);
-              return null;
-            }),
-          supabaseService.getMeetings()
-            .then(res => {
-              console.log(`Đã tải ${res?.length || 0} cuộc họp`);
-              return res;
-            })
-            .catch(err => {
-              console.error("Lỗi tải lịch họp:", err);
-              return [];
-            })
-        ]);
-
-        if (cloudSettings) {
-          setSystemSettings(cloudSettings);
-          storageService.saveSystemSettings(cloudSettings);
-        }
-
-        if (cloudMeetings && cloudMeetings.length > 0) {
-          setMeetings(cloudMeetings);
-          storageService.saveMeetings(cloudMeetings);
-        }
-
-        // 2. Tải các bảng dữ liệu danh mục & quản trị (Sử dụng catch riêng để không chặn lẫn nhau)
-        const [cloudEndpoints, cloudEndpointGroups, cloudUnits, cloudStaff, cloudGroups, cloudOperators] = await Promise.all([
-          supabaseService.getEndpoints().catch(err => { console.error("Lỗi tải endpoints:", err); return []; }),
-          supabaseService.getEndpointGroups().catch(err => { console.error("Lỗi tải endpoint groups:", err); return []; }),
-          supabaseService.getUnits().catch(err => { console.error("Lỗi tải units:", err); return []; }),
-          supabaseService.getStaff().catch(err => { console.error("Lỗi tải staff:", err); return []; }),
-          supabaseService.getGroups().catch(err => { console.error("Lỗi tải groups:", err); return []; }),
-          supabaseService.getOperators().catch(err => { console.error("Lỗi tải operators:", err); return []; })
-        ]);
-
-        if (cloudEndpoints && cloudEndpoints.length > 0) {
-          setEndpoints(cloudEndpoints);
-          storageService.saveEndpoints(cloudEndpoints);
-        }
-        if (cloudEndpointGroups && cloudEndpointGroups.length > 0) {
-          setEndpointGroups(cloudEndpointGroups);
-          storageService.saveEndpointGroups(cloudEndpointGroups);
-        }
-        if (cloudUnits && cloudUnits.length > 0) {
-          setUnits(cloudUnits);
-          storageService.saveUnits(cloudUnits);
-        }
-        if (cloudStaff && cloudStaff.length > 0) {
-          setStaff(cloudStaff);
-          storageService.saveStaff(cloudStaff);
-        }
-        if (cloudGroups && cloudGroups.length > 0) {
-          setGroups(cloudGroups);
-          storageService.saveGroups(cloudGroups);
-        }
-        if (cloudOperators && cloudOperators.length > 0) {
-          setOperators(cloudOperators);
-        }
-
-        setLastRefreshed(new Date());
-        setHasSyncedOnce(true);
-      } catch (err) {
-        console.error("Lỗi đồng bộ chi tiết:", err);
-      } finally {
-        setIsSyncing(false);
+      if (cloudMeetings && cloudMeetings.length > 0) {
+        setMeetings(cloudMeetings);
+        storageService.saveMeetings(cloudMeetings);
       }
-    };
 
+      // 2. Tải các bảng dữ liệu danh mục & quản trị (Sử dụng catch riêng để không chặn lẫn nhau)
+      const [cloudEndpoints, cloudEndpointGroups, cloudUnits, cloudStaff, cloudGroups, cloudOperators] = await Promise.all([
+        supabaseService.getEndpoints().catch(err => { console.error("Lỗi tải endpoints:", err); return []; }),
+        supabaseService.getEndpointGroups().catch(err => { console.error("Lỗi tải endpoint groups:", err); return []; }),
+        supabaseService.getUnits().catch(err => { console.error("Lỗi tải units:", err); return []; }),
+        supabaseService.getStaff().catch(err => { console.error("Lỗi tải staff:", err); return []; }),
+        supabaseService.getGroups().catch(err => { console.error("Lỗi tải groups:", err); return []; }),
+        supabaseService.getOperators().catch(err => { console.error("Lỗi tải operators:", err); return []; })
+      ]);
+
+      if (cloudEndpoints && cloudEndpoints.length > 0) {
+        setEndpoints(cloudEndpoints);
+        storageService.saveEndpoints(cloudEndpoints);
+      }
+      if (cloudEndpointGroups && cloudEndpointGroups.length > 0) {
+        setEndpointGroups(cloudEndpointGroups);
+        storageService.saveEndpointGroups(cloudEndpointGroups);
+      }
+      if (cloudUnits && cloudUnits.length > 0) {
+        setUnits(cloudUnits);
+        storageService.saveUnits(cloudUnits);
+      }
+      if (cloudStaff && cloudStaff.length > 0) {
+        setStaff(cloudStaff);
+        storageService.saveStaff(cloudStaff);
+      }
+      if (cloudGroups && cloudGroups.length > 0) {
+        setGroups(cloudGroups);
+        storageService.saveGroups(cloudGroups);
+      }
+      if (cloudOperators && cloudOperators.length > 0) {
+        setOperators(cloudOperators);
+      }
+
+      setLastRefreshed(new Date());
+      setHasSyncedOnce(true);
+    } catch (err) {
+      console.error("Lỗi đồng bộ chi tiết:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  useEffect(() => {
     syncData();
 
-    // Tự động kiểm tra và làm mới (auto-refresh) dữ liệu từ Supabase mỗi 30 giây
+    // Tự động kiểm tra và làm mới (auto-refresh) dữ liệu định kỳ mỗi 2 phút
     const refreshInterval = setInterval(() => {
-      console.log("Tự động làm mới dữ liệu định kỳ (30 giây)...");
       syncData();
-    }, 30000);
+    }, 120000);
 
     // Chỉ đăng ký subscription realtime cho các bảng cần thiết
     const tables = ['meetings', 'endpoints', 'units', 'staff', 'participant_groups', 'users', 'system_settings', 'system_operators'];
@@ -604,15 +604,15 @@ const App: React.FC = () => {
           
           <div className="flex items-center gap-4">
              <button 
-                onClick={() => dbStatus.status === 'error' && setShowDbErrorModal(true)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all text-left ${
+                onClick={() => setShowDbErrorModal(true)}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all text-left cursor-pointer ${
                   dbStatus.status === 'connected' 
-                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30' 
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40' 
                     : dbStatus.status === 'error'
-                      ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/30'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                      ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800 hover:bg-red-100/60 dark:hover:bg-red-950/40'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/60'
                 }`}
-                title={dbStatus.status === 'error' ? "Nhấp vào để xem chi tiết lỗi kết nối MySQL" : "Trạng thái kết nối CSDL MySQL Hostinger"}
+                title="Nhấp vào để xem chi tiết và cấu hình kết nối CSDL MySQL Hostinger"
              >
                 <div className={`w-2 h-2 rounded-full ${
                   dbStatus.status === 'connected' 
@@ -1116,74 +1116,12 @@ const App: React.FC = () => {
         />
       )}
 
-      {showDbErrorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900 rounded-[2.5rem] shadow-2xl p-6 md:p-8 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-start gap-4 text-red-600 dark:text-red-400 mb-6">
-              <div className="p-3 bg-red-100 dark:bg-red-950/50 rounded-2xl shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">Cảnh báo: Lỗi kết nối MySQL Hostinger</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hệ thống tự động phát hiện và chẩn đoán lỗi kết nối từ máy chủ Hostinger của bạn.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="p-4 bg-red-50 dark:bg-slate-950/60 rounded-2xl border border-red-100 dark:border-slate-800">
-                <h4 className="text-xs font-black text-red-800 dark:text-red-300 uppercase tracking-wider mb-2">Thông báo lỗi:</h4>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{dbStatus.message}</p>
-              </div>
-
-              {dbStatus.details && (
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
-                  <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Chi tiết kỹ thuật từ MySQL PDO:</h4>
-                  <pre className="text-xs font-mono text-red-600 dark:text-red-400 overflow-x-auto whitespace-pre-wrap break-all">{dbStatus.details}</pre>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Các bước chẩn đoán & khắc phục:</h4>
-                <ol className="list-decimal pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed">
-                  <li>
-                    <strong className="text-slate-900 dark:text-white">Kiểm tra thông tin mật khẩu:</strong> Mật khẩu Database User hiện tại được đặt trong file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> là <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-amber-600 dark:text-amber-400 font-bold">"Sonla2026"</code>. Hãy chắc chắn mật khẩu này trùng khớp 100% với mật khẩu bạn đã tạo cho User <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-600 dark:text-slate-400 font-bold">"u295972519_lichhop"</code> trong trang quản lý hosting của Hostinger (hPanel).
-                  </li>
-                  <li>
-                    <strong className="text-slate-900 dark:text-white">Kiểm tra cơ sở dữ liệu mẫu:</strong> Đảm bảo bạn đã truy cập vào <strong className="text-slate-900 dark:text-white">phpMyAdmin</strong> trên Hostinger, chọn cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">u295972519_lichhop</code> và <strong className="text-slate-900 dark:text-white">Import (Nhập)</strong> file cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">mysql_backup.sql</code> hoặc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">schema.sql</code> đi kèm mã nguồn.
-                  </li>
-                  <li>
-                    <strong className="text-slate-900 dark:text-white">Vị trí của file api.php:</strong> Hãy đảm bảo bạn đã tải file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> cùng với thư mục <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">dist</code> lên thư mục gốc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">public_html</code> trên Hostinger. File <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> bắt buộc phải nằm ở cùng thư mục với file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">index.html</code> của React.
-                  </li>
-                  <li>
-                    <strong className="text-slate-900 dark:text-white">Lưu ý về Môi trường thử nghiệm:</strong> Nếu bạn đang chạy ứng dụng trực tiếp trên công cụ xem trước (Vite Dev Server) của AI Studio, máy chủ Node.js không thể chạy mã nguồn PHP nên kết nối MySQL sẽ bị báo lỗi. Bạn vẫn có thể nhập/sửa dữ liệu bình thường thông qua bộ nhớ cục bộ (Local Storage) dự phòng để kiểm tra giao diện, và khi bạn biên dịch (build) rồi tải lên Hostinger, dữ liệu sẽ tự động đồng bộ sang MySQL thật!
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-slate-800 shrink-0">
-              <button
-                onClick={async () => {
-                  setShowDbErrorModal(false);
-                  setDbStatus({ status: 'syncing' });
-                  window.location.reload();
-                }}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
-              >
-                Thử kết nối lại
-              </button>
-              <button
-                onClick={() => setShowDbErrorModal(false)}
-                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <HostingerDbModal
+        isOpen={showDbErrorModal}
+        onClose={() => setShowDbErrorModal(false)}
+        dbStatus={dbStatus}
+        onSyncData={syncData}
+      />
     </div>
   );
 };
