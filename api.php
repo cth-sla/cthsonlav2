@@ -18,10 +18,10 @@
 $envFile = __DIR__ . '/.env.php';
 $envConfig = file_exists($envFile) ? (include $envFile) : [];
 
-define('DB_HOST', getenv('DB_HOST') ?: ($envConfig['DB_HOST'] ?? 'localhost'));
+define('DB_HOST', getenv('DB_HOST') ?: ($envConfig['DB_HOST'] ?? 'srv1415.hstgr.io'));
 define('DB_PORT', getenv('DB_PORT') ?: ($envConfig['DB_PORT'] ?? '3306'));
 define('DB_USER', getenv('DB_USER') ?: ($envConfig['DB_USER'] ?? 'u295972519_lichhop'));
-define('DB_PASS', getenv('DB_PASS') ?: ($envConfig['DB_PASS'] ?? 'Sonla2026'));
+define('DB_PASS', getenv('DB_PASS') ?: (getenv('DB_PASSWORD') ?: ($envConfig['DB_PASS'] ?? ($envConfig['DB_PASSWORD'] ?? 'Sonla2026'))));
 define('DB_NAME', getenv('DB_NAME') ?: ($envConfig['DB_NAME'] ?? 'u295972519_lichhop'));
 
 // Khóa bí mật dùng cho ký và xác thực token JWT/HMAC (thay đổi trên môi trường production nếu cần)

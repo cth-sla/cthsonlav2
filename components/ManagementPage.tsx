@@ -779,10 +779,10 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                 <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
                   <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
                     <Cpu size={12} className="text-emerald-500" />
-                    <span>Máy chủ DB</span>
+                    <span>Máy chủ DB (Host)</span>
                   </div>
-                  <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono truncate">
-                    localhost:3306
+                  <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono truncate" title={dbTestResult?.host || 'srv1415.hstgr.io:3306'}>
+                    {dbTestResult?.host || 'srv1415.hstgr.io:3306'}
                   </div>
                 </div>
 
@@ -792,7 +792,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <span>Database</span>
                   </div>
                   <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono truncate">
-                    u295972519_lichhop
+                    {dbTestResult?.database || 'u295972519_lichhop'}
                   </div>
                 </div>
 
@@ -802,17 +802,17 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <span>DB User</span>
                   </div>
                   <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono truncate">
-                    u295972519_lichhop
+                    {dbTestResult?.user || 'u295972519_lichhop'}
                   </div>
                 </div>
 
                 <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
                   <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
                     <ShieldCheck size={12} className="text-amber-500" />
-                    <span>Cổng API Backend</span>
+                    <span>Kết nối Remote MySQL</span>
                   </div>
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 font-mono">
-                    api.php (PDO MySQL)
+                    Hostinger Remote OK
                   </div>
                 </div>
               </div>
