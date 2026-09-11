@@ -62,16 +62,29 @@ export class MySQLDatabase {
 export const mysqlBackendService = {
   // --- SETTINGS ---
   async getSettings(): Promise<SystemSettings | null> {
-    const rows = await MySQLDatabase.query("SELECT * FROM system_settings WHERE id = 1");
-    if (!rows || rows.length === 0) return null;
-    const r = rows[0];
+    const rows: any = await MySQLDatabase.query("SELECT * FROM system_settings WHERE id = 1");
+    let bannerList: any[] = [];
+    try {
+      const bannerRows: any = await MySQLDatabase.query("SELECT * FROM ad_banners ORDER BY id ASC");
+      bannerList = (bannerRows || []).map((b: any) => ({
+        id: String(b.id),
+        title: b.title || '',
+        image: b.image || '',
+        link: b.link || '',
+        active: b.active === 1 || b.active === true || b.active === '1'
+      }));
+    } catch {}
+
+    if ((!rows || rows.length === 0) && bannerList.length === 0) return null;
+    const r = rows && rows.length > 0 ? rows[0] : {};
     return {
-      systemName: r.system_name,
-      shortName: r.short_name,
-      logoBase64: r.logo_base_64,
-      primaryColor: r.primary_color,
-      supportQrBase64: r.support_qr_base_64,
-      supportPhone: r.support_phone
+      systemName: r.system_name || 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+      shortName: r.short_name || 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+      logoBase64: r.logo_base_64 || '',
+      primaryColor: r.primary_color || '#3B82F6',
+      supportQrBase64: r.support_qr_base_64 || '',
+      supportPhone: r.support_phone || '0328.007.999',
+      banners: bannerList
     };
   },
 
@@ -86,8 +99,27 @@ export const mysqlBackendService = {
          primary_color = VALUES(primary_color),
          support_qr_base_64 = VALUES(support_qr_base_64),
          support_phone = VALUES(support_phone)`,
-      [s.systemName, s.shortName, s.logoBase64 || null, s.primaryColor, s.supportQrBase64 || null, s.supportPhone || null]
+      [s.systemName || '', s.shortName || '', s.logoBase64 || null, s.primaryColor || '#3B82F6', s.supportQrBase64 || null, s.supportPhone || null]
     );
+
+    if (Array.isArray(s.banners)) {
+      for (const b of s.banners) {
+        try {
+          await MySQLDatabase.query(
+            `INSERT INTO ad_banners (id, title, image, link, active)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               title = VALUES(title),
+               image = VALUES(image),
+               link = VALUES(link),
+               active = VALUES(active)`,
+            [String(b.id), b.title || '', b.image || null, b.link || '', b.active ? 1 : 0]
+          );
+        } catch (bannerErr) {
+          console.error("Lỗi cập nhật banner:", bannerErr);
+        }
+      }
+    }
   },
 
   // --- MEETINGS ---

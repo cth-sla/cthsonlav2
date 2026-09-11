@@ -1,5 +1,5 @@
 
-import { Meeting, EndpointStatus, Unit, Staff, ParticipantGroup, User, EndpointGroup } from './types';
+import { Meeting, EndpointStatus, Unit, Staff, ParticipantGroup, User, EndpointGroup, AdBanner, SystemSettings } from './types';
 
 export const MOCK_USERS: User[] = [
   { id: '1', username: 'admin', fullName: 'Quản trị viên Hệ thống', role: 'ADMIN', password: 'admin' },
@@ -128,4 +128,22 @@ export const MOCK_ENDPOINT_GROUPS: EndpointGroup[] = [
   { id: 'SO_NGANH', name: 'Sở/Ngành', description: 'Các điểm cầu thuộc sở, ban, ngành cấp tỉnh' },
   { id: 'TINH', name: 'Tỉnh', description: 'Các điểm cầu thuộc UBND tỉnh, HĐND tỉnh, Tỉnh ủy' },
 ];
+
+export const DEFAULT_BANNERS: AdBanner[] = [
+  { id: 'ad1', title: 'Cổng Dịch vụ công Quốc gia', image: '', link: 'https://dichvucong.gov.vn', active: true },
+  { id: 'ad2', title: 'Trang Tin Đảng Cộng Sản', image: '', link: 'http://dangcongsan.vn', active: true },
+  { id: 'ad3', title: 'Cổng TTĐT Tỉnh Sơn La', image: '', link: 'https://sonla.gov.vn', active: true },
+  { id: 'ad4', title: 'Viettel Tammi', image: '', link: 'https://tammi.vn/?ref=84328007999', active: true },
+  { id: 'ad5', title: 'Hướng dẫn vận hành CTH', image: '', link: 'http://hisonla.com:82/share/93RQvCc44YCjVj8ghGLwOpzqQmCVkLtLnvZFCp45eTjf9XOLSw', active: true },
+  { id: 'ad6', title: 'Yêu cầu Hỗ trợ dịch vụ', image: '', link: 'https://qltb.sonlasmart.com/', active: true }
+];
+
+export const DEFAULT_SETTINGS: SystemSettings = {
+  systemName: 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+  shortName: 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+  primaryColor: '#3B82F6',
+  supportPhone: '0328.007.999',
+  supportQrBase64: '',
+  banners: DEFAULT_BANNERS
+};
 

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings, EndpointGroup } from '../types';
-import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode, Plus, Edit3, Mail, User, Save, RefreshCw, RotateCcw, ShieldCheck, Database, HardDrive, Cpu, CheckCircle2 } from 'lucide-react';
+import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings, EndpointGroup, AdBanner } from '../types';
+import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode, Plus, Edit3, Mail, User, Save, RefreshCw, RotateCcw, ShieldCheck, Database, HardDrive, Cpu, CheckCircle2, Link as LinkIcon, ExternalLink, Globe } from 'lucide-react';
 import { storageService } from '../services/storageService';
+import { DEFAULT_BANNERS } from '../constants';
 import { getCacheDiagnostics, clearBrowserCache, AUTO_PURGE_KEY, CacheDiagnostics, APP_VERSION } from '../services/cacheService';
 import { mysqlClientService } from '../services/mysqlService';
 
@@ -71,7 +72,25 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
-  const [settingsForm, setSettingsForm] = useState<SystemSettings>(systemSettings);
+  const [settingsForm, setSettingsForm] = useState<SystemSettings>(() => {
+    return {
+      ...systemSettings,
+      banners: (systemSettings.banners && systemSettings.banners.length > 0)
+        ? systemSettings.banners
+        : DEFAULT_BANNERS
+    };
+  });
+
+  useEffect(() => {
+    if (systemSettings) {
+      setSettingsForm(prev => ({
+        ...systemSettings,
+        banners: (systemSettings.banners && systemSettings.banners.length > 0)
+          ? systemSettings.banners
+          : (prev.banners && prev.banners.length > 0 ? prev.banners : DEFAULT_BANNERS)
+      }));
+    }
+  }, [systemSettings]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrInputRef = useRef<HTMLInputElement>(null);
 
@@ -973,113 +992,207 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
 
         {activeTab === 'ads' && (
           <div className="p-8 w-full space-y-8">
-            <div className="border-b border-gray-100 dark:border-slate-800 pb-4">
-              <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Quản lý Liên kết quảng cáo</h4>
-              <p className="text-xs text-gray-550 dark:text-slate-400 mt-1">Cấu hình danh sách 6 liên kết nhanh / logo quảng cáo hiển thị ở góc trái trang đăng nhập.</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-150 dark:border-slate-800 pb-5">
+              <div>
+                <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                  <Globe className="text-blue-500 w-5 h-5" />
+                  Quản lý Liên kết quảng cáo & Cổng liên kết nhanh
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Cấu hình danh sách các liên kết nhanh, banner/logo hiển thị tại màn hình đăng nhập và hệ thống.</p>
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Bạn có chắc chắn muốn khôi phục 6 liên kết quảng cáo mặc định?')) {
+                      setSettingsForm({ ...settingsForm, banners: DEFAULT_BANNERS });
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-gray-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                  title="Khôi phục danh sách liên kết mặc định"
+                >
+                  <RotateCcw size={14} />
+                  Khôi phục mặc định
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextId = `ad_${Date.now()}`;
+                    const newBanner: AdBanner = {
+                      id: nextId,
+                      title: 'Liên kết mới',
+                      image: '',
+                      link: 'https://',
+                      active: true
+                    };
+                    const updated = [...(settingsForm.banners || []), newBanner];
+                    setSettingsForm({ ...settingsForm, banners: updated });
+                  }}
+                  className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <Plus size={14} />
+                  Thêm liên kết
+                </button>
+                <button 
+                  onClick={handleSaveSettings}
+                  style={primaryBgStyle}
+                  className="px-6 py-2.5 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:brightness-110 transition-all active:scale-95 flex items-center gap-2"
+                >
+                  <Save size={14} />
+                  Lưu cấu hình
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(settingsForm.banners || []).map((b, idx) => (
-                <div key={b.id} className="bg-[#F8F9FA] dark:bg-slate-850/40 border border-gray-150 dark:border-slate-800/60 p-5 rounded-3xl space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden group">
-                  {/* Slot Number Badge */}
-                  <div className="absolute top-4 right-4 bg-gray-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black px-2.5 py-1 rounded-full uppercase">
-                    Ô số {idx + 1}
+              {((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS).map((b, idx) => (
+                <div key={b.id || idx} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-5 rounded-3xl space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-blue-400 dark:hover:border-blue-500/50 transition-all">
+                  {/* Slot Number Badge & Delete Action */}
+                  <div className="flex items-center justify-between">
+                    <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-100 dark:border-blue-900/50">
+                      Ô số {idx + 1}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {b.link && b.link.trim() !== '' && b.link !== 'https://' && (
+                        <a
+                          href={b.link.startsWith('http') ? b.link : `https://${b.link}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all"
+                          title="Mở thử liên kết trong tab mới"
+                        >
+                          <ExternalLink size={11} />
+                          Mở thử
+                        </a>
+                      )}
+                      {(settingsForm.banners && settingsForm.banners.length > 6) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (settingsForm.banners || []).filter(item => item.id !== b.id);
+                            setSettingsForm({ ...settingsForm, banners: updated });
+                          }}
+                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                          title="Xóa ô liên kết này"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-4">
                     {/* Image Preview & Upload Area */}
                     <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider">Hình ảnh đại diện</label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-transparent rounded-2xl border border-gray-255 dark:border-slate-800/80 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider">Hình ảnh / Logo</label>
+                      <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-850/50 p-3 rounded-2xl border border-gray-150 dark:border-slate-800">
+                        <div className="w-14 h-14 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
                           {b.image ? (
                             <img src={b.image} alt="Banner" className="w-full h-full object-contain p-1" />
                           ) : (
-                            <ImageIcon className="text-gray-350 dark:text-slate-600 w-6 h-6" />
+                            <ImageIcon className="text-gray-400 dark:text-slate-600 w-6 h-6" />
                           )}
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1 flex-1">
                           <input 
                             type="file" 
-                            id={`banner-file-${b.id}`}
+                            id={`banner-file-${b.id || idx}`}
                             className="hidden" 
                             accept="image/*"
                             onChange={(e) => handleBannerImageUpload(b.id, e)}
                           />
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-2">
                             <label 
-                              htmlFor={`banner-file-${b.id}`}
-                              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-slate-750 transition-all flex items-center gap-1 cursor-pointer shadow-sm select-none"
+                              htmlFor={`banner-file-${b.id || idx}`}
+                              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-50 dark:hover:bg-slate-750 transition-all flex items-center gap-1 cursor-pointer shadow-xs select-none"
                             >
-                              <Upload size={10} />
+                              <Upload size={11} />
                               Tải ảnh
                             </label>
                             {b.image && (
                               <button 
                                 type="button"
                                 onClick={() => removeBannerImage(b.id)}
-                                className="px-2 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-900/50 rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center"
+                                className="px-2 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-red-900/50 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center"
                                 title="Xóa ảnh"
                               >
-                                <Trash2 size={10} />
+                                <Trash2 size={11} />
                               </button>
                             )}
                           </div>
-                          <p className="text-[8px] text-gray-400 dark:text-slate-500 font-medium">Tỷ lệ khuyên dùng 1:1, dưới 1MB</p>
+                          <p className="text-[9px] text-gray-400 dark:text-slate-500 font-medium">Khuyên dùng logo vuông hoặc PNG trong suốt</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Title input */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider">Tiêu đề liên kết</label>
+                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Edit3 size={12} className="text-slate-400" />
+                        Tiêu đề liên kết
+                      </label>
                       <input 
                         type="text"
                         placeholder="Ví dụ: Cổng dịch vụ công..."
-                        className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-900 border border-gray-250 dark:border-slate-800 rounded-xl focus:ring-2 outline-none font-bold text-gray-900 dark:text-white"
-                        value={b.title}
+                        className="w-full px-3.5 py-2.5 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 outline-none font-bold text-gray-900 dark:text-white transition-all"
+                        value={b.title || ''}
                         onChange={(e) => {
-                          const updated = settingsForm.banners?.map(item => 
+                          const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
+                          const updated = currentList.map(item => 
                             item.id === b.id ? { ...item, title: e.target.value } : item
-                          ) || [];
+                          );
                           setSettingsForm({ ...settingsForm, banners: updated });
                         }}
                       />
                     </div>
 
-                    {/* Link URL input */}
+                    {/* Link URL input (Ô liên kết) */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider">Đường dẫn liên kết (URL)</label>
-                      <input 
-                        type="text"
-                        placeholder="Ví dụ: https://..."
-                        className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-900 border border-gray-250 dark:border-slate-800 rounded-xl focus:ring-2 outline-none font-mono text-gray-900 dark:text-white"
-                        value={b.link}
-                        onChange={(e) => {
-                          const updated = settingsForm.banners?.map(item => 
-                            item.id === b.id ? { ...item, link: e.target.value } : item
-                          ) || [];
-                          setSettingsForm({ ...settingsForm, banners: updated });
-                        }}
-                      />
+                      <label className="text-[11px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <LinkIcon size={12} className="text-blue-500" />
+                        Đường dẫn liên kết (URL)
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="url"
+                          placeholder="https://example.gov.vn"
+                          className="w-full pl-8 pr-3.5 py-2.5 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 outline-none font-mono text-gray-900 dark:text-white transition-all"
+                          value={b.link || ''}
+                          onChange={(e) => {
+                            const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
+                            const updated = currentList.map(item => 
+                              item.id === b.id ? { ...item, link: e.target.value } : item
+                            );
+                            setSettingsForm({ ...settingsForm, banners: updated });
+                          }}
+                        />
+                        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none">
+                          <Globe size={13} />
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-gray-400 dark:text-slate-500">Nhập đường dẫn trang web bắt đầu bằng https:// hoặc http://</p>
                     </div>
 
                     {/* Active Toggle Switch */}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200/50 dark:border-slate-800/65 mt-1">
-                      <span className="text-xs font-bold text-gray-600 dark:text-slate-400">Trạng thái hiển thị</span>
+                    <div className="flex items-center justify-between pt-2.5 border-t border-gray-150 dark:border-slate-800">
+                      <div>
+                        <span className="text-xs font-bold text-gray-700 dark:text-slate-300 block">Trạng thái hiển thị</span>
+                        <span className="text-[10px] text-gray-400 dark:text-slate-500">{b.active ? 'Đang bật hiển thị' : 'Đang ẩn liên kết'}</span>
+                      </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
                           type="checkbox" 
                           className="sr-only peer"
-                          checked={b.active}
+                          checked={Boolean(b.active)}
                           onChange={(e) => {
-                            const updated = settingsForm.banners?.map(item => 
+                            const currentList = ((settingsForm.banners && settingsForm.banners.length > 0) ? settingsForm.banners : DEFAULT_BANNERS);
+                            const updated = currentList.map(item => 
                               item.id === b.id ? { ...item, active: e.target.checked } : item
-                            ) || [];
+                            );
                             setSettingsForm({ ...settingsForm, banners: updated });
                           }}
                         />
-                        <div className="w-9 h-5 bg-gray-200 dark:bg-slate-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        <div className="w-10 h-5 bg-gray-200 dark:bg-slate-750 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
                   </div>
@@ -1087,12 +1200,14 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
               ))}
             </div>
 
-            <div className="pt-4 border-t border-gray-100 dark:border-slate-800/80 flex justify-start">
+            <div className="pt-6 border-t border-gray-150 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-gray-500 dark:text-slate-400">Sau khi điều chỉnh liên kết hoặc logo, nhấn nút lưu bên dưới để cập nhật vào cơ sở dữ liệu.</p>
               <button 
                 onClick={handleSaveSettings}
                 style={primaryBgStyle}
-                className="px-8 py-3.5 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto"
+                className="px-8 py-3.5 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl hover:brightness-110 transition-all active:scale-95 w-full sm:w-auto flex items-center justify-center gap-2"
               >
+                <Save size={16} />
                 Lưu cấu hình quảng cáo
               </button>
             </div>
