@@ -354,6 +354,46 @@ export const mysqlClientService = {
     authStorage.clearToken();
   },
 
+  // --- KIỂM TRA KẾT NỐI DATABASE ---
+  async testConnection(): Promise<{
+    status: 'success' | 'error' | 'local_preview';
+    message: string;
+    host?: string;
+    database?: string;
+    user?: string;
+    timestamp?: string;
+    tables?: Record<string, number>;
+    latencyMs?: number;
+  }> {
+    const startTime = performance.now();
+    try {
+      const res = await fetch(reqUrl('testConnection', 'health'));
+      const latencyMs = Math.round(performance.now() - startTime);
+      const data = await handleResponse(res);
+      if (data && data.__isPhpDevMode) {
+        return {
+          status: 'local_preview',
+          message: 'Hệ thống đang chạy trên môi trường giả lập (Preview Mode). File api.php đã sẵn sàng và sẽ kết nối trực tiếp MySQL khi tải lên Hostinger.',
+          host: 'localhost:3306 (Hostinger)',
+          database: 'u295972519_lichhop',
+          user: 'u295972519_lichhop',
+          latencyMs
+        };
+      }
+      return {
+        ...data,
+        latencyMs
+      };
+    } catch (err: any) {
+      const latencyMs = Math.round(performance.now() - startTime);
+      return {
+        status: 'error',
+        message: err.message || 'Không thể kết nối đến API Database Hostinger',
+        latencyMs
+      };
+    }
+  },
+
   // --- SYSTEM SETTINGS ---
   async getSettings(): Promise<SystemSettings | null> {
     if (!this.isUsingRealAPI()) return null;

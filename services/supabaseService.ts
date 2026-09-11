@@ -15,6 +15,10 @@ import { storageService } from './storageService';
 export const supabaseService = {
   isConfigured: () => true,
 
+  async testConnection() {
+    return await mysqlClientService.testConnection();
+  },
+
   async login(username: string, pass: string): Promise<User | null> {
     return await mysqlClientService.login(username, pass);
   },

@@ -208,6 +208,42 @@ $input = json_decode($rawInput, true);
 switch ($action) {
 
     // ==========================================
+    // KIỂM TRA KẾT NỐI (PING & HEALTH CHECK)
+    // ==========================================
+    case 'ping':
+    case 'testConnection':
+        try {
+            $tableStats = [];
+            $checkTables = ['meetings', 'endpoints', 'staff', 'units', 'users', 'system_settings', 'ad_banners', 'system_operators', 'participant_groups', 'endpoint_groups'];
+            foreach ($checkTables as $tbl) {
+                try {
+                    $q = $pdo->query("SELECT COUNT(*) as cnt FROM `$tbl`");
+                    $r = $q->fetch();
+                    $tableStats[$tbl] = intval($r['cnt'] ?? 0);
+                } catch (Exception $e) {
+                    $tableStats[$tbl] = -1; // Chưa tạo bảng hoặc lỗi
+                }
+            }
+
+            echo json_encode([
+                "status" => "success",
+                "message" => "Kết nối CSDL MySQL Hostinger thành công",
+                "host" => DB_HOST . ":" . DB_PORT,
+                "database" => DB_NAME,
+                "user" => DB_USER,
+                "timestamp" => date('Y-m-d H:i:s'),
+                "tables" => $tableStats
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Lỗi kiểm tra kết nối CSDL: " . $e->getMessage()
+            ]);
+        }
+        break;
+
+    // ==========================================
     // 0. XÁC THỰC VÀ BẢO MẬT ĐĂNG NHẬP (AUTHENTICATION)
     // ==========================================
     case 'login':

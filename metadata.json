@@ -1,5 +1,5 @@
 {
-  "name": "CTH-SLAv2",
+  "name": "SonlaSmart.com",
   "description": "Hệ thống giám sát Cầu truyền hình trực tuyến",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

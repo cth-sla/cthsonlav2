@@ -4,6 +4,7 @@ import { Unit, Staff, ParticipantGroup, Endpoint, EndpointStatus, SystemSettings
 import { Upload, X, Trash2, Image as ImageIcon, Phone, QrCode, Plus, Edit3, Mail, User, Save, RefreshCw, RotateCcw, ShieldCheck, Database, HardDrive, Cpu, CheckCircle2 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { getCacheDiagnostics, clearBrowserCache, AUTO_PURGE_KEY, CacheDiagnostics, APP_VERSION } from '../services/cacheService';
+import { mysqlClientService } from '../services/mysqlService';
 
 
 interface ManagementPageProps {
@@ -79,6 +80,35 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [cacheClearedSuccess, setCacheClearedSuccess] = useState(false);
   const [autoPurgeSetting, setAutoPurgeSetting] = useState(true);
+
+  // Database Connection Test State
+  const [isTestingDb, setIsTestingDb] = useState(false);
+  const [dbTestResult, setDbTestResult] = useState<{
+    status: 'success' | 'error' | 'local_preview';
+    message: string;
+    host?: string;
+    database?: string;
+    user?: string;
+    timestamp?: string;
+    tables?: Record<string, number>;
+    latencyMs?: number;
+  } | null>(null);
+
+  const handleTestDb = async () => {
+    setIsTestingDb(true);
+    try {
+      const res = await mysqlClientService.testConnection();
+      setDbTestResult(res);
+    } catch (err: any) {
+      setDbTestResult({
+        status: 'error',
+        message: err.message || 'Lỗi kiểm tra kết nối',
+        latencyMs: 0
+      });
+    } finally {
+      setIsTestingDb(false);
+    }
+  };
 
   useEffect(() => {
     setSettingsForm(systemSettings);
@@ -714,6 +744,110 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                   />
                 </div>
               </div>
+            </div>
+
+            {/* TRẠNG THÁI & KIỂM ĐỊNH KẾT NỐI DATABASE HOSTINGER */}
+            <div className="p-6 bg-gradient-to-br from-emerald-50/60 via-slate-50 to-teal-50/40 dark:from-slate-850 dark:via-slate-900 dark:to-emerald-950/20 rounded-3xl border border-emerald-200/80 dark:border-emerald-900/50 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-100 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <Database size={20} className={isTestingDb ? 'animate-pulse' : ''} />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                      Kết Nối Cơ Sở Dữ Liệu Hostinger (MySQL)
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Kiểm tra trạng thái kết nối máy chủ dữ liệu MySQL, cổng API backend và cấu trúc bảng.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleTestDb}
+                  disabled={isTestingDb}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                >
+                  <RefreshCw size={14} className={isTestingDb ? 'animate-spin' : ''} />
+                  <span>{isTestingDb ? 'Đang kiểm tra kết nối...' : 'Kiểm tra kết nối MySQL ngay'}</span>
+                </button>
+              </div>
+
+              {/* Database Parameter Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <Cpu size={12} className="text-emerald-500" />
+                    <span>Máy chủ DB</span>
+                  </div>
+                  <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono truncate">
+                    localhost:3306
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <Database size={12} className="text-blue-500" />
+                    <span>Database</span>
+                  </div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono truncate">
+                    u295972519_lichhop
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <User size={12} className="text-purple-500" />
+                    <span>DB User</span>
+                  </div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono truncate">
+                    u295972519_lichhop
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white dark:bg-slate-800/80 rounded-2xl border border-gray-150 dark:border-slate-700/60 shadow-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase mb-1">
+                    <ShieldCheck size={12} className="text-amber-500" />
+                    <span>Cổng API Backend</span>
+                  </div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 font-mono">
+                    api.php (PDO MySQL)
+                  </div>
+                </div>
+              </div>
+
+              {/* DB Test Result details */}
+              {dbTestResult && (
+                <div className={`p-4 rounded-2xl border text-xs font-medium space-y-2 animate-in fade-in ${
+                  dbTestResult.status === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                    : dbTestResult.status === 'local_preview'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+                      : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={16} className={dbTestResult.status === 'error' ? 'text-red-500' : 'text-emerald-500'} />
+                      <span className="font-bold">{dbTestResult.message}</span>
+                    </div>
+                    {dbTestResult.latencyMs !== undefined && (
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-white/70 dark:bg-slate-900/50">
+                        Độ trễ: {dbTestResult.latencyMs}ms
+                      </span>
+                    )}
+                  </div>
+                  {dbTestResult.tables && (
+                    <div className="pt-2 border-t border-current/10 flex flex-wrap gap-2 text-[10px]">
+                      {Object.entries(dbTestResult.tables).map(([tbl, cnt]) => (
+                        <span key={tbl} className="px-2 py-1 bg-white/60 dark:bg-slate-900/40 rounded-lg font-mono">
+                          {tbl}: <strong>{cnt >= 0 ? `${cnt} bản ghi` : 'Chưa tạo'}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* CƠ CHẾ TỰ ĐỘNG XOÁ & QUẢN LÝ CACHE TRÌNH DUYỆT */}
