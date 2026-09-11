@@ -40,11 +40,11 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 15,
       queueLimit: 0,
-      connectTimeout: 10000,
+      connectTimeout: 20000,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 10000
+      keepAliveInitialDelay: 1000
     });
     console.log(`[MySQL] Initialized pool connecting to ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
   }

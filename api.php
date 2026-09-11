@@ -13,6 +13,11 @@
  * -----------------------------------------------------------------------------
  */
 
+// Tắt hoàn toàn hiển thị lỗi trực tiếp ra output để bảo đảm phản hồi luôn là thuần JSON
+error_reporting(0);
+ini_set('display_errors', '0');
+ob_start();
+
 // CẤU HÌNH KẾT NỐI DATABASE MYSQL
 // Đọc từ biến môi trường nếu có hoặc file cấu hình bí mật .env.php bên ngoài web root
 $envFile = __DIR__ . '/.env.php';

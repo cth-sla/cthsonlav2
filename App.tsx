@@ -147,8 +147,16 @@ const App: React.FC = () => {
       try {
         console.log("Bắt đầu kiểm tra kết nối MySQL Hostinger...");
         // Gọi trực tiếp mysqlClientService để kiểm tra kết nối thực tế tới API
-        await mysqlClientService.getSettings();
-        setDbStatus({ status: 'connected' });
+        const connRes = await mysqlClientService.testConnection();
+        if (connRes.status === 'success') {
+          setDbStatus({ status: 'connected' });
+        } else {
+          setDbStatus({
+            status: 'error',
+            message: connRes.message || "Lỗi kết nối cơ sở dữ liệu MySQL trên Hostinger",
+            details: `Máy chủ: ${connRes.host || 'srv1415.hstgr.io'} | CSDL: ${connRes.database || 'u295972519_lichhop'}`
+          });
+        }
       } catch (err: any) {
         console.error("Lỗi kết nối cơ sở dữ liệu MySQL:", err);
         setDbStatus({
@@ -1153,10 +1161,10 @@ const App: React.FC = () => {
                 <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Các bước chẩn đoán & khắc phục:</h4>
                 <ol className="list-decimal pl-5 text-xs text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed">
                   <li>
-                    <strong className="text-slate-900 dark:text-white">Kiểm tra thông tin mật khẩu:</strong> Mật khẩu Database User hiện tại được đặt trong file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> là <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-amber-600 dark:text-amber-400 font-bold">"Sonla2026"</code>. Hãy chắc chắn mật khẩu này trùng khớp 100% với mật khẩu bạn đã tạo cho User <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-600 dark:text-slate-400 font-bold">"u411714528_lichhop"</code> trong trang quản lý hosting của Hostinger (hPanel).
+                    <strong className="text-slate-900 dark:text-white">Kiểm tra thông tin mật khẩu:</strong> Mật khẩu Database User hiện tại được đặt trong file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> là <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-amber-600 dark:text-amber-400 font-bold">"Sonla2026"</code>. Hãy chắc chắn mật khẩu này trùng khớp 100% với mật khẩu bạn đã tạo cho User <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-600 dark:text-slate-400 font-bold">"u295972519_lichhop"</code> trong trang quản lý hosting của Hostinger (hPanel).
                   </li>
                   <li>
-                    <strong className="text-slate-900 dark:text-white">Kiểm tra cơ sở dữ liệu mẫu:</strong> Đảm bảo bạn đã truy cập vào <strong className="text-slate-900 dark:text-white">phpMyAdmin</strong> trên Hostinger, chọn cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">u411714528_lichhop</code> và <strong className="text-slate-900 dark:text-white">Import (Nhập)</strong> file cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">mysql_backup.sql</code> hoặc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">schema.sql</code> đi kèm mã nguồn. Nếu cơ sở dữ liệu trống không có bảng, hệ thống sẽ báo lỗi không tìm thấy bảng.
+                    <strong className="text-slate-900 dark:text-white">Kiểm tra cơ sở dữ liệu mẫu:</strong> Đảm bảo bạn đã truy cập vào <strong className="text-slate-900 dark:text-white">phpMyAdmin</strong> trên Hostinger, chọn cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">u295972519_lichhop</code> và <strong className="text-slate-900 dark:text-white">Import (Nhập)</strong> file cơ sở dữ liệu <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">mysql_backup.sql</code> hoặc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-500 font-bold">schema.sql</code> đi kèm mã nguồn.
                   </li>
                   <li>
                     <strong className="text-slate-900 dark:text-white">Vị trí của file api.php:</strong> Hãy đảm bảo bạn đã tải file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> cùng với thư mục <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">dist</code> lên thư mục gốc <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">public_html</code> trên Hostinger. File <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">api.php</code> bắt buộc phải nằm ở cùng thư mục với file <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-500">index.html</code> của React.

@@ -22,14 +22,29 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 15,
       queueLimit: 0,
-      connectTimeout: 10000,
+      connectTimeout: 20000,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 10000
+      keepAliveInitialDelay: 1000
     });
   }
   return pool;
+}
+
+async function safeQuery(sql: string, params: any[] = [], retries = 2): Promise<any> {
+  const db = getDbPool();
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await db.query(sql, params);
+    } catch (err: any) {
+      if (i === retries || (!err.message?.includes('ETIMEDOUT') && !err.message?.includes('ECONNRESET') && !err.message?.includes('PROTOCOL_CONNECTION_LOST'))) {
+        throw err;
+      }
+      // Đợi 300ms rồi thử lại
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
 }
 
 function generateJwtToken(user: any): string {

@@ -285,37 +285,49 @@ const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string 
  */
 const handleResponse = async (res: Response): Promise<any> => {
   const text = await res.text();
-  const isHtml = text.trim().startsWith('<') || text.includes('<!DOCTYPE') || text.includes('<html');
+  const trimmed = text.trim();
 
+  // 1. Trích xuất JSON từ chuỗi phản hồi (kể cả khi có warning hoặc BOM phía trước)
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  const firstBracket = trimmed.indexOf('[');
+  const lastBracket = trimmed.lastIndexOf(']');
+
+  let parsed: any = null;
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      parsed = JSON.parse(trimmed.substring(firstBrace, lastBrace + 1));
+    } catch {}
+  }
+
+  if (!parsed && firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    try {
+      parsed = JSON.parse(trimmed.substring(firstBracket, lastBracket + 1));
+    } catch {}
+  }
+
+  if (parsed !== null) {
+    if (parsed.status === 'error') {
+      throw new Error(parsed.message || "Lỗi truy vấn cơ sở dữ liệu");
+    }
+    return parsed;
+  }
+
+  const isHtml = trimmed.startsWith('<') || trimmed.includes('<!DOCTYPE') || trimmed.includes('<html');
   if (isHtml) {
     throw new Error('HTML_RESPONSE');
   }
 
   if (!res.ok) {
     let errorMsg = `HTTP Error: ${res.status}`;
-    try {
-      const errorData = JSON.parse(text);
-      if (errorData && errorData.message) {
-        errorMsg = errorData.message;
-      }
-    } catch (e) {
-      if (text) {
-        errorMsg = text.length > 80 ? text.substring(0, 80) + '...' : text;
-      }
+    if (text) {
+      errorMsg = text.length > 80 ? text.substring(0, 80) + '...' : text;
     }
     throw new Error(errorMsg);
   }
 
-  try {
-    const data = JSON.parse(text);
-    if (data && data.status === 'error') {
-      throw new Error(data.message || "Lỗi truy vấn cơ sở dữ liệu");
-    }
-    return data;
-  } catch (err: any) {
-    if (err.message === 'HTML_RESPONSE') throw err;
-    throw new Error("Không thể phân tích dữ liệu JSON từ máy chủ");
-  }
+  throw new Error("Không thể phân tích dữ liệu JSON từ máy chủ");
 };
 
 /**
@@ -335,19 +347,19 @@ const fetchSmartApi = async (phpAction: string, expressEndpoint: string, options
     const res = await fetch(urlPHP, options);
     return await handleResponse(res);
   } catch (err: any) {
-    // Nếu api.php trả về HTML hoặc 404, fallback sang express endpoint
-    if (err.message === 'HTML_RESPONSE' || err.message?.includes('404') || err.message?.includes('Failed to fetch')) {
-      try {
-        const res2 = await fetch(urlExpress, options);
-        return await handleResponse(res2);
-      } catch (err2: any) {
-        if (err2.message === 'HTML_RESPONSE') {
-          throw new Error("Máy chủ phản hồi trang HTML thay vì JSON API. Vui lòng kiểm tra lại đường dẫn kết nối.");
-        }
-        throw err2;
+    // Nếu api.php trả về HTML hoặc lỗi mạng, fallback sang express endpoint
+    try {
+      const res2 = await fetch(urlExpress, options);
+      return await handleResponse(res2);
+    } catch (err2: any) {
+      if (err.message && err.message !== 'HTML_RESPONSE' && !err.message.includes('Failed to fetch')) {
+        throw err;
       }
+      if (err2.message === 'HTML_RESPONSE') {
+        throw new Error("Máy chủ phản hồi trang HTML thay vì JSON API. Vui lòng kiểm tra lại đường dẫn kết nối.");
+      }
+      throw err2;
     }
-    throw err;
   }
 };
 
@@ -418,14 +430,14 @@ export const mysqlClientService = {
   }> {
     const startTime = performance.now();
     try {
-      const data = await fetchSmartApi('testConnection', 'testConnection');
+      const data = await fetchSmartApi('testConnection', 'health');
       const latencyMs = Math.round(performance.now() - startTime);
       return {
         status: data.status === 'error' ? 'error' : 'success',
         message: data.message || 'Kết nối CSDL MySQL Hostinger thành công',
         host: data.host || 'srv1415.hstgr.io:3306',
-        database: data.database || 'u411714528_lichhop',
-        user: data.user || 'u411714528_lichhop',
+        database: data.database || 'u295972519_lichhop',
+        user: data.user || 'u295972519_lichhop',
         timestamp: data.timestamp || new Date().toISOString(),
         tables: data.tables || {},
         latencyMs: data.latencyMs || latencyMs
