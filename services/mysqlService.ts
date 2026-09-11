@@ -281,84 +281,47 @@ const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string 
 };
 
 /**
- * Helper xử lý kết quả trả về từ fetch API MySQL một cách an toàn
+ * Helper xử lý kết quả trả về từ fetch API MySQL đơn giản, nhanh và an toàn
  */
 const handleResponse = async (res: Response): Promise<any> => {
   const text = await res.text();
-  const trimmed = text.trim();
-
-  // 1. Trích xuất JSON từ chuỗi phản hồi (kể cả khi có warning hoặc BOM phía trước)
-  const firstBrace = trimmed.indexOf('{');
-  const lastBrace = trimmed.lastIndexOf('}');
-  const firstBracket = trimmed.indexOf('[');
-  const lastBracket = trimmed.lastIndexOf(']');
-
-  let parsed: any = null;
-
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      parsed = JSON.parse(trimmed.substring(firstBrace, lastBrace + 1));
-    } catch {}
-  }
-
-  if (!parsed && firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-    try {
-      parsed = JSON.parse(trimmed.substring(firstBracket, lastBracket + 1));
-    } catch {}
-  }
-
-  if (parsed !== null) {
-    if (parsed.status === 'error') {
-      throw new Error(parsed.message || "Lỗi truy vấn cơ sở dữ liệu");
+  try {
+    const data = JSON.parse(text);
+    if (data && data.status === 'error' && data.data === undefined) {
+      throw new Error(data.message || 'Lỗi truy vấn cơ sở dữ liệu');
     }
-    return parsed;
-  }
-
-  const isHtml = trimmed.startsWith('<') || trimmed.includes('<!DOCTYPE') || trimmed.includes('<html');
-  if (isHtml) {
-    throw new Error('HTML_RESPONSE');
-  }
-
-  if (!res.ok) {
-    let errorMsg = `HTTP Error: ${res.status}`;
-    if (text) {
-      errorMsg = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    return data;
+  } catch (err: any) {
+    if (!res.ok) {
+      throw new Error(`Lỗi kết nối máy chủ (${res.status})`);
     }
-    throw new Error(errorMsg);
+    throw err;
   }
-
-  throw new Error("Không thể phân tích dữ liệu JSON từ máy chủ");
 };
 
 /**
- * Hàm gọi API thông minh có khả năng tự động fallback giữa /api.php và /api/...
+ * Hàm gọi API đơn giản, trực tiếp và tối ưu hóa cho MySQL Hostinger
  */
 const fetchSmartApi = async (phpAction: string, expressEndpoint: string, options: RequestInit = {}, extraParams: string = ''): Promise<any> => {
-  const urlPHP = extraParams 
-    ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}`
-    : `/api.php?action=${encodeURIComponent(phpAction)}`;
+  // Ưu tiên gọi trực tiếp qua route chuẩn /api/...
+  const primaryUrl = extraParams ? `/api/${expressEndpoint}?${extraParams}` : `/api/${expressEndpoint}`;
+  const fallbackUrl = extraParams ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}` : `/api.php?action=${encodeURIComponent(phpAction)}`;
 
-  const urlExpress = extraParams
-    ? `/api/${expressEndpoint}?${extraParams}`
-    : `/api/${expressEndpoint}`;
-
-  // Thử gọi qua api.php trước
   try {
-    const res = await fetch(urlPHP, options);
-    return await handleResponse(res);
+    const res = await fetch(primaryUrl, options);
+    if (res.ok) {
+      return await handleResponse(res);
+    }
+    // Nếu endpoint Node/Express trả về 404/500, thử fallback sang api.php (dành cho hosting thuần PHP)
+    const fallbackRes = await fetch(fallbackUrl, options);
+    return await handleResponse(fallbackRes);
   } catch (err: any) {
-    // Nếu api.php trả về HTML hoặc lỗi mạng, fallback sang express endpoint
+    // Nếu có sự cố kết nối primary, thử fallback sang api.php
     try {
-      const res2 = await fetch(urlExpress, options);
-      return await handleResponse(res2);
-    } catch (err2: any) {
-      if (err.message && err.message !== 'HTML_RESPONSE' && !err.message.includes('Failed to fetch')) {
-        throw err;
-      }
-      if (err2.message === 'HTML_RESPONSE') {
-        throw new Error("Máy chủ phản hồi trang HTML thay vì JSON API. Vui lòng kiểm tra lại đường dẫn kết nối.");
-      }
-      throw err2;
+      const fallbackRes = await fetch(fallbackUrl, options);
+      return await handleResponse(fallbackRes);
+    } catch {
+      throw err;
     }
   }
 };

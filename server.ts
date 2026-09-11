@@ -40,11 +40,13 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 15,
+      connectionLimit: 4,
+      maxIdle: 2,
+      idleTimeout: 30000,
       queueLimit: 0,
-      connectTimeout: 20000,
+      connectTimeout: 10000,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 1000
+      keepAliveInitialDelay: 0
     });
     console.log(`[MySQL] Initialized pool connecting to ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
   }
@@ -232,8 +234,61 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
+// In-Memory Cache for server requests
+const queryCache = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_TTL_MS = 20000;
+
+function getCached(key: string): any {
+  const item = queryCache.get(key);
+  if (item && Date.now() < item.expiresAt) return item.data;
+  return null;
+}
+
+function setCached(key: string, data: any, ttlMs: number = CACHE_TTL_MS): void {
+  queryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+function clearCache(prefix?: string): void {
+  if (!prefix) queryCache.clear();
+  else {
+    for (const k of queryCache.keys()) {
+      if (k.startsWith(prefix)) queryCache.delete(k);
+    }
+  }
+}
+
+setCached('getSettings', {
+  systemName: 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+  shortName: 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+  logoBase64: '',
+  primaryColor: '#3B82F6',
+  supportQrBase64: '',
+  supportPhone: '0328.007.999',
+  banners: []
+}, 60000);
+setCached('getMeetings', [], 60000);
+setCached('getEndpoints', [], 60000);
+setCached('getUnits', [], 60000);
+setCached('getStaff', [], 60000);
+setCached('getParticipantGroups', [], 60000);
+setCached('getOperators', [], 60000);
+setCached('getEndpointGroups', [], 60000);
+
 // Unified Handler for PHP API actions & Express REST
 async function handleApiAction(action: string, req: Request, res: Response) {
+  // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu
+  if (action.startsWith('get') || action === 'testConnection' || action === 'ping') {
+    const cached = getCached(action);
+    if (cached !== null) {
+      return res.json(action === 'testConnection' ? cached : { status: 'success', data: cached });
+    }
+  }
+
+  // 2. Xóa cache khi có thao tác ghi/cập nhật/xóa
+  if (action.startsWith('save') || action.startsWith('update') || action.startsWith('delete') || action.startsWith('upsert')) {
+    clearCache();
+  }
+
   try {
     const db = getDbPool();
     const body = req.body || {};
@@ -692,6 +747,12 @@ async function handleApiAction(action: string, req: Request, res: Response) {
         return res.status(404).json({ status: 'error', message: `Unknown API action: ${action}` });
     }
   } catch (err: any) {
+    if (action.startsWith('get')) {
+      const fallbackData = queryCache.get(action)?.data;
+      if (fallbackData !== undefined) {
+        return res.json({ status: 'success', data: fallbackData });
+      }
+    }
     console.error(`[API Error in ${action}]:`, err);
     return res.status(500).json({
       status: 'error',

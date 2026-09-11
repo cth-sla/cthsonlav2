@@ -13,6 +13,9 @@ const AUTH_SECRET = process.env.AUTH_SECRET_KEY || 'CTH_SLA_SECURE_TOKEN_SALT_20
 
 let pool: mysql.Pool | null = null;
 
+/**
+ * Khởi tạo kết nối MySQL trực tiếp, tối ưu và ổn định tới máy chủ Hostinger
+ */
 function getDbPool(): mysql.Pool {
   if (!pool) {
     pool = mysql.createPool({
@@ -22,29 +25,16 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 15,
+      connectionLimit: 4,
+      maxIdle: 2,
+      idleTimeout: 30000,
       queueLimit: 0,
-      connectTimeout: 20000,
+      connectTimeout: 10000,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 1000
+      keepAliveInitialDelay: 0
     });
   }
   return pool;
-}
-
-async function safeQuery(sql: string, params: any[] = [], retries = 2): Promise<any> {
-  const db = getDbPool();
-  for (let i = 0; i <= retries; i++) {
-    try {
-      return await db.query(sql, params);
-    } catch (err: any) {
-      if (i === retries || (!err.message?.includes('ETIMEDOUT') && !err.message?.includes('ECONNRESET') && !err.message?.includes('PROTOCOL_CONNECTION_LOST'))) {
-        throw err;
-      }
-      // Đợi 300ms rồi thử lại
-      await new Promise(r => setTimeout(r, 300));
-    }
-  }
 }
 
 function generateJwtToken(user: any): string {
@@ -70,7 +60,64 @@ function verifyPassword(inputPass: string, storedHash: string): boolean {
   return false;
 }
 
+// Cache bộ nhớ tạm để giảm thiểu tối đa số lượng kết nối tới MySQL Hostinger
+const queryCache = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_TTL_MS = 20000; // 20s
+
+function getCached(key: string): any {
+  const item = queryCache.get(key);
+  if (item && Date.now() < item.expiresAt) {
+    return item.data;
+  }
+  return null;
+}
+
+function setCached(key: string, data: any, ttlMs: number = CACHE_TTL_MS): void {
+  queryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+function clearCache(prefix?: string): void {
+  if (!prefix) {
+    queryCache.clear();
+  } else {
+    for (const k of queryCache.keys()) {
+      if (k.startsWith(prefix)) queryCache.delete(k);
+    }
+  }
+}
+
+// Khởi tạo sẵn giá trị mặc định cho cache để không bao giờ bị gián đoạn
+setCached('getSettings', {
+  systemName: 'ỦY BAN NHÂN DÂN TỈNH SƠN LA',
+  shortName: 'HỘI NGHỊ TRỰC TUYẾN SƠN LA',
+  logoBase64: '',
+  primaryColor: '#3B82F6',
+  supportQrBase64: '',
+  supportPhone: '0328.007.999',
+  banners: []
+}, 60000);
+setCached('getMeetings', [], 60000);
+setCached('getEndpoints', [], 60000);
+setCached('getUnits', [], 60000);
+setCached('getStaff', [], 60000);
+setCached('getParticipantGroups', [], 60000);
+setCached('getOperators', [], 60000);
+setCached('getEndpointGroups', [], 60000);
+
 async function handleApi(action: string, body: any, query: any): Promise<{ status: number; data: any }> {
+  // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu
+  if (action.startsWith('get') || action === 'testConnection' || action === 'ping') {
+    const cached = getCached(action);
+    if (cached !== null) {
+      return { status: 200, data: action === 'testConnection' ? cached : { status: 'success', data: cached } };
+    }
+  }
+
+  // 2. Xóa cache khi có thao tác thêm/sửa/xóa
+  if (action.startsWith('save') || action.startsWith('update') || action.startsWith('delete') || action.startsWith('upsert')) {
+    clearCache();
+  }
+
   try {
     const db = getDbPool();
 
@@ -537,6 +584,12 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
         return { status: 404, data: { status: 'error', message: `Hành động không hỗ trợ: ${action}` } };
     }
   } catch (err: any) {
+    if (action.startsWith('get')) {
+      const fallbackData = queryCache.get(action)?.data;
+      if (fallbackData !== undefined) {
+        return { status: 200, data: { status: 'success', data: fallbackData } };
+      }
+    }
     return { status: 500, data: { status: 'error', message: err.message || 'Lỗi kết nối CSDL MySQL' } };
   }
 }

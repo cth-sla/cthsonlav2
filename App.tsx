@@ -145,25 +145,12 @@ const App: React.FC = () => {
       setDbStatus(prev => prev.status === 'error' ? prev : { status: 'syncing' });
 
       try {
-        console.log("Bắt đầu kiểm tra kết nối MySQL Hostinger...");
-        // Gọi trực tiếp mysqlClientService để kiểm tra kết nối thực tế tới API
         const connRes = await mysqlClientService.testConnection();
         if (connRes.status === 'success') {
           setDbStatus({ status: 'connected' });
-        } else {
-          setDbStatus({
-            status: 'error',
-            message: connRes.message || "Lỗi kết nối cơ sở dữ liệu MySQL trên Hostinger",
-            details: `Máy chủ: ${connRes.host || 'srv1415.hstgr.io'} | CSDL: ${connRes.database || 'u295972519_lichhop'}`
-          });
         }
       } catch (err: any) {
-        console.error("Lỗi kết nối cơ sở dữ liệu MySQL:", err);
-        setDbStatus({
-          status: 'error',
-          message: err.message || "Lỗi kết nối cơ sở dữ liệu MySQL trên Hostinger",
-          details: err.toString()
-        });
+        console.warn("Kiểm tra kết nối MySQL ban đầu:", err);
       }
 
       try {

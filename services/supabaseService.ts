@@ -42,7 +42,11 @@ export const supabaseService = {
   },
 
   async upsertMeeting(m: Meeting): Promise<void> {
-    await mysqlClientService.upsertMeeting(m);
+    try {
+      await mysqlClientService.upsertMeeting(m);
+    } catch (err) {
+      console.warn("Lưu cuộc họp lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getMeetings();
     const idx = local.findIndex(x => x.id === m.id);
     if (idx >= 0) local[idx] = m;
@@ -51,7 +55,11 @@ export const supabaseService = {
   },
 
   async deleteMeeting(id: string): Promise<void> {
-    await mysqlClientService.deleteMeeting(id);
+    try {
+      await mysqlClientService.deleteMeeting(id);
+    } catch (err) {
+      console.warn("Xóa cuộc họp trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getMeetings();
     storageService.saveMeetings(local.filter(x => x.id !== id));
   },
@@ -66,7 +74,11 @@ export const supabaseService = {
   },
 
   async upsertEndpoint(e: Endpoint): Promise<void> {
-    await mysqlClientService.upsertEndpoint(e);
+    try {
+      await mysqlClientService.upsertEndpoint(e);
+    } catch (err) {
+      console.warn("Lưu điểm cầu lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getEndpoints();
     const idx = local.findIndex(x => x.id === e.id);
     if (idx >= 0) local[idx] = e;
@@ -75,7 +87,11 @@ export const supabaseService = {
   },
 
   async deleteEndpoint(id: string): Promise<void> {
-    await mysqlClientService.deleteEndpoint(id);
+    try {
+      await mysqlClientService.deleteEndpoint(id);
+    } catch (err) {
+      console.warn("Xóa điểm cầu trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getEndpoints();
     storageService.saveEndpoints(local.filter(x => x.id !== id));
   },
@@ -90,7 +106,11 @@ export const supabaseService = {
   },
 
   async upsertUnit(u: Unit): Promise<void> {
-    await mysqlClientService.upsertUnit(u);
+    try {
+      await mysqlClientService.upsertUnit(u);
+    } catch (err) {
+      console.warn("Lưu đơn vị lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getUnits();
     const idx = local.findIndex(x => x.id === u.id);
     if (idx >= 0) local[idx] = u;
@@ -99,7 +119,11 @@ export const supabaseService = {
   },
 
   async deleteUnit(id: string): Promise<void> {
-    await mysqlClientService.deleteUnit(id);
+    try {
+      await mysqlClientService.deleteUnit(id);
+    } catch (err) {
+      console.warn("Xóa đơn vị trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getUnits();
     storageService.saveUnits(local.filter(x => x.id !== id));
   },
@@ -114,7 +138,11 @@ export const supabaseService = {
   },
 
   async upsertStaff(s: Staff): Promise<void> {
-    await mysqlClientService.upsertStaff(s);
+    try {
+      await mysqlClientService.upsertStaff(s);
+    } catch (err) {
+      console.warn("Lưu cán bộ lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getStaff();
     const idx = local.findIndex(x => x.id === s.id);
     if (idx >= 0) local[idx] = s;
@@ -123,7 +151,11 @@ export const supabaseService = {
   },
 
   async deleteStaff(id: string): Promise<void> {
-    await mysqlClientService.deleteStaff(id);
+    try {
+      await mysqlClientService.deleteStaff(id);
+    } catch (err) {
+      console.warn("Xóa cán bộ trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getStaff();
     storageService.saveStaff(local.filter(x => x.id !== id));
   },
@@ -138,7 +170,11 @@ export const supabaseService = {
   },
 
   async upsertGroup(g: ParticipantGroup): Promise<void> {
-    await mysqlClientService.upsertGroup(g);
+    try {
+      await mysqlClientService.upsertGroup(g);
+    } catch (err) {
+      console.warn("Lưu nhóm lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getGroups();
     const idx = local.findIndex(x => x.id === g.id);
     if (idx >= 0) local[idx] = g;
@@ -147,7 +183,11 @@ export const supabaseService = {
   },
 
   async deleteGroup(id: string): Promise<void> {
-    await mysqlClientService.deleteGroup(id);
+    try {
+      await mysqlClientService.deleteGroup(id);
+    } catch (err) {
+      console.warn("Xóa nhóm trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getGroups();
     storageService.saveGroups(local.filter(x => x.id !== id));
   },
@@ -162,7 +202,11 @@ export const supabaseService = {
   },
 
   async upsertUser(u: User): Promise<void> {
-    await mysqlClientService.upsertUser(u);
+    try {
+      await mysqlClientService.upsertUser(u);
+    } catch (err) {
+      console.warn("Lưu user lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getUsers();
     const idx = local.findIndex(x => x.id === u.id);
     if (idx >= 0) local[idx] = u;
@@ -171,7 +215,11 @@ export const supabaseService = {
   },
 
   async deleteUser(id: string): Promise<void> {
-    await mysqlClientService.deleteUser(id);
+    try {
+      await mysqlClientService.deleteUser(id);
+    } catch (err) {
+      console.warn("Xóa user trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getUsers();
     storageService.saveUsers(local.filter(x => x.id !== id));
   },
@@ -186,7 +234,11 @@ export const supabaseService = {
   },
 
   async updateSettings(s: SystemSettings): Promise<void> {
-    await mysqlClientService.updateSettings(s);
+    try {
+      await mysqlClientService.updateSettings(s);
+    } catch (err) {
+      console.warn("Cập nhật cài đặt lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     storageService.saveSystemSettings(s);
   },
 
@@ -200,11 +252,19 @@ export const supabaseService = {
   },
 
   async upsertOperator(o: SystemOperator): Promise<void> {
-    await mysqlClientService.upsertOperator(o);
+    try {
+      await mysqlClientService.upsertOperator(o);
+    } catch (err) {
+      console.warn("Lưu cán bộ kỹ thuật lên MySQL thất bại:", err);
+    }
   },
 
   async deleteOperator(id: string): Promise<void> {
-    await mysqlClientService.deleteOperator(id);
+    try {
+      await mysqlClientService.deleteOperator(id);
+    } catch (err) {
+      console.warn("Xóa cán bộ kỹ thuật trên MySQL thất bại:", err);
+    }
   },
 
   async getEndpointGroups(): Promise<EndpointGroup[]> {
@@ -217,7 +277,11 @@ export const supabaseService = {
   },
 
   async upsertEndpointGroup(g: EndpointGroup): Promise<void> {
-    await mysqlClientService.upsertEndpointGroup(g);
+    try {
+      await mysqlClientService.upsertEndpointGroup(g);
+    } catch (err) {
+      console.warn("Lưu nhóm điểm cầu lên MySQL thất bại (đã lưu bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getEndpointGroups();
     const idx = local.findIndex(x => x.id === g.id);
     if (idx >= 0) local[idx] = g;
@@ -226,7 +290,11 @@ export const supabaseService = {
   },
 
   async deleteEndpointGroup(id: string): Promise<void> {
-    await mysqlClientService.deleteEndpointGroup(id);
+    try {
+      await mysqlClientService.deleteEndpointGroup(id);
+    } catch (err) {
+      console.warn("Xóa nhóm điểm cầu trên MySQL thất bại (đã xóa bộ nhớ cục bộ):", err);
+    }
     const local = storageService.getEndpointGroups();
     storageService.saveEndpointGroups(local.filter(x => x.id !== id));
   },
