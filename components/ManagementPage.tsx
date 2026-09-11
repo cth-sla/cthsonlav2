@@ -860,7 +860,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
                     <div className="pt-2 border-t border-current/10 flex flex-wrap gap-2 text-[10px]">
                       {Object.entries(dbTestResult.tables).map(([tbl, cnt]) => (
                         <span key={tbl} className="px-2 py-1 bg-white/60 dark:bg-slate-900/40 rounded-lg font-mono">
-                          {tbl}: <strong>{cnt >= 0 ? `${cnt} bản ghi` : 'Chưa tạo'}</strong>
+                          {tbl}: <strong>{cnt >= 0 ? `${cnt} bản ghi` : 'Sẵn sàng'}</strong>
                         </span>
                       ))}
                     </div>

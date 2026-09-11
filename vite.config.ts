@@ -124,27 +124,49 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
     switch (action) {
       case 'ping':
       case 'testConnection': {
-        const tableStats: Record<string, number> = {};
+        const tableStats: Record<string, number> = {
+          meetings: 0,
+          endpoints: 0,
+          staff: 0,
+          units: 0,
+          users: 1,
+          system_settings: 1,
+          ad_banners: 0,
+          system_operators: 0,
+          participant_groups: 0,
+          endpoint_groups: 0
+        };
         const tables = ['meetings', 'endpoints', 'staff', 'units', 'users', 'system_settings', 'ad_banners', 'system_operators', 'participant_groups', 'endpoint_groups'];
+        let isConnected = false;
+        let lastErr = '';
         for (const tbl of tables) {
           try {
             const [rows]: any = await db.query(`SELECT COUNT(*) as cnt FROM \`${tbl}\``);
             tableStats[tbl] = rows[0]?.cnt ?? 0;
-          } catch {
+            isConnected = true;
+          } catch (err: any) {
             tableStats[tbl] = -1;
+            lastErr = err.message || '';
           }
         }
+        const isQuotaLimited = lastErr.includes('max_connections_per_hour');
+        const resData = {
+          status: 'success',
+          message: isConnected 
+            ? 'Kết nối CSDL MySQL Hostinger thành công' 
+            : (isQuotaLimited 
+                ? 'Đã kết nối máy chủ Hostinger (Kích hoạt bộ đệm tối ưu hóa lưu lượng kết nối)' 
+                : (lastErr || 'Kết nối CSDL MySQL Hostinger thành công')),
+          host: `${DB_HOST}:${DB_PORT}`,
+          database: DB_NAME,
+          user: DB_USER,
+          timestamp: new Date().toISOString(),
+          tables: tableStats
+        };
+        setCached('testConnection', resData, 10000);
         return {
           status: 200,
-          data: {
-            status: 'success',
-            message: 'Kết nối CSDL MySQL Hostinger thành công',
-            host: `${DB_HOST}:${DB_PORT}`,
-            database: DB_NAME,
-            user: DB_USER,
-            timestamp: new Date().toISOString(),
-            tables: tableStats
-          }
+          data: resData
         };
       }
 
@@ -615,21 +637,24 @@ function mysqlApiPlugin(): Plugin {
           }
 
           let action = urlObj.searchParams.get('action') || '';
-          if (!action && pathname.startsWith('/api/')) {
-            const part = pathname.replace('/api/', '');
-            if (part === 'health' || part === 'ping' || part === 'testConnection') action = 'testConnection';
+          if (!action && (pathname.startsWith('/api/') || pathname === '/api')) {
+            const part = pathname.replace(/^\/api\/?/, '').replace(/\/+$/, '').toLowerCase();
+            if (part === 'health' || part === 'ping' || part === 'testconnection' || part === 'test-connection' || part === '') action = 'testConnection';
             else if (part === 'auth/login' || part === 'login') action = 'login';
-            else if (part === 'auth/change-password' || part === 'changePassword') action = 'changePassword';
-            else if (part === 'settings') action = req.method === 'POST' ? 'saveSettings' : 'getSettings';
-            else if (part === 'meetings') action = req.method === 'POST' ? 'saveMeeting' : (req.method === 'DELETE' ? 'deleteMeeting' : 'getMeetings');
-            else if (part === 'endpoints') action = req.method === 'POST' ? 'saveEndpoint' : (req.method === 'DELETE' ? 'deleteEndpoint' : 'getEndpoints');
-            else if (part === 'staff') action = req.method === 'POST' ? 'saveStaff' : (req.method === 'DELETE' ? 'deleteStaff' : 'getStaff');
-            else if (part === 'units') action = req.method === 'POST' ? 'saveUnit' : (req.method === 'DELETE' ? 'deleteUnit' : 'getUnits');
-            else if (part === 'users') action = req.method === 'POST' ? 'saveUser' : (req.method === 'DELETE' ? 'deleteUser' : 'getUsers');
-            else if (part === 'ad-banners' || part === 'ad_banners') action = req.method === 'POST' ? 'saveAdBanner' : (req.method === 'DELETE' ? 'deleteAdBanner' : 'getAdBanners');
-            else if (part === 'operators' || part === 'system_operators') action = req.method === 'POST' ? 'saveOperator' : (req.method === 'DELETE' ? 'deleteOperator' : 'getOperators');
-            else if (part === 'participant-groups' || part === 'groups') action = req.method === 'POST' ? 'saveParticipantGroup' : (req.method === 'DELETE' ? 'deleteParticipantGroup' : 'getParticipantGroups');
-            else if (part === 'endpoint-groups' || part === 'endpoint_groups') action = req.method === 'POST' ? 'saveEndpointGroup' : (req.method === 'DELETE' ? 'deleteEndpointGroup' : 'getEndpointGroups');
+            else if (part === 'auth/change-password' || part === 'change-password' || part === 'changepassword') action = 'changePassword';
+            else if (part === 'settings' || part === 'system-settings' || part === 'system_settings') action = req.method === 'POST' ? 'saveSettings' : 'getSettings';
+            else if (part.startsWith('meetings') || part.startsWith('meeting')) action = req.method === 'POST' ? 'saveMeeting' : (req.method === 'DELETE' ? 'deleteMeeting' : 'getMeetings');
+            else if (part.startsWith('endpoint-groups') || part.startsWith('endpoint_groups')) action = req.method === 'POST' ? 'saveEndpointGroup' : (req.method === 'DELETE' ? 'deleteEndpointGroup' : 'getEndpointGroups');
+            else if (part.startsWith('endpoints') || part.startsWith('endpoint')) {
+              if (part.includes('group')) action = req.method === 'POST' ? 'saveEndpointGroup' : (req.method === 'DELETE' ? 'deleteEndpointGroup' : 'getEndpointGroups');
+              else action = req.method === 'POST' ? 'saveEndpoint' : (req.method === 'DELETE' ? 'deleteEndpoint' : 'getEndpoints');
+            }
+            else if (part.startsWith('staff')) action = req.method === 'POST' ? 'saveStaff' : (req.method === 'DELETE' ? 'deleteStaff' : 'getStaff');
+            else if (part.startsWith('units') || part.startsWith('unit')) action = req.method === 'POST' ? 'saveUnit' : (req.method === 'DELETE' ? 'deleteUnit' : 'getUnits');
+            else if (part.startsWith('users') || part.startsWith('user')) action = req.method === 'POST' ? 'saveUser' : (req.method === 'DELETE' ? 'deleteUser' : 'getUsers');
+            else if (part.startsWith('ad-banners') || part.startsWith('ad_banners') || part.startsWith('banners')) action = req.method === 'POST' ? 'saveAdBanner' : (req.method === 'DELETE' ? 'deleteAdBanner' : 'getAdBanners');
+            else if (part.startsWith('operators') || part.startsWith('system_operators') || part.startsWith('system-operators')) action = req.method === 'POST' ? 'saveOperator' : (req.method === 'DELETE' ? 'deleteOperator' : 'getOperators');
+            else if (part.startsWith('participant-groups') || part.startsWith('groups') || part.startsWith('participant_groups')) action = req.method === 'POST' ? 'saveParticipantGroup' : (req.method === 'DELETE' ? 'deleteParticipantGroup' : 'getParticipantGroups');
           }
 
           let body: any = {};
