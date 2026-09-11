@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Chuyển tiếp các request /api/... sang file api.php
+  RewriteRule ^api/auth/login$ api.php?action=login [QSA,L]
+  RewriteRule ^api/auth/change-password$ api.php?action=changePassword [QSA,L]
+  RewriteRule ^api/settings$ api.php?action=getSettings [QSA,L]
+  RewriteRule ^api/meetings$ api.php?action=getMeetings [QSA,L]
+  RewriteRule ^api/endpoints$ api.php?action=getEndpoints [QSA,L]
+  RewriteRule ^api/units$ api.php?action=getUnits [QSA,L]
+  RewriteRule ^api/staff$ api.php?action=getStaff [QSA,L]
+  RewriteRule ^api/users$ api.php?action=getUsers [QSA,L]
+  RewriteRule ^api/operators$ api.php?action=getOperators [QSA,L]
+  RewriteRule ^api/participant-groups$ api.php?action=getParticipantGroups [QSA,L]
+  RewriteRule ^api/endpoint-groups$ api.php?action=getEndpointGroups [QSA,L]
+  RewriteRule ^api/ad-banners$ api.php?action=getAdBanners [QSA,L]
+  RewriteRule ^api/ping$ api.php?action=ping [QSA,L]
+  RewriteRule ^api/health$ api.php?action=testConnection [QSA,L]
+  RewriteRule ^api/testConnection$ api.php?action=testConnection [QSA,L]
+  RewriteRule ^api/(.*)$ api.php?action=$1 [QSA,L]
+
+  # 2. Điều hướng SPA React/Vite cho các file không tồn tại
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>

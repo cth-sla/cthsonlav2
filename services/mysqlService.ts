@@ -236,8 +236,6 @@ export const mysqlBackendService = {
 // PHẦN 2: CLIENT API SERVICE - KẾT NỐI TỚI BACKEND MYSQL BẢO MẬT
 // =============================================================================
 
-const isPHPHosting = false; // Môi trường chuẩn kết nối qua API endpoint
-
 // Quản lý Token xác thực trong SessionStorage (tự động giải phóng khi đóng trình duyệt)
 const AUTH_TOKEN_KEY = 'cth_sla_jwt_session_token';
 
@@ -274,25 +272,24 @@ const getAuthHeaders = (extra: Record<string, string> = {}): Record<string, stri
 };
 
 /**
- * Hàm bổ trợ tự động chuyển đổi URL cho phù hợp với môi trường Hosting
+ * Hàm bổ trợ URL hỗ trợ cả PHP Hosting và Node/Express
  */
 const reqUrl = (phpAction: string, expressEndpoint: string, extraParams: string = ''): string => {
-  if (isPHPHosting) {
-    return extraParams 
-      ? `/api.php?action=${phpAction}&${extraParams}`
-      : `/api.php?action=${phpAction}`;
-  } else {
-    return extraParams
-      ? `/api/${expressEndpoint}?${extraParams}`
-      : `/api/${expressEndpoint}`;
-  }
+  return extraParams 
+    ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}`
+    : `/api.php?action=${encodeURIComponent(phpAction)}`;
 };
 
 /**
- * Helper xử lý kết quả trả về từ fetch API MySQL
+ * Helper xử lý kết quả trả về từ fetch API MySQL một cách an toàn
  */
 const handleResponse = async (res: Response): Promise<any> => {
   const text = await res.text();
+  const isHtml = text.trim().startsWith('<') || text.includes('<!DOCTYPE') || text.includes('<html');
+
+  if (isHtml) {
+    throw new Error('HTML_RESPONSE');
+  }
 
   if (!res.ok) {
     let errorMsg = `HTTP Error: ${res.status}`;
@@ -303,7 +300,7 @@ const handleResponse = async (res: Response): Promise<any> => {
       }
     } catch (e) {
       if (text) {
-        errorMsg = `Lỗi từ máy chủ: ${text.substring(0, 120)}`;
+        errorMsg = text.length > 80 ? text.substring(0, 80) + '...' : text;
       }
     }
     throw new Error(errorMsg);
@@ -316,6 +313,40 @@ const handleResponse = async (res: Response): Promise<any> => {
     }
     return data;
   } catch (err: any) {
+    if (err.message === 'HTML_RESPONSE') throw err;
+    throw new Error("Không thể phân tích dữ liệu JSON từ máy chủ");
+  }
+};
+
+/**
+ * Hàm gọi API thông minh có khả năng tự động fallback giữa /api.php và /api/...
+ */
+const fetchSmartApi = async (phpAction: string, expressEndpoint: string, options: RequestInit = {}, extraParams: string = ''): Promise<any> => {
+  const urlPHP = extraParams 
+    ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}`
+    : `/api.php?action=${encodeURIComponent(phpAction)}`;
+
+  const urlExpress = extraParams
+    ? `/api/${expressEndpoint}?${extraParams}`
+    : `/api/${expressEndpoint}`;
+
+  // Thử gọi qua api.php trước
+  try {
+    const res = await fetch(urlPHP, options);
+    return await handleResponse(res);
+  } catch (err: any) {
+    // Nếu api.php trả về HTML hoặc 404, fallback sang express endpoint
+    if (err.message === 'HTML_RESPONSE' || err.message?.includes('404') || err.message?.includes('Failed to fetch')) {
+      try {
+        const res2 = await fetch(urlExpress, options);
+        return await handleResponse(res2);
+      } catch (err2: any) {
+        if (err2.message === 'HTML_RESPONSE') {
+          throw new Error("Máy chủ phản hồi trang HTML thay vì JSON API. Vui lòng kiểm tra lại đường dẫn kết nối.");
+        }
+        throw err2;
+      }
+    }
     throw err;
   }
 };
@@ -338,29 +369,36 @@ export const mysqlClientService = {
   // --- XÁC THỰC VÀ PHIÊN LÀM VIỆC ---
   async login(username: string, password: string): Promise<User | null> {
     try {
-      const res = await fetch(reqUrl('login', 'auth/login'), {
+      const data = await fetchSmartApi('login', 'auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await handleResponse(res);
       if (data && data.status === 'success' && data.token && data.user) {
         authStorage.setToken(data.token);
         return data.user;
       }
       return null;
     } catch (err: any) {
+      if (err.message && (err.message.includes('Mật khẩu') || err.message.includes('Tài khoản') || err.message.includes('401'))) {
+        throw new Error(err.message || 'Tài khoản hoặc mật khẩu không chính xác.');
+      }
+      // Khôi phục tài khoản dự phòng cục bộ nếu đường truyền máy chủ gặp sự cố
+      const localUser = storageService.verifyLocalLogin(username, password);
+      if (localUser) {
+        console.warn("Đăng nhập qua tài khoản dự phòng cục bộ:", localUser.username);
+        return localUser;
+      }
       throw err;
     }
   },
 
   async changePassword(currentPassword: string, newPassword: string, userId?: string): Promise<void> {
-    const res = await fetch(reqUrl('changePassword', 'auth/change-password'), {
+    await fetchSmartApi('changePassword', 'auth/change-password', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ currentPassword, newPassword, userId })
     });
-    await handleResponse(res);
   },
 
   logout(): void {
