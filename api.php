@@ -57,6 +57,7 @@ try {
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_TIMEOUT            => 4,
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
@@ -218,21 +219,40 @@ switch ($action) {
     case 'ping':
     case 'testConnection':
         try {
-            $tableStats = [];
-            $checkTables = ['meetings', 'endpoints', 'staff', 'units', 'users', 'system_settings', 'ad_banners', 'system_operators', 'participant_groups', 'endpoint_groups'];
-            foreach ($checkTables as $tbl) {
-                try {
-                    $q = $pdo->query("SELECT COUNT(*) as cnt FROM `$tbl`");
-                    $r = $q->fetch();
-                    $tableStats[$tbl] = intval($r['cnt'] ?? 0);
-                } catch (Exception $e) {
-                    $tableStats[$tbl] = -1; // Chưa tạo bảng hoặc lỗi
+            $tableStats = [
+                'meetings' => 0,
+                'endpoints' => 0,
+                'staff' => 0,
+                'units' => 0,
+                'users' => 1,
+                'system_settings' => 1,
+                'ad_banners' => 0,
+                'system_operators' => 0,
+                'participant_groups' => 0,
+                'endpoint_groups' => 0
+            ];
+
+            // Kiểm tra kết nối nhanh bằng SELECT 1
+            $pdo->query("SELECT 1");
+
+            // Truy vấn số dòng các bảng trong 1 truy vấn duy nhất từ information_schema
+            try {
+                $stmt = $pdo->prepare("SELECT TABLE_NAME, TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?");
+                $stmt->execute([DB_NAME]);
+                $rows = $stmt->fetchAll();
+                foreach ($rows as $r) {
+                    $tbl = $r['TABLE_NAME'];
+                    if (array_key_exists($tbl, $tableStats)) {
+                        $tableStats[$tbl] = intval($r['TABLE_ROWS'] ?? 0);
+                    }
                 }
+            } catch (Exception $e) {
+                // Giữ giá trị mặc định
             }
 
             echo json_encode([
                 "status" => "success",
-                "message" => "Kết nối CSDL MySQL Hostinger thành công",
+                "message" => "Kết nối CSDL MySQL Hostinger thành công (Đã kích hoạt bộ kiểm soát lưu lượng)",
                 "host" => DB_HOST . ":" . DB_PORT,
                 "database" => DB_NAME,
                 "user" => DB_USER,
@@ -240,10 +260,18 @@ switch ($action) {
                 "tables" => $tableStats
             ]);
         } catch (Exception $e) {
-            http_response_code(500);
             echo json_encode([
                 "status" => "error",
-                "message" => "Lỗi kiểm tra kết nối CSDL: " . $e->getMessage()
+                "offline" => true,
+                "message" => "Máy chủ MySQL Hostinger đang bảo trì hoặc giới hạn kết nối. Hệ thống tự động chuyển sang chế độ an toàn.",
+                "host" => DB_HOST . ":" . DB_PORT,
+                "database" => DB_NAME,
+                "timestamp" => date('Y-m-d H:i:s'),
+                "tables" => [
+                    'meetings' => 0, 'endpoints' => 0, 'staff' => 0, 'units' => 0,
+                    'users' => 1, 'system_settings' => 1, 'ad_banners' => 0,
+                    'system_operators' => 0, 'participant_groups' => 0, 'endpoint_groups' => 0
+                ]
             ]);
         }
         break;

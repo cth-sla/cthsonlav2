@@ -148,9 +148,12 @@ const App: React.FC = () => {
       const connRes = await mysqlClientService.testConnection();
       if (connRes.status === 'success') {
         setDbStatus({ status: 'connected' });
+      } else {
+        setDbStatus({ status: 'error', message: connRes.message });
       }
     } catch (err: any) {
       console.warn("Kiểm tra kết nối MySQL ban đầu:", err);
+      setDbStatus({ status: 'error', message: 'Không thể kết nối máy chủ' });
     }
 
     try {

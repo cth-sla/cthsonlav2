@@ -134,7 +134,7 @@ const ManagementPage: React.FC<ManagementPageProps> = ({
   const handleTestDb = async () => {
     setIsTestingDb(true);
     try {
-      const res = await mysqlClientService.testConnection();
+      const res = await mysqlClientService.testConnection(true);
       setDbTestResult(res);
     } catch (err: any) {
       setDbTestResult({

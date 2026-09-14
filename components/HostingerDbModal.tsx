@@ -53,7 +53,7 @@ export const HostingerDbModal: React.FC<HostingerDbModalProps> = ({
     setIsTesting(true);
     const startTime = performance.now();
     try {
-      const res = await mysqlClientService.testConnection();
+      const res = await mysqlClientService.testConnection(true);
       const latency = Math.round(performance.now() - startTime);
       setTestResult({
         status: res.status,

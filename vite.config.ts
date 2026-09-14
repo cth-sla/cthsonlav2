@@ -14,7 +14,7 @@ const AUTH_SECRET = process.env.AUTH_SECRET_KEY || 'CTH_SLA_SECURE_TOKEN_SALT_20
 let pool: mysql.Pool | null = null;
 
 /**
- * Khởi tạo kết nối MySQL trực tiếp, tối ưu và ổn định tới máy chủ Hostinger
+ * Khởi tạo kết nối MySQL trực tiếp với giới hạn kết nối (Connection Limiter) tối ưu cho Hostinger
  */
 function getDbPool(): mysql.Pool {
   if (!pool) {
@@ -25,16 +25,60 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 4,
+      connectionLimit: 2, // Giới hạn tối đa 2 kết nối đồng thời để chống nghẽn MySQL Hostinger
       maxIdle: 2,
       idleTimeout: 30000,
-      queueLimit: 0,
-      connectTimeout: 10000,
+      queueLimit: 50,
+      connectTimeout: 4000, // Timeout kết nối nhanh (4s) để không làm treo luồng
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0
+      keepAliveInitialDelay: 10000
     });
   }
   return pool;
+}
+
+// Bộ kiểm soát lưu lượng và ngắt mạch tự động (Circuit Breaker & Concurrency Semaphore)
+let activeDbQueries = 0;
+const MAX_CONCURRENT_QUERIES = 2;
+let dbCircuitOpenUntil = 0;
+
+async function executeDbWithLimit<T>(fn: (db: mysql.Pool) => Promise<T>, fallbackData?: any): Promise<T> {
+  const now = Date.now();
+  if (now < dbCircuitOpenUntil) {
+    if (fallbackData !== undefined) return fallbackData;
+    throw new Error('Hệ thống đang ở chế độ đệm an toàn (MySQL Hostinger tạm thời bảo vệ lưu lượng)');
+  }
+
+  // Chờ lượt nếu đang có truy vấn khác đang chạy
+  let waited = 0;
+  while (activeDbQueries >= MAX_CONCURRENT_QUERIES && waited < 3000) {
+    await new Promise(r => setTimeout(r, 60));
+    waited += 60;
+  }
+
+  activeDbQueries++;
+  try {
+    const db = getDbPool();
+    // Bọc timeout 4.5 giây cho mỗi truy vấn
+    const result = await Promise.race([
+      fn(db),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('MySQL Query Timeout')), 4500))
+    ]);
+    return result;
+  } catch (err: any) {
+    const msg = err?.message || '';
+    if (msg.includes('Timeout') || msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('max_connections') || msg.includes('PROTOCOL_CONNECTION_LOST')) {
+      // Mở mạch ngắt bảo vệ trong 15 giây để tránh bắn liên tục vào Hostinger
+      dbCircuitOpenUntil = Date.now() + 15000;
+      console.warn(`[MySQL Circuit Breaker Active]: ${msg}. Tự động chuyển sang chế độ Offline Cache trong 15s.`);
+    }
+    if (fallbackData !== undefined) {
+      return fallbackData;
+    }
+    throw err;
+  } finally {
+    activeDbQueries = Math.max(0, activeDbQueries - 1);
+  }
 }
 
 function generateJwtToken(user: any): string {
@@ -130,65 +174,80 @@ setCached('getUsers', [], CACHE_TTL_MS);
 setCached('getAdBanners', [], CACHE_TTL_MS);
 
 async function handleApi(action: string, body: any, query: any): Promise<{ status: number; data: any }> {
-  // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu
+  // 1. Phục vụ ngay từ cache cho các truy vấn đọc dữ liệu nếu còn hiệu lực
   if (action.startsWith('get') || action === 'testConnection' || action === 'ping') {
     const cached = getCached(action);
-    if (cached !== null && Array.isArray(cached) ? cached.length > 0 : true) {
+    if (cached !== null && (Array.isArray(cached) ? cached.length > 0 : true)) {
       return { status: 200, data: action === 'testConnection' ? cached : { status: 'success', data: cached } };
     }
   }
 
   try {
-    const db = getDbPool();
-
-    switch (action) {
-      case 'ping':
-      case 'testConnection': {
-        const tableStats: Record<string, number> = {
-          meetings: 0,
-          endpoints: 0,
-          staff: 0,
-          units: 0,
-          users: 1,
-          system_settings: 1,
-          ad_banners: 0,
-          system_operators: 0,
-          participant_groups: 0,
-          endpoint_groups: 0
-        };
-        const tables = ['meetings', 'endpoints', 'staff', 'units', 'users', 'system_settings', 'ad_banners', 'system_operators', 'participant_groups', 'endpoint_groups'];
-        let isConnected = false;
-        let lastErr = '';
-        for (const tbl of tables) {
+    return await executeDbWithLimit(async (db) => {
+      switch (action) {
+        case 'ping':
+        case 'testConnection': {
+          const tableStats: Record<string, number> = {
+            meetings: 0,
+            endpoints: 0,
+            staff: 0,
+            units: 0,
+            users: 1,
+            system_settings: 1,
+            ad_banners: 0,
+            system_operators: 0,
+            participant_groups: 0,
+            endpoint_groups: 0
+          };
+          
+          let isConnected = false;
+          let lastErr = '';
           try {
-            const [rows]: any = await db.query(`SELECT COUNT(*) as cnt FROM \`${tbl}\``);
-            tableStats[tbl] = rows[0]?.cnt ?? 0;
+            // Kiểm tra kết nối nhanh bằng truy vấn SELECT 1 siêu nhẹ (không tạo 10 kết nối dồn dập)
+            await db.query('SELECT 1');
             isConnected = true;
+
+            // Lấy thống kê số lượng bảng nhanh trong 1 truy vấn duy nhất từ information_schema
+            try {
+              const [rows]: any = await db.query(
+                'SELECT TABLE_NAME, TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?',
+                [DB_NAME]
+              );
+              if (Array.isArray(rows)) {
+                for (const r of rows) {
+                  if (tableStats[r.TABLE_NAME] !== undefined) {
+                    tableStats[r.TABLE_NAME] = Number(r.TABLE_ROWS) || 0;
+                  }
+                }
+              }
+            } catch {
+              // Nếu không có quyền information_schema, giữ giá trị mặc định
+            }
           } catch (err: any) {
-            tableStats[tbl] = -1;
-            lastErr = err.message || '';
+            isConnected = false;
+            lastErr = err?.message || 'Không thể kết nối đến MySQL Hostinger';
           }
+
+          const resData = {
+            status: isConnected ? 'success' : 'error',
+            offline: !isConnected,
+            message: isConnected 
+              ? 'Kết nối CSDL MySQL Hostinger thành công (Đã kích hoạt bộ kiểm soát lưu lượng)' 
+              : `Máy chủ MySQL Hostinger đang bảo trì hoặc giới hạn kết nối (${lastErr}). Hệ thống tự động hoạt động ở chế độ bộ đệm an toàn.`,
+            host: `${DB_HOST}:${DB_PORT}`,
+            database: DB_NAME,
+            user: DB_USER,
+            timestamp: new Date().toISOString(),
+            tables: tableStats
+          };
+          
+          // Lưu cache kết quả kiểm tra 10 giây để chống spam liên tục nút kiểm tra
+          setCached('testConnection', resData, 10000);
+          return {
+            status: 200,
+            data: resData
+          };
         }
-        const isQuotaLimited = lastErr.includes('max_connections_per_hour');
-        const resData = {
-          status: 'success',
-          message: isConnected 
-            ? 'Kết nối CSDL MySQL Hostinger thành công' 
-            : (isQuotaLimited 
-                ? 'Đã kết nối máy chủ Hostinger (Kích hoạt bộ đệm tối ưu hóa lưu lượng kết nối)' 
-                : (lastErr || 'Kết nối CSDL MySQL Hostinger thành công')),
-          host: `${DB_HOST}:${DB_PORT}`,
-          database: DB_NAME,
-          user: DB_USER,
-          timestamp: new Date().toISOString(),
-          tables: tableStats
-        };
-        setCached('testConnection', resData, 10000);
-        return {
-          status: 200,
-          data: resData
-        };
-      }
 
       case 'login': {
         const username = (body.username || '').trim();
@@ -643,14 +702,32 @@ async function handleApi(action: string, body: any, query: any): Promise<{ statu
       default:
         return { status: 404, data: { status: 'error', message: `Hành động không hỗ trợ: ${action}` } };
     }
+  });
   } catch (err: any) {
     if (action.startsWith('get')) {
       const fallbackData = queryCache.get(action)?.data;
       if (fallbackData !== undefined) {
-        return { status: 200, data: { status: 'success', data: fallbackData } };
+        return { status: 200, data: { status: 'success', data: fallbackData, offline: true } };
       }
     }
-    return { status: 500, data: { status: 'error', message: err.message || 'Lỗi kết nối CSDL MySQL' } };
+    if (action === 'testConnection' || action === 'ping') {
+      return {
+        status: 200,
+        data: {
+          status: 'error',
+          offline: true,
+          message: 'Không thể kết nối đến máy chủ MySQL Hostinger (Máy chủ quá tải hoặc ngoại tuyến). Đã kích hoạt cơ chế đệm an toàn.',
+          host: `${DB_HOST}:${DB_PORT}`,
+          database: DB_NAME,
+          user: DB_USER,
+          timestamp: new Date().toISOString(),
+          tables: { meetings: 0, endpoints: 0, staff: 0, units: 0, users: 1, system_settings: 1, ad_banners: 0, system_operators: 0, participant_groups: 0, endpoint_groups: 0 }
+        }
+      };
+    }
+    console.warn(`[API Notice in ${action}]:`, err?.message);
+    // Tránh trả về HTTP 500 gây sập giao diện client
+    return { status: 200, data: { status: 'error', message: err.message || 'Lỗi xử lý cơ sở dữ liệu MySQL (Đã bật chế độ an toàn)', offline: true } };
   }
 }
 

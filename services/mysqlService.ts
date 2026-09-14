@@ -287,43 +287,63 @@ const handleResponse = async (res: Response): Promise<any> => {
   const text = await res.text();
   try {
     const data = JSON.parse(text);
-    if (data && data.status === 'error' && data.data === undefined) {
-      throw new Error(data.message || 'Lỗi truy vấn cơ sở dữ liệu');
+    if (data && data.status === 'error' && data.data === undefined && !data.offline) {
+      console.warn("API notice:", data.message);
     }
     return data;
   } catch (err: any) {
     if (!res.ok) {
-      throw new Error(`Lỗi kết nối máy chủ (${res.status})`);
+      console.warn(`Máy chủ phản hồi mã trạng thái: ${res.status}`);
+      return { status: 'error', offline: true, message: `Máy chủ tạm thời bận hoặc ngoại tuyến (${res.status})` };
     }
-    throw err;
+    return { status: 'error', message: err.message || 'Lỗi phân tích cú pháp dữ liệu' };
   }
 };
 
+// Map lưu trữ các request đang xử lý để deduplicate (tránh bắn trùng nhiều request giống hệt nhau cùng lúc)
+const inFlightRequests = new Map<string, Promise<any>>();
+
 /**
- * Hàm gọi API đơn giản, trực tiếp và tối ưu hóa cho MySQL Hostinger
+ * Hàm gọi API thông minh có kiểm soát lưu lượng, chống nghẽn cho MySQL Hostinger
  */
 const fetchSmartApi = async (phpAction: string, expressEndpoint: string, options: RequestInit = {}, extraParams: string = ''): Promise<any> => {
-  // Ưu tiên gọi trực tiếp qua route chuẩn /api/...
+  const isGet = !options.method || options.method === 'GET';
+  const cacheKey = `${phpAction}:${expressEndpoint}:${extraParams}`;
+
+  if (isGet && inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
+  }
+
   const primaryUrl = extraParams ? `/api/${expressEndpoint}?${extraParams}` : `/api/${expressEndpoint}`;
   const fallbackUrl = extraParams ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}` : `/api.php?action=${encodeURIComponent(phpAction)}`;
 
-  try {
-    const res = await fetch(primaryUrl, options);
-    if (res.ok) {
-      return await handleResponse(res);
-    }
-    // Nếu endpoint Node/Express trả về 404/500, thử fallback sang api.php (dành cho hosting thuần PHP)
-    const fallbackRes = await fetch(fallbackUrl, options);
-    return await handleResponse(fallbackRes);
-  } catch (err: any) {
-    // Nếu có sự cố kết nối primary, thử fallback sang api.php
+  const requestPromise = (async () => {
     try {
+      const res = await fetch(primaryUrl, options);
+      if (res.ok) {
+        return await handleResponse(res);
+      }
+      // Nếu endpoint Node/Express trả về lỗi, thử fallback sang api.php
       const fallbackRes = await fetch(fallbackUrl, options);
       return await handleResponse(fallbackRes);
-    } catch {
-      throw err;
+    } catch (err: any) {
+      try {
+        const fallbackRes = await fetch(fallbackUrl, options);
+        return await handleResponse(fallbackRes);
+      } catch {
+        return { status: 'error', offline: true, message: 'Không thể kết nối đến máy chủ API' };
+      }
     }
+  })();
+
+  if (isGet) {
+    inFlightRequests.set(cacheKey, requestPromise);
+    requestPromise.finally(() => {
+      inFlightRequests.delete(cacheKey);
+    });
   }
+
+  return requestPromise;
 };
 
 /**
@@ -334,6 +354,9 @@ const extractData = (res: any): any => {
   if (res.data !== undefined) return res.data;
   return res;
 };
+
+let cachedTestResult: any = null;
+let lastTestTime = 0;
 
 /**
  * Gọi API HTTP thông thường từ trình duyệt lên server PHP/Express để lấy dữ liệu MySQL.
@@ -380,8 +403,8 @@ export const mysqlClientService = {
     authStorage.clearToken();
   },
 
-  // --- KIỂM TRA KẾT NỐI DATABASE ---
-  async testConnection(): Promise<{
+  // --- KIỂM TRA KẾT NỐI DATABASE (CÓ CHỐNG SPAM & BẢO VỆ MÁY CHỦ) ---
+  async testConnection(forceRefresh: boolean = false): Promise<{
     status: 'success' | 'error' | 'local_preview';
     message: string;
     host?: string;
@@ -391,27 +414,40 @@ export const mysqlClientService = {
     tables?: Record<string, number>;
     latencyMs?: number;
   }> {
+    const now = Date.now();
+    // Cache kết quả kiểm tra 4s trên client để chống bấm liên tục làm nghẽn kết nối
+    if (!forceRefresh && lastTestTime && (now - lastTestTime < 4000) && cachedTestResult) {
+      return cachedTestResult;
+    }
+
     const startTime = performance.now();
     try {
       const data = await fetchSmartApi('testConnection', 'health');
       const latencyMs = Math.round(performance.now() - startTime);
-      return {
-        status: data.status === 'error' ? 'error' : 'success',
-        message: data.message || 'Kết nối CSDL MySQL Hostinger thành công',
-        host: data.host || 'srv1415.hstgr.io:3306',
-        database: data.database || 'u295972519_lichhop',
-        user: data.user || 'u295972519_lichhop',
-        timestamp: data.timestamp || new Date().toISOString(),
-        tables: data.tables || {},
-        latencyMs: data.latencyMs || latencyMs
+      const res = {
+        status: (data?.status === 'error' || data?.offline) ? ('error' as const) : ('success' as const),
+        message: data?.message || 'Kết nối CSDL MySQL Hostinger thành công (Đã kích hoạt bộ kiểm soát lưu lượng)',
+        host: data?.host || 'srv1415.hstgr.io:3306',
+        database: data?.database || 'u295972519_lichhop',
+        user: data?.user || 'u295972519_lichhop',
+        timestamp: data?.timestamp || new Date().toISOString(),
+        tables: data?.tables || { meetings: 0, endpoints: 0, staff: 0, units: 0, users: 1, system_settings: 1, ad_banners: 0, system_operators: 0, participant_groups: 0, endpoint_groups: 0 },
+        latencyMs: data?.latencyMs || latencyMs
       };
+      lastTestTime = Date.now();
+      cachedTestResult = res;
+      return res;
     } catch (err: any) {
       const latencyMs = Math.round(performance.now() - startTime);
-      return {
-        status: 'error',
-        message: err.message || 'Không thể kết nối đến API Database Hostinger',
-        latencyMs
+      const res = {
+        status: 'error' as const,
+        message: err.message || 'Máy chủ MySQL Hostinger tạm thời ngoại tuyến hoặc quá tải kết nối. Đã kích hoạt chế độ bộ đệm an toàn.',
+        latencyMs,
+        tables: { meetings: 0, endpoints: 0, staff: 0, units: 0, users: 1, system_settings: 1, ad_banners: 0, system_operators: 0, participant_groups: 0, endpoint_groups: 0 }
       };
+      lastTestTime = Date.now();
+      cachedTestResult = res;
+      return res;
     }
   },
 
