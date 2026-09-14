@@ -441,12 +441,24 @@ const LoginView: React.FC<LoginViewProps> = ({
 
           {/* Meeting List */}
           <div className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div className="flex items-center justify-between px-2">
+            <div className="flex items-center justify-between px-2 flex-wrap gap-2">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-400/20">
                   <UsersIcon size={16} />
                 </div>
                 <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Lịch họp sắp tới</h3>
+              </div>
+
+              {/* Chú thích màu sắc */}
+              <div className="flex items-center gap-2 text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Lịch trong ngày
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/40 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                  Lịch ngày tiếp theo
+                </span>
               </div>
             </div>
             
@@ -456,37 +468,78 @@ const LoginView: React.FC<LoginViewProps> = ({
                   const isCancelled = m.status === 'CANCELLED';
                   const isPostponed = m.status === 'POSTPONED';
                   const isChangedFormat = m.status === 'CHANGED_FORMAT';
- 
+
+                  // Kiểm tra lịch trong ngày (Hôm nay) vs lịch ngày tiếp theo
+                  const meetingDate = new Date(m.startTime);
+                  const isToday = 
+                    meetingDate.getFullYear() === now.getFullYear() &&
+                    meetingDate.getMonth() === now.getMonth() &&
+                    meetingDate.getDate() === now.getDate();
+
+                  // Cấu hình màu sắc khung hình:
+                  // - Lịch trong ngày: Khung hình màu xanh lá cây (Emerald / Green)
+                  // - Lịch ngày tiếp theo: Khung hình màu xanh da trời (Sky Blue)
+                  const frameColorClasses = isToday
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/25 border-emerald-400/60 dark:border-emerald-500/50 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/45 shadow-[0_4px_20px_rgba(16,185,129,0.06)]'
+                    : 'bg-sky-50/60 dark:bg-sky-950/25 border-sky-400/60 dark:border-sky-500/50 hover:border-sky-500 dark:hover:border-sky-400 hover:bg-sky-100/50 dark:hover:bg-sky-950/45 shadow-[0_4px_20px_rgba(14,165,233,0.06)]';
+
+                  const timeDividerClasses = isToday
+                    ? 'border-emerald-200 dark:border-emerald-500/25'
+                    : 'border-sky-200 dark:border-sky-500/25';
+
+                  const timeColorClasses = isCancelled 
+                    ? 'text-red-400' 
+                    : isPostponed 
+                    ? 'text-amber-400' 
+                    : isChangedFormat 
+                    ? 'text-purple-400 dark:text-purple-300' 
+                    : isToday 
+                    ? 'text-emerald-700 dark:text-emerald-300' 
+                    : 'text-sky-700 dark:text-sky-300';
+
+                  const dateColorClasses = isCancelled 
+                    ? 'text-red-500 dark:text-red-400' 
+                    : isPostponed 
+                    ? 'text-amber-600 dark:text-amber-400' 
+                    : isChangedFormat 
+                    ? 'text-purple-600 dark:text-purple-400' 
+                    : isToday 
+                    ? 'text-emerald-600 dark:text-emerald-400/90' 
+                    : 'text-sky-600 dark:text-sky-400/90';
+
+                  const titleHoverClasses = isToday
+                    ? 'group-hover:text-emerald-600 dark:group-hover:text-emerald-300'
+                    : 'group-hover:text-sky-600 dark:group-hover:text-sky-300';
+
+                  const arrowBtnClasses = isToday
+                    ? 'bg-emerald-100/90 dark:bg-emerald-500/20 border-emerald-300/80 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600'
+                    : 'bg-sky-100/90 dark:bg-sky-500/20 border-sky-300/80 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 group-hover:bg-sky-600 group-hover:text-white group-hover:border-sky-600';
+
                   return (
                     <div 
                       key={m.id}
                       onClick={() => setSelectedPublicMeeting(m)}
-                      className={`group bg-white dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-white/10 backdrop-blur-md border border-gray-100 dark:border-white/5 hover:border-blue-500/30 p-4 rounded-[1.5rem] transition-all cursor-pointer flex items-center gap-4 shadow-sm dark:shadow-none ${
+                      className={`group backdrop-blur-md border-2 p-4 rounded-[1.5rem] transition-all cursor-pointer flex items-center gap-4 ${frameColorClasses} ${
                         isCancelled ? 'opacity-60 grayscale-[0.5]' : ''
                       }`}
                     >
-                      <div className="flex flex-col items-center justify-center min-w-[105px] border-r border-gray-100 dark:border-white/10 pr-4 shrink-0">
-                        <span className={`text-[14px] font-black tracking-tight ${
-                          isCancelled ? 'text-red-400' : 
-                          isPostponed ? 'text-amber-400' : 
-                          isChangedFormat ? 'text-purple-400 dark:text-purple-300' : 
-                          'text-blue-600 dark:text-blue-400'
-                        }`}>
+                      <div className={`flex flex-col items-center justify-center min-w-[105px] border-r ${timeDividerClasses} pr-4 shrink-0`}>
+                        <span className={`text-[14px] font-black tracking-tight ${timeColorClasses}`}>
                           {formatMeetingTime(m.startTime)} - {formatMeetingTime(m.endTime)}
                         </span>
-                        <span className={`text-[10.5px] font-black uppercase mt-1.5 text-center leading-tight tracking-wider transition-colors ${
-                          isCancelled ? 'text-red-500 dark:text-red-400' :
-                          isPostponed ? 'text-amber-600 dark:text-amber-400' :
-                          isChangedFormat ? 'text-purple-600 dark:text-purple-400' :
-                          'text-slate-500 dark:text-white/40'
-                        }`}>
+                        <span className={`text-[10.5px] font-black uppercase mt-1.5 text-center leading-tight tracking-wider transition-colors ${dateColorClasses}`}>
                           {formatMeetingDate(m.startTime)}
                         </span>
+                        {isToday && !isCancelled && !isPostponed && (
+                          <span className="mt-1 px-1.5 py-0.2 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[8px] font-black uppercase rounded border border-emerald-500/30">
+                            Hôm nay
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h4 className={`text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors line-clamp-1 ${isCancelled ? 'line-through' : ''}`}>
+                          <h4 className={`text-sm font-bold text-slate-900 dark:text-white ${titleHoverClasses} transition-colors line-clamp-1 ${isCancelled ? 'line-through' : ''}`}>
                             {m.title}
                           </h4>
                           {isCancelled ? (
@@ -526,10 +579,12 @@ const LoginView: React.FC<LoginViewProps> = ({
                         <div className="flex items-center gap-3 overflow-hidden flex-wrap">
                           <span className="text-[10px] text-slate-500 dark:text-white/40 font-bold uppercase whitespace-nowrap">Chủ trì: {m.chairPerson}</span>
                           <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-white/10 shrink-0 hidden sm:block"></div>
-                          <span className="text-[10px] text-blue-600 dark:text-blue-400/60 font-black uppercase truncate">{m.hostUnit}</span>
+                          <span className={`text-[10px] font-black uppercase truncate ${isToday ? 'text-emerald-700 dark:text-emerald-400' : 'text-sky-700 dark:text-sky-400'}`}>
+                            {m.hostUnit}
+                          </span>
                         </div>
                       </div>
- 
+
                       <div className="shrink-0 flex items-center gap-2">
                         {m.invitationLink && (
                           <button 
@@ -543,7 +598,7 @@ const LoginView: React.FC<LoginViewProps> = ({
                         <button 
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setSelectedPublicMeeting(m); }}
-                          className="p-2.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-slate-400 dark:text-white/30 group-hover:text-white group-hover:bg-blue-600 group-hover:border-blue-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 z-20"
+                          className={`p-2.5 border rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 z-20 ${arrowBtnClasses}`}
                         >
                           <ArrowRight size={16} />
                         </button>
