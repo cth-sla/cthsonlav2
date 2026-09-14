@@ -40,23 +40,58 @@ function getDbPool(): mysql.Pool {
       password: DB_PASS,
       database: DB_NAME,
       waitForConnections: true,
-      connectionLimit: 2, // Giới hạn tối đa 2 kết nối đồng thời để bảo vệ MySQL Hostinger
-      maxIdle: 2,
-      idleTimeout: 30000,
-      queueLimit: 50,
-      connectTimeout: 4000, // Timeout kết nối nhanh (4s)
+      connectionLimit: 1, // Duy trì đúng 1 kết nối duy nhất để không bao giờ bị vượt hạn ngạch 500/giờ của Hostinger
+      maxIdle: 1,
+      idleTimeout: 3600000, // Giữ kết nối trong 1 giờ, không đóng mở liên tục
+      queueLimit: 100,
+      connectTimeout: 5000,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000
     });
-    console.log(`[MySQL] Initialized pool connecting to ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
+    console.log(`[MySQL] Initialized single persistent pool connecting to ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
+
+    // Gửi ping định kỳ mỗi 60 giây để duy trì kết nối sống (Keep-Alive), tránh timeout và tránh tạo kết nối mới
+    setInterval(() => {
+      if (pool) {
+        pool.query('SELECT 1').catch(() => {});
+      }
+    }, 60000);
   }
   return pool;
 }
 
 // Bộ kiểm soát lưu lượng và ngắt mạch tự động (Circuit Breaker & Concurrency Semaphore)
 let activeDbQueries = 0;
-const MAX_CONCURRENT_QUERIES = 2;
+const MAX_CONCURRENT_QUERIES = 1;
 let dbCircuitOpenUntil = 0;
+
+function formatMySQLErrorMessage(err: any): { message: string; reason: string } {
+  const code = err?.code || '';
+  const msg = err?.message || '';
+
+  if (code === 'ER_USER_LIMIT_REACHED' || msg.includes('max_connections_per_hour')) {
+    return {
+      message: 'Máy chủ MySQL Hostinger tạm thời chạm hạn mức 500 kết nối/giờ (max_connections_per_hour).',
+      reason: 'quota_reached'
+    };
+  }
+  if (code === 'ETIMEDOUT' || code === 'ECONNREFUSED' || msg.includes('ETIMEDOUT')) {
+    return {
+      message: 'Không thể kết nối đến cổng 3306. Hãy chắc chắn bạn đã thêm IP "%" vào mục Remote MySQL trên hPanel Hostinger.',
+      reason: 'remote_blocked'
+    };
+  }
+  if (code === 'ER_ACCESS_DENIED_ERROR' || msg.includes('Access denied')) {
+    return {
+      message: 'Sai tên đăng nhập hoặc mật khẩu tài khoản MySQL Hostinger.',
+      reason: 'auth_failed'
+    };
+  }
+  return {
+    message: msg || 'Lỗi kết nối máy chủ MySQL Hostinger',
+    reason: 'unknown'
+  };
+}
 
 async function executeDbWithLimit<T>(fn: (db: mysql.Pool) => Promise<T>, fallbackData?: any): Promise<T> {
   const now = Date.now();
@@ -67,8 +102,8 @@ async function executeDbWithLimit<T>(fn: (db: mysql.Pool) => Promise<T>, fallbac
 
   let waited = 0;
   while (activeDbQueries >= MAX_CONCURRENT_QUERIES && waited < 3000) {
-    await new Promise(r => setTimeout(r, 60));
-    waited += 60;
+    await new Promise(r => setTimeout(r, 50));
+    waited += 50;
   }
 
   activeDbQueries++;
@@ -76,19 +111,20 @@ async function executeDbWithLimit<T>(fn: (db: mysql.Pool) => Promise<T>, fallbac
     const db = getDbPool();
     const result = await Promise.race([
       fn(db),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('MySQL Query Timeout')), 4500))
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('MySQL Query Timeout')), 5000))
     ]);
     return result;
   } catch (err: any) {
-    const msg = err?.message || '';
-    if (msg.includes('Timeout') || msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('max_connections') || msg.includes('PROTOCOL_CONNECTION_LOST')) {
+    const errorInfo = formatMySQLErrorMessage(err);
+    if (errorInfo.reason === 'quota_reached') {
+      dbCircuitOpenUntil = Date.now() + 30000;
+    } else if (errorInfo.reason === 'remote_blocked') {
       dbCircuitOpenUntil = Date.now() + 15000;
-      console.warn(`[MySQL Circuit Breaker Active]: ${msg}. Tự động chuyển sang chế độ Offline Cache trong 15s.`);
     }
     if (fallbackData !== undefined) {
       return fallbackData;
     }
-    throw err;
+    throw new Error(errorInfo.message);
   } finally {
     activeDbQueries = Math.max(0, activeDbQueries - 1);
   }

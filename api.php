@@ -59,14 +59,22 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => false,
         PDO::ATTR_TIMEOUT            => 4,
     ];
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    try {
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    } catch (PDOException $primaryEx) {
+        // Nếu kết nối qua host từ xa không thành công và đang chạy trên hosting nội bộ, thử kết nối qua localhost
+        if (DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1') {
+            $localDsn = "mysql:host=localhost;port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $pdo = new PDO($localDsn, DB_USER, DB_PASS, $options);
+        } else {
+            throw $primaryEx;
+        }
+    }
 } catch (PDOException $e) {
-    http_response_code(500);
-    error_log("CTH-SLA Database connection failed: " . $e->getMessage());
-    // Không bao giờ trả về $e->getMessage() ra ngoài client để tránh lộ thông tin máy chủ
     echo json_encode([
-        "status" => "error", 
-        "message" => "Không thể kết nối cơ sở dữ liệu. Vui lòng liên hệ quản trị viên."
+        "status" => "error",
+        "offline" => true,
+        "message" => "Máy chủ MySQL Hostinger tạm thời bảo vệ lưu lượng hoặc chưa mở quyền Remote. Hãy kiểm tra cài đặt Remote MySQL hoặc thử lại sau ít phút."
     ]);
     exit();
 }

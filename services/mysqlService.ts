@@ -303,6 +303,23 @@ const handleResponse = async (res: Response): Promise<any> => {
 // Map lưu trữ các request đang xử lý để deduplicate (tránh bắn trùng nhiều request giống hệt nhau cùng lúc)
 const inFlightRequests = new Map<string, Promise<any>>();
 
+const HOSTINGER_CUSTOM_API_KEY = 'cth_hostinger_custom_api_url';
+
+export const getCustomHostingerApiUrl = (): string => {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(HOSTINGER_CUSTOM_API_KEY) || '';
+};
+
+export const setCustomHostingerApiUrl = (url: string): void => {
+  if (typeof window === 'undefined') return;
+  const clean = url.trim();
+  if (clean) {
+    localStorage.setItem(HOSTINGER_CUSTOM_API_KEY, clean);
+  } else {
+    localStorage.removeItem(HOSTINGER_CUSTOM_API_KEY);
+  }
+};
+
 /**
  * Hàm gọi API thông minh có kiểm soát lưu lượng, chống nghẽn cho MySQL Hostinger
  */
@@ -314,7 +331,10 @@ const fetchSmartApi = async (phpAction: string, expressEndpoint: string, options
     return inFlightRequests.get(cacheKey);
   }
 
-  const primaryUrl = extraParams ? `/api/${expressEndpoint}?${extraParams}` : `/api/${expressEndpoint}`;
+  const customApi = getCustomHostingerApiUrl();
+  const primaryUrl = customApi 
+    ? (extraParams ? `${customApi}?action=${encodeURIComponent(phpAction)}&${extraParams}` : `${customApi}?action=${encodeURIComponent(phpAction)}`)
+    : (extraParams ? `/api/${expressEndpoint}?${extraParams}` : `/api/${expressEndpoint}`);
   const fallbackUrl = extraParams ? `/api.php?action=${encodeURIComponent(phpAction)}&${extraParams}` : `/api.php?action=${encodeURIComponent(phpAction)}`;
 
   const requestPromise = (async () => {
