@@ -465,7 +465,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                   </div>
                   
                   <div className="flex flex-wrap gap-1.5 py-1">
-                    {['1@10.8.0.1', '2@10.8.0.1', '3@10.8.0.1', '4@10.8.0.1'].map(id => (
+                    {['1@10.8.0.1', '2@10.8.0.1', '1@10.130.247.116', '1@10.0.0.2'].map(id => (
                       <button
                         key={id}
                         type="button"
@@ -479,7 +479,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({
                         {id}
                       </button>
                     ))}
-                    {formData.meetingRoomId && !['1@10.8.0.1', '2@10.8.0.1', '3@10.8.0.1', '4@10.8.0.1'].includes(formData.meetingRoomId) && (
+                    {formData.meetingRoomId && !['1@10.8.0.1', '2@10.8.0.1', '1@10.130.247.116', '1@10.0.0.2'].includes(formData.meetingRoomId) && (
                       <div className="px-3 py-1.5 text-xs font-mono font-bold rounded-lg border bg-blue-50/50 dark:bg-slate-900 border-blue-200 text-blue-600 dark:text-blue-400">
                         ID thực tế: {formData.meetingRoomId}
                       </div>

@@ -1,17 +1,4 @@
 <?php
-/**
- * -----------------------------------------------------------------------------
- * CTH SLA PLATFORM - SECURE HOSTINGER MYSQL API GATEWAY (api.php)
- * -----------------------------------------------------------------------------
- * Bản nâng cấp bảo mật toàn diện:
- * - Bảo vệ xác thực máy chủ bằng Token JWT HMAC-SHA256
- * - Mã hóa mật khẩu bằng thuật toán chuẩn Bcrypt (password_hash)
- * - Ngăn chặn rò rỉ thông tin (Information Disclosure) & lỗi CSDL nội bộ
- * - Kiểm soát quyền truy cập chặt chẽ (RBAC) cho mọi thao tác ghi / xóa
- * - Thêm các Security Headers chống Clickjacking, MIME-sniffing & XSS
- * - Tự động di chuyển (migrate) mật khẩu cũ sang Bcrypt khi đăng nhập
- * -----------------------------------------------------------------------------
- */
 
 // Tắt hoàn toàn hiển thị lỗi trực tiếp ra output để bảo đảm phản hồi luôn là thuần JSON
 error_reporting(0);
